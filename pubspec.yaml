@@ -8,7 +8,7 @@ environment:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/image/logo.png"
+  image_path: ./assets/images/SOMOS_QRplus.png
 
 dependencies:
   flutter:
