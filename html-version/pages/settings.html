@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - SOMOS QR+</title>
+    <link rel="stylesheet" href="../css/settings.css">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="nav-header">
+        <div class="nav-container">
+            <button class="nav-menu-btn">
+                <span class="hamburger-icon">☰</span>
+            </button>
+            <div class="nav-logo">
+                <h1>SOMOS QR+</h1>
+            </div>
+            <div class="nav-profile">
+                <button class="profile-btn">
+                    <div class="avatar">
+                        <div class="avatar-initials">JC</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Drawer -->
+    <nav class="nav-drawer" id="navDrawer">
+        <div class="drawer-header">
+            <div class="drawer-logo-container">
+                <div class="drawer-logo-circle">
+                    <div class="drawer-avatar-initials">JC</div>
+                </div>
+                <div class="drawer-title">
+                    <span class="drawer-title-text">SOMOS QR</span>
+                    <span class="drawer-title-plus">+</span>
+                </div>
+            </div>
+        </div>
+        <div class="drawer-content">
+            <div class="drawer-item" data-page="dashboard">
+                <span class="drawer-text">Dashboard</span>
+            </div>
+            <div class="drawer-item" data-page="quality-scorecards">
+                <span class="drawer-text">Quality Score Cards</span>
+            </div>
+            <div class="drawer-item" onclick="window.location.href='schedule.html'">
+                <span class="drawer-text">My Schedule</span>
+            </div>
+            <div class="drawer-item" data-page="patients">
+                <span class="drawer-text">My Patients</span>
+            </div>
+            <div class="drawer-item" data-page="reports">
+                <span class="drawer-text">Reports</span>
+            </div>
+            <div class="drawer-item" data-page="resources">
+                <span class="drawer-text">Resources</span>
+            </div>
+            <div class="drawer-divider"></div>
+            <div class="drawer-item active" data-page="settings">
+                <span class="drawer-text">Settings</span>
+            </div>
+            
+            <div class="drawer-item" onclick="logout()">
+                <span class="drawer-text">Log Out</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Overlay for closing drawer -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- Logout Dialog -->
+    <div class="logout-dialog" id="logoutDialog">
+        <div class="logout-dialog-content">
+            <div class="logout-dialog-header">
+                <div class="logout-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </div>
+                <h3>Log Out</h3>
+            </div>
+            <div class="logout-dialog-body">
+                <p>Are you sure you want to log out of your account?</p>
+                <p class="logout-subtitle">You'll need to sign in again to access your dashboard.</p>
+            </div>
+            <div class="logout-dialog-footer">
+                <button class="logout-btn-cancel" onclick="closeLogoutDialog()">Cancel</button>
+                <button class="logout-btn-confirm" onclick="confirmLogout()">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Title -->
+        <div class="page-title">
+            <h1>Settings</h1>
+        </div>
+        
+        <div class="container">
+            <!-- Settings Cards -->
+            <div class="settings-container">
+                <!-- Report a Bug Card -->
+                <div class="setting-card" id="reportBugCard">
+                    <div class="card-header">
+                        <div class="setting-info">
+                            <div class="setting-icon">
+                                <i data-feather="alert-triangle"></i>
+                            </div>
+                            <div class="setting-details">
+                                <h3>Report a Bug</h3>
+                                <p>Help us improve by reporting issues</p>
+                            </div>
+                        </div>
+                        <button class="action-btn" id="reportBugBtn">
+                            <span>Report</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2-Step Verification Card -->
+                <div class="setting-card" id="twoFactorCard">
+                    <div class="card-header">
+                        <div class="setting-info">
+                            <div class="setting-icon">
+                                <i data-feather="shield"></i>
+                            </div>
+                            <div class="setting-details">
+                                <h3>2-Step Verification</h3>
+                                <p>Add an extra layer of security</p>
+                            </div>
+                        </div>
+                        <div class="toggle-container">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="twoFactorToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Change Password Card -->
+                <div class="setting-card" id="changePasswordCard">
+                    <div class="card-header">
+                        <div class="setting-info">
+                            <div class="setting-icon">
+                                <i data-feather="key"></i>
+                            </div>
+                            <div class="setting-details">
+                                <h3>Change Password</h3>
+                                <p>Update your account password</p>
+                            </div>
+                        </div>
+                        <button class="action-btn" id="changePasswordBtn">
+                            <span>Change</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dark Mode Card -->
+                <div class="setting-card" id="darkModeCard">
+                    <div class="card-header">
+                        <div class="setting-info">
+                            <div class="setting-icon">
+                                <i data-feather="moon"></i>
+                            </div>
+                            <div class="setting-details">
+                                <h3>Dark Mode</h3>
+                                <p>Switch to dark theme</p>
+                            </div>
+                        </div>
+                        <div class="toggle-container">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="darkModeToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invite Card -->
+                <div class="setting-card" id="inviteCard">
+                    <div class="card-header">
+                        <div class="setting-info">
+                            <div class="setting-icon">
+                                <i data-feather="mail"></i>
+                            </div>
+                            <div class="setting-details">
+                                <h3>Invite</h3>
+                                <p>Invite colleagues to join</p>
+                            </div>
+                        </div>
+                        <button class="action-btn" id="inviteBtn">
+                            <span>Invite</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Accounts Card -->
+                <div class="setting-card" id="accountsCard">
+                    <div class="card-header">
+                        <div class="setting-info">
+                            <div class="setting-icon">
+                                <i data-feather="user"></i>
+                            </div>
+                            <div class="setting-details">
+                                <h3>Accounts</h3>
+                                <p>Manage your account settings</p>
+                            </div>
+                        </div>
+                        <button class="action-btn" id="accountsBtn">
+                            <span>Manage</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Report Bug Modal -->
+    <div class="modal" id="reportBugModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Report a Bug</h2>
+                <button class="close-btn" id="closeReportBugModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="bugReportForm">
+                    <div class="form-group">
+                        <label for="bugTitle">Title</label>
+                        <input type="text" id="bugTitle" placeholder="Brief description of the issue" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bugDescription">Description</label>
+                        <textarea id="bugDescription" placeholder="Detailed description of the bug..." rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="bugSeverity">Severity</label>
+                        <select id="bugSeverity" required>
+                            <option value="">Select severity</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelReportBug">Cancel</button>
+                        <button type="submit" class="btn-primary">Submit Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal" id="changePasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Change Password</h2>
+                <button class="close-btn" id="closeChangePasswordModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelChangePassword">Cancel</button>
+                        <button type="submit" class="btn-primary">Change Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invite Modal -->
+    <div class="modal" id="inviteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Invite</h2>
+                <button class="close-btn" id="closeInviteModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="inviteForm">
+                    <div class="form-group">
+                        <label for="inviteRole">Role</label>
+                        <div class="select-container">
+                            <select id="inviteRole" required>
+                                <option value="">Select a Role</option>
+                                <option value="provider-users">Provider Users</option>
+                                <option value="non-admin">Non Admin</option>
+                                <option value="admin">Administrator</option>
+                                <option value="nurse">Nurse</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
+                            <i data-feather="chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="inviteNpi">NPI</label>
+                        <div class="select-container">
+                            <select id="inviteNpi" required>
+                                <option value="">Select a npi</option>
+                                <option value="npi-001">NPI-001</option>
+                                <option value="npi-002">NPI-002</option>
+                                <option value="npi-003">NPI-003</option>
+                                <option value="npi-004">NPI-004</option>
+                            </select>
+                            <i data-feather="chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="inviteFirstName">First Name</label>
+                        <div class="input-with-action">
+                            <input type="text" id="inviteFirstName" placeholder="First Name" required>
+                            <button type="button" class="action-dots" id="firstNameAction">
+                                <i data-feather="more-horizontal"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="inviteLastName">Last Name</label>
+                        <input type="text" id="inviteLastName" placeholder="Last Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="invitePhone">Phone Number</label>
+                        <input type="tel" id="invitePhone" placeholder="Phone Number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inviteEmail">Email Address</label>
+                        <input type="email" id="inviteEmail" placeholder="Email Address" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Send Invitation</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accounts Modal -->
+    <div class="modal" id="accountsModal">
+        <div class="modal-content accounts-modal">
+            <div class="modal-header">
+                <h2>User Management</h2>
+                <button class="close-btn" id="closeAccountsModal">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Filter Bar -->
+                <div class="filter-container">
+                    <div class="filter-input">
+                        <i data-feather="search"></i>
+                        <input type="text" id="userFilter" placeholder="Filter">
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable">
+                                    Name
+                                    <i data-feather="chevrons-up-down"></i>
+                                </th>
+                                <th class="sortable">
+                                    Role
+                                    <i data-feather="chevrons-up-down"></i>
+                                </th>
+                                <th class="sortable">
+                                    Status
+                                    <i data-feather="chevrons-up-down"></i>
+                                </th>
+                                <th class="sortable">
+                                    Last Login
+                                    <i data-feather="chevrons-up-down"></i>
+                                </th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td>Mirza Morales-Diaz</td>
+                                <td>Admin</td>
+                                <td>
+                                    <label class="toggle-switch small">
+                                        <input type="checkbox" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </td>
+                                <td>04/29/2025</td>
+                                <td>
+                                    <button class="btn-select-role">select role</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Joel Cedano</td>
+                                <td>Provider</td>
+                                <td>
+                                    <label class="toggle-switch small">
+                                        <input type="checkbox" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </td>
+                                <td>04/28/2025</td>
+                                <td>
+                                    <button class="btn-select-role">select role</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Sarah Johnson</td>
+                                <td>Nurse</td>
+                                <td>
+                                    <label class="toggle-switch small">
+                                        <input type="checkbox">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </td>
+                                <td>04/27/2025</td>
+                                <td>
+                                    <button class="btn-select-role">select role</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="pagination-btn" id="firstPage">
+                        <i data-feather="chevrons-left"></i>
+                    </button>
+                    <button class="pagination-btn" id="prevPage">
+                        <i data-feather="chevron-left"></i>
+                    </button>
+                    <button class="pagination-btn active" id="currentPage">1</button>
+                    <button class="pagination-btn" id="nextPage">
+                        <i data-feather="chevron-right"></i>
+                    </button>
+                    <button class="pagination-btn" id="lastPage">
+                        <i data-feather="chevrons-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/settings.js"></script>
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+    </script>
+</body>
+</html> 

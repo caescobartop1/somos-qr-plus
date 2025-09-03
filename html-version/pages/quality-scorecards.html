@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quality Score Cards - SOMOS QR+</title>
+    <link rel="stylesheet" href="../css/quality-scorecards.css">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="nav-header">
+        <div class="nav-container">
+            <button class="nav-menu-btn">
+                <span class="hamburger-icon">☰</span>
+            </button>
+            <div class="nav-logo">
+                <h1>SOMOS QR+</h1>
+            </div>
+            <div class="nav-provider">
+                <div class="searchable-dropdown" id="searchableDropdown">
+                    <div class="dropdown-trigger" id="dropdownTrigger">
+                        <span class="selected-text" id="selectedText">All</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </div>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="search-container">
+                            <input type="text" class="search-input" id="searchInput" placeholder="Search providers...">
+                            <span class="search-icon">🔍</span>
+                        </div>
+                        <div class="dropdown-options" id="dropdownOptions">
+                            <div class="dropdown-option" data-value="all" data-selected="true">
+                                <span class="option-text">All</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="delmont">
+                                <span class="option-text">Delmont Medical, PC</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider2">
+                                <span class="option-text">Provider 2</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider3">
+                                <span class="option-text">Provider 3</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider4">
+                                <span class="option-text">Provider 4</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-notifications">
+                <button class="notification-btn" id="notificationBtn">
+                    <svg class="notification-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge">3</span>
+                </button>
+                
+                <!-- Notifications Dropdown -->
+                <div class="notifications-dropdown" id="notificationsDropdown">
+                    <div class="notifications-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all-read-btn" id="markAllReadBtn">Mark all read</button>
+                    </div>
+                    
+                    <div class="notifications-list" id="notificationsList">
+                        <div class="notification-item unread" data-id="1">
+                            <div class="notification-icon-small">📋</div>
+                            <div class="notification-content">
+                                <div class="notification-title">New Quality Scorecard Available</div>
+                                <div class="notification-message">Your Q2 2025 quality scorecard is ready for review.</div>
+                                <div class="notification-time">2 hours ago</div>
+                            </div>
+                            <button class="notification-close" data-id="1">×</button>
+                        </div>
+                        
+                        <div class="notification-item unread" data-id="2">
+                            <div class="notification-icon-small">👥</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Patient Appointment Reminder</div>
+                                <div class="notification-message">5 patients have appointments scheduled for tomorrow.</div>
+                                <div class="notification-time">4 hours ago</div>
+                            </div>
+                            <button class="notification-close" data-id="2">×</button>
+                        </div>
+                        
+                        <div class="notification-item unread" data-id="3">
+                            <div class="notification-icon-small">📊</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Monthly Report Generated</div>
+                                <div class="notification-message">Your July 2025 performance report has been generated.</div>
+                                <div class="notification-time">1 day ago</div>
+                            </div>
+                            <button class="notification-close" data-id="3">×</button>
+                        </div>
+                    </div>
+                    
+                    <div class="notifications-footer">
+                        <a href="notifications.html" class="view-all-notifications">View all notifications</a>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-profile">
+                <button class="profile-btn">
+                    <div class="avatar">
+                        <div class="avatar-initials">JC</div>
+                    </div>
+                </button>
+                
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <div class="avatar-initials">JC</div>
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name">Joel Cedano</div>
+                            <div class="profile-email">jcedano@somosipa.com</div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-divider"></div>
+                    
+                    <div class="profile-options">
+                        <div class="profile-option" data-action="language">
+                            <span class="option-label">Language</span>
+                            <span class="option-value">
+                                <span class="flag-icon">🇺🇸</span>
+                                English
+                            </span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="invitations">
+                            <span class="option-label">Invitations</span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="logout">
+                            <span class="option-label">Log Out</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Drawer -->
+    <nav class="nav-drawer" id="navDrawer">
+        <div class="drawer-header">
+            <div class="drawer-logo-container">
+                <div class="drawer-logo-circle">
+                    <div class="drawer-avatar-initials">JC</div>
+                </div>
+                <div class="drawer-title">
+                    <span class="drawer-title-text">SOMOS QR</span>
+                    <span class="drawer-title-plus">+</span>
+                </div>
+            </div>
+        </div>
+        <div class="drawer-content">
+            <div class="drawer-item" data-page="dashboard">
+                <span class="drawer-text">Dashboard</span>
+            </div>
+            <div class="drawer-item active" data-page="quality-scorecards">
+                <span class="drawer-text">Quality Score Cards</span>
+            </div>
+            <div class="drawer-item" onclick="window.location.href='schedule.html'">
+                <span class="drawer-text">My Schedule</span>
+            </div>
+            <div class="drawer-item" data-page="patients">
+                <span class="drawer-text">My Patients</span>
+            </div>
+            <div class="drawer-item" data-page="reports">
+                <span class="drawer-text">Reports</span>
+            </div>
+            <div class="drawer-item" data-page="resources">
+                <span class="drawer-text">Resources</span>
+            </div>
+            <div class="drawer-divider"></div>
+            <div class="drawer-item" onclick="window.location.href='settings.html'">
+                <span class="drawer-text">Settings</span>
+            </div>
+            
+            <div class="drawer-item" onclick="logout()">
+                <span class="drawer-text">Log Out</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Overlay for closing drawer -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- Logout Dialog -->
+    <div class="logout-dialog" id="logoutDialog">
+        <div class="logout-dialog-content">
+            <div class="logout-dialog-header">
+                <div class="logout-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </div>
+                <h3>Log Out</h3>
+            </div>
+            <div class="logout-dialog-body">
+                <p>Are you sure you want to log out of your account?</p>
+                <p class="logout-subtitle">You'll need to sign in again to access your dashboard.</p>
+            </div>
+            <div class="logout-dialog-footer">
+                <button class="logout-btn-cancel" onclick="closeLogoutDialog()">Cancel</button>
+                <button class="logout-btn-confirm" onclick="confirmLogout()">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Title -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">Quality Score Cards</h1>
+            </div>
+
+            <!-- Score Cards Table Container -->
+            <div class="table-container">
+                <div class="table-wrapper">
+                    <table class="scorecards-table">
+                        <thead>
+                            <tr>
+                                <th class="metric-header">Measures</th>
+                                <!-- Closed Section -->
+                                <th class="section-header closed-section" colspan="3">
+                                    <div class="section-title">Closed</div>
+                                    <div class="section-labels">
+                                        <span>MCO</span>
+                                        <span>CLAIM</span>
+                                        <span>EHR*</span>
+                                    </div>
+                                </th>
+                                <!-- Benchmarks Section -->
+                                <th class="section-header benchmarks-section" colspan="3">
+                                    <div class="section-title">Benchmarks</div>
+                                    <div class="section-labels">
+                                        <span>50TH/3 START</span>
+                                        <span>75TH/4 START</span>
+                                        <span>90TH/5STAR</span>
+                                    </div>
+                                </th>
+                                <!-- Hits Needed Section -->
+                                <th class="section-header hits-needed-section" colspan="3">
+                                    <div class="section-title">Hits Needed</div>
+                                    <div class="section-labels">
+                                        <span>50TH/3 START</span>
+                                        <span>75TH/4 START</span>
+                                        <span>90TH/5STAR</span>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="metric-name">COA-PA</td>
+                                <td class="metric-value">123</td>
+                                <td class="metric-value">456</td>
+                                <td class="metric-value">789</td>
+                                <td class="metric-value">50%</td>
+                                <td class="metric-value">75%</td>
+                                <td class="metric-value">90%</td>
+                                <td class="metric-value">10</td>
+                                <td class="metric-value">20</td>
+                                <td class="metric-value">30</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">CCS</td>
+                                <td class="metric-value">234</td>
+                                <td class="metric-value">567</td>
+                                <td class="metric-value">890</td>
+                                <td class="metric-value">55%</td>
+                                <td class="metric-value">80%</td>
+                                <td class="metric-value">95%</td>
+                                <td class="metric-value">15</td>
+                                <td class="metric-value">25</td>
+                                <td class="metric-value">35</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">CAW</td>
+                                <td class="metric-value">345</td>
+                                <td class="metric-value">678</td>
+                                <td class="metric-value">901</td>
+                                <td class="metric-value">60%</td>
+                                <td class="metric-value">85%</td>
+                                <td class="metric-value">92%</td>
+                                <td class="metric-value">12</td>
+                                <td class="metric-value">22</td>
+                                <td class="metric-value">32</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">CIS-3</td>
+                                <td class="metric-value">456</td>
+                                <td class="metric-value">789</td>
+                                <td class="metric-value">012</td>
+                                <td class="metric-value">65%</td>
+                                <td class="metric-value">88%</td>
+                                <td class="metric-value">94%</td>
+                                <td class="metric-value">18</td>
+                                <td class="metric-value">28</td>
+                                <td class="metric-value">38</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">CRC</td>
+                                <td class="metric-value">567</td>
+                                <td class="metric-value">890</td>
+                                <td class="metric-value">123</td>
+                                <td class="metric-value">70%</td>
+                                <td class="metric-value">90%</td>
+                                <td class="metric-value">96%</td>
+                                <td class="metric-value">14</td>
+                                <td class="metric-value">24</td>
+                                <td class="metric-value">34</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">CDC-EE</td>
+                                <td class="metric-value">678</td>
+                                <td class="metric-value">901</td>
+                                <td class="metric-value">234</td>
+                                <td class="metric-value">75%</td>
+                                <td class="metric-value">92%</td>
+                                <td class="metric-value">98%</td>
+                                <td class="metric-value">16</td>
+                                <td class="metric-value">26</td>
+                                <td class="metric-value">36</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">CDC-HbA1c</td>
+                                <td class="metric-value">789</td>
+                                <td class="metric-value">012</td>
+                                <td class="metric-value">345</td>
+                                <td class="metric-value">80%</td>
+                                <td class="metric-value">94%</td>
+                                <td class="metric-value">99%</td>
+                                <td class="metric-value">13</td>
+                                <td class="metric-value">23</td>
+                                <td class="metric-value">33</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">CHBP</td>
+                                <td class="metric-value">890</td>
+                                <td class="metric-value">123</td>
+                                <td class="metric-value">456</td>
+                                <td class="metric-value">85%</td>
+                                <td class="metric-value">96%</td>
+                                <td class="metric-value">100%</td>
+                                <td class="metric-value">17</td>
+                                <td class="metric-value">27</td>
+                                <td class="metric-value">37</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">FUA-7</td>
+                                <td class="metric-value">901</td>
+                                <td class="metric-value">234</td>
+                                <td class="metric-value">567</td>
+                                <td class="metric-value">90%</td>
+                                <td class="metric-value">98%</td>
+                                <td class="metric-value">100%</td>
+                                <td class="metric-value">11</td>
+                                <td class="metric-value">21</td>
+                                <td class="metric-value">31</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">MAC</td>
+                                <td class="metric-value">012</td>
+                                <td class="metric-value">345</td>
+                                <td class="metric-value">678</td>
+                                <td class="metric-value">95%</td>
+                                <td class="metric-value">99%</td>
+                                <td class="metric-value">100%</td>
+                                <td class="metric-value">19</td>
+                                <td class="metric-value">29</td>
+                                <td class="metric-value">39</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">MAH</td>
+                                <td class="metric-value">123</td>
+                                <td class="metric-value">456</td>
+                                <td class="metric-value">789</td>
+                                <td class="metric-value">100%</td>
+                                <td class="metric-value">100%</td>
+                                <td class="metric-value">100%</td>
+                                <td class="metric-value">0</td>
+                                <td class="metric-value">0</td>
+                                <td class="metric-value">0</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">MAD</td>
+                                <td class="metric-value">234</td>
+                                <td class="metric-value">567</td>
+                                <td class="metric-value">890</td>
+                                <td class="metric-value">45%</td>
+                                <td class="metric-value">70%</td>
+                                <td class="metric-value">85%</td>
+                                <td class="metric-value">25</td>
+                                <td class="metric-value">40</td>
+                                <td class="metric-value">55</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">OMF</td>
+                                <td class="metric-value">345</td>
+                                <td class="metric-value">678</td>
+                                <td class="metric-value">901</td>
+                                <td class="metric-value">40%</td>
+                                <td class="metric-value">65%</td>
+                                <td class="metric-value">80%</td>
+                                <td class="metric-value">30</td>
+                                <td class="metric-value">45</td>
+                                <td class="metric-value">60</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">PPC-PP</td>
+                                <td class="metric-value">456</td>
+                                <td class="metric-value">789</td>
+                                <td class="metric-value">012</td>
+                                <td class="metric-value">35%</td>
+                                <td class="metric-value">60%</td>
+                                <td class="metric-value">75%</td>
+                                <td class="metric-value">35</td>
+                                <td class="metric-value">50</td>
+                                <td class="metric-value">65</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">ST-DM</td>
+                                <td class="metric-value">567</td>
+                                <td class="metric-value">890</td>
+                                <td class="metric-value">123</td>
+                                <td class="metric-value">30%</td>
+                                <td class="metric-value">55%</td>
+                                <td class="metric-value">70%</td>
+                                <td class="metric-value">40</td>
+                                <td class="metric-value">55</td>
+                                <td class="metric-value">70</td>
+                            </tr>
+                            <tr>
+                                <td class="metric-name">TOC-MR</td>
+                                <td class="metric-value">678</td>
+                                <td class="metric-value">901</td>
+                                <td class="metric-value">234</td>
+                                <td class="metric-value">25%</td>
+                                <td class="metric-value">50%</td>
+                                <td class="metric-value">65%</td>
+                                <td class="metric-value">45</td>
+                                <td class="metric-value">60</td>
+                                <td class="metric-value">75</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <div class="pagination-left">
+                        <span class="rows-text">Rows per page:</span>
+                        <select class="page-size-select" id="pageSizeSelect">
+                            <option value="15">15</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span class="page-info" id="pageInfo">1-15 of 18</span>
+                    </div>
+                    <div class="pagination-right">
+                        <div class="pagination-buttons">
+                            <button class="page-btn" id="firstPage" disabled>⏮️</button>
+                            <button class="page-btn" id="prevPage" disabled>◀</button>
+                            <button class="page-btn" id="nextPage">▶</button>
+                            <button class="page-btn" id="lastPage">⏭️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/quality-scorecards.js"></script>
+</body>
+</html> 

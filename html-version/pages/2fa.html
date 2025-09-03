@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-Factor Authentication - SOMOS QR+</title>
+    <link rel="stylesheet" href="../css/2fa.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Logo Section -->
+            <div class="logo-section">
+                <img src="../images/SOMOS QR.png" alt="SOMOS QR Logo" class="logo-image">
+            </div>
+
+            <!-- 2FA Form -->
+            <div class="auth-form">
+                <div class="auth-header">
+                    <h1>Two-Factor Authentication</h1>
+                    <p>Enter the 6-digit code sent to your device</p>
+                </div>
+
+                <form id="twoFactorForm" class="two-factor-form">
+                    <div class="code-input-container">
+                        <div class="code-inputs">
+                            <input type="text" class="code-input" maxlength="1" data-index="0" autocomplete="off">
+                            <input type="text" class="code-input" maxlength="1" data-index="1" autocomplete="off">
+                            <input type="text" class="code-input" maxlength="1" data-index="2" autocomplete="off">
+                            <input type="text" class="code-input" maxlength="1" data-index="3" autocomplete="off">
+                            <input type="text" class="code-input" maxlength="1" data-index="4" autocomplete="off">
+                            <input type="text" class="code-input" maxlength="1" data-index="5" autocomplete="off">
+                        </div>
+                        <div class="code-error" id="codeError"></div>
+                    </div>
+
+                    <div class="auth-actions">
+                        <button type="submit" class="btn-verify" id="verifyBtn">
+                            <span class="btn-text">Verify Code</span>
+                            <div class="btn-loading" id="btnLoading">
+                                <div class="spinner"></div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="auth-links">
+                        <button type="button" class="link-btn" id="resendBtn">
+                            <span class="link-text">Resend Code</span>
+                            <span class="countdown" id="countdown"></span>
+                        </button>
+                        <button type="button" class="link-btn" id="backBtn">
+                            Back to Login
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/2fa.js"></script>
+</body>
+</html>

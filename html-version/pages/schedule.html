@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Schedule - SOMOS QR+</title>
+    <link rel="stylesheet" href="../css/schedule.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="nav-header">
+        <div class="nav-container">
+            <button class="nav-menu-btn">
+                <span class="hamburger-icon">☰</span>
+            </button>
+            <div class="nav-logo">
+                <h1>SOMOS QR+</h1>
+            </div>
+            <div class="nav-provider">
+                <div class="searchable-dropdown" id="searchableDropdown">
+                    <div class="dropdown-trigger" id="dropdownTrigger">
+                        <span class="selected-text" id="selectedText">All</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </div>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="search-container">
+                            <input type="text" class="search-input" id="searchInput" placeholder="Search providers...">
+                            <span class="search-icon">🔍</span>
+                        </div>
+                        <div class="dropdown-options" id="dropdownOptions">
+                            <div class="dropdown-option" data-value="all" data-selected="true">
+                                <span class="option-text">All</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="delmont">
+                                <span class="option-text">Delmont Medical, PC</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider2">
+                                <span class="option-text">Provider 2</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider3">
+                                <span class="option-text">Provider 3</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider4">
+                                <span class="option-text">Provider 4</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-notifications">
+                <button class="notification-btn" id="notificationBtn">
+                    <svg class="notification-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge">3</span>
+                </button>
+                
+                <!-- Notifications Dropdown -->
+                <div class="notifications-dropdown" id="notificationsDropdown">
+                    <div class="notifications-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all-read-btn" id="markAllReadBtn">Mark all read</button>
+                    </div>
+                    
+                    <div class="notifications-list" id="notificationsList">
+                        <div class="notification-item unread" data-id="1">
+                            <div class="notification-icon-small">📅</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Schedule Update</div>
+                                <div class="notification-message">Your schedule has been updated for next week.</div>
+                                <div class="notification-time">1 hour ago</div>
+                            </div>
+                            <button class="notification-close" data-id="1">×</button>
+                        </div>
+                        
+                        <div class="notification-item unread" data-id="2">
+                            <div class="notification-icon-small">👥</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Patient Appointment Reminder</div>
+                                <div class="notification-message">5 patients have appointments scheduled for tomorrow.</div>
+                                <div class="notification-time">4 hours ago</div>
+                            </div>
+                            <button class="notification-close" data-id="2">×</button>
+                        </div>
+                        
+                        <div class="notification-item unread" data-id="3">
+                            <div class="notification-icon-small">📊</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Monthly Report Generated</div>
+                                <div class="notification-message">Your July 2025 performance report has been generated.</div>
+                                <div class="notification-time">1 day ago</div>
+                            </div>
+                            <button class="notification-close" data-id="3">×</button>
+                        </div>
+                    </div>
+                    
+                    <div class="notifications-footer">
+                        <a href="notifications.html" class="view-all-notifications">View all notifications</a>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-profile">
+                <button class="profile-btn">
+                    <div class="avatar">
+                        <div class="avatar-initials">JC</div>
+                    </div>
+                </button>
+                
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <div class="avatar-initials">JC</div>
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name">Joel Cedano</div>
+                            <div class="profile-email">jcedano@somosipa.com</div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-divider"></div>
+                    
+                    <div class="profile-options">
+                        <div class="profile-option" data-action="language">
+                            <span class="option-label">Language</span>
+                            <span class="option-value">
+                                <span class="flag-icon">🇺🇸</span>
+                                English
+                            </span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="invitations">
+                            <span class="option-label">Invitations</span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="logout">
+                            <span class="option-label">Log Out</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Drawer -->
+    <nav class="nav-drawer" id="navDrawer">
+        <div class="drawer-header">
+            <div class="drawer-logo-container">
+                <div class="drawer-logo-circle">
+                    <div class="drawer-avatar-initials">JC</div>
+                </div>
+                <div class="drawer-title">
+                    <span class="drawer-title-text">SOMOS QR</span>
+                    <span class="drawer-title-plus">+</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="drawer-content">
+            <div class="drawer-item" data-page="dashboard">
+                <span class="drawer-text">Dashboard</span>
+            </div>
+            <div class="drawer-item" data-page="quality-scorecards">
+                <span class="drawer-text">Quality Score Cards</span>
+            </div>
+            <div class="drawer-item active" data-page="schedule">
+                <span class="drawer-text">My Schedule</span>
+            </div>
+            <div class="drawer-item" data-page="patients">
+                <span class="drawer-text">My Patients</span>
+            </div>
+            <div class="drawer-item" data-page="reports">
+                <span class="drawer-text">Reports</span>
+            </div>
+            <div class="drawer-item" data-page="resources">
+                <span class="drawer-text">Resources</span>
+            </div>
+            <div class="drawer-divider"></div>
+            <div class="drawer-item" onclick="window.location.href='settings.html'">
+                <span class="drawer-text">Settings</span>
+            </div>
+            <div class="drawer-item" onclick="logout()">
+                <span class="drawer-text">Log Out</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Overlay for closing drawer -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- Logout Dialog -->
+    <div class="logout-dialog" id="logoutDialog">
+        <div class="logout-dialog-content">
+            <div class="logout-dialog-header">
+                <div class="logout-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </div>
+                <h3>Log Out</h3>
+            </div>
+            <div class="logout-dialog-body">
+                <p>Are you sure you want to log out of your account?</p>
+                <p class="logout-subtitle">You'll need to sign in again to access your dashboard.</p>
+            </div>
+            <div class="logout-dialog-footer">
+                <button class="logout-btn-cancel" onclick="closeLogoutDialog()">Cancel</button>
+                <button class="logout-btn-confirm" onclick="confirmLogout()">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">My Schedule</h1>
+            </div>
+
+            <!-- Spacer -->
+            <div style="height: 0px;"></div>
+
+            <!-- Schedule Controls -->
+            <div class="schedule-controls">
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="day">Day</button>
+                    <button class="view-btn" data-view="week">Week</button>
+                    <button class="view-btn" data-view="month">Month</button>
+                </div>
+                <div class="date-navigation">
+                    <button class="nav-btn" id="prevWeek" title="Previous">
+                        <i data-feather="chevron-left"></i>
+                    </button>
+                    <div class="current-date" id="currentDateDisplay"></div>
+                    <button class="nav-btn" id="nextWeek" title="Next">
+                        <i data-feather="chevron-right"></i>
+                    </button>
+                    <button class="today-btn" id="todayBtn" title="Go to Today">
+                        <i data-feather="calendar"></i>
+                        Today
+                    </button>
+                </div>
+                <div class="schedule-actions">
+                    <button class="action-btn primary" id="addAppointment">
+                        <i data-feather="plus"></i>
+                        Add Appointment
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Filter Controls -->
+            <div class="status-filter-controls">
+                <div class="status-filter-label">Filter by Status:</div>
+                <div class="status-filter-buttons">
+                    <button class="status-filter-btn active" data-status="all">
+                        <span class="status-dot all"></span>
+                        All
+                    </button>
+                    <button class="status-filter-btn" data-status="pending">
+                        <span class="status-dot pending"></span>
+                        Pending
+                    </button>
+                    <button class="status-filter-btn" data-status="confirmed">
+                        <span class="status-dot confirmed"></span>
+                        Confirmed
+                    </button>
+                    <button class="status-filter-btn" data-status="completed">
+                        <span class="status-dot completed"></span>
+                        Completed
+                    </button>
+                    <button class="status-filter-btn" data-status="no-show">
+                        <span class="status-dot no-show"></span>
+                        No Show
+                    </button>
+                    <button class="status-filter-btn" data-status="cancelled">
+                        <span class="status-dot cancelled"></span>
+                        Cancelled
+                    </button>
+                </div>
+            </div>
+
+            <!-- Provider Filter Controls -->
+            <div class="provider-filter-controls">
+                <div class="provider-filter-label">Filter by Provider:</div>
+                <div class="provider-filter-dropdown">
+                    <select class="provider-select" id="providerSelect">
+                        <option value="all">All Providers</option>
+                        <option value="dr-smith">Dr. Sarah Smith</option>
+                        <option value="dr-johnson">Dr. Michael Johnson</option>
+                        <option value="dr-williams">Dr. Emily Williams</option>
+                        <option value="dr-brown">Dr. David Brown</option>
+                        <option value="dr-davis">Dr. Lisa Davis</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Schedule Grid -->
+            <div class="schedule-grid">
+                <!-- Time Column -->
+                <div class="time-column">
+                    <div class="time-header">Time</div>
+                    <div class="time-slots">
+                        <div class="time-slot">8:00 AM</div>
+                        <div class="time-slot">9:00 AM</div>
+                        <div class="time-slot">10:00 AM</div>
+                        <div class="time-slot">11:00 AM</div>
+                        <div class="time-slot">12:00 PM</div>
+                        <div class="time-slot">1:00 PM</div>
+                        <div class="time-slot">2:00 PM</div>
+                        <div class="time-slot">3:00 PM</div>
+                        <div class="time-slot">4:00 PM</div>
+                        <div class="time-slot">5:00 PM</div>
+                    </div>
+                </div>
+
+                <!-- Day Columns -->
+                <div class="day-column" data-day="monday">
+                    <div class="day-header">
+                        <div class="day-name">Monday</div>
+                        <div class="day-date">Jul 29</div>
+                    </div>
+                    <div class="day-slots">
+                        <div class="appointment" style="top: 60px; height: 60px; background: #4CAF50;" data-status="completed" data-provider="dr-smith">
+                            <div class="appointment-content">
+                                <div class="patient-name">Sarah Johnson</div>
+                                <div class="appointment-time">9:00 - 10:00</div>
+                                <div class="appointment-type">Annual Checkup</div>
+                                <div class="appointment-status">Completed</div>
+                            </div>
+                        </div>
+                        <div class="appointment" style="top: 180px; height: 60px; background: #2196F3;" data-status="confirmed" data-provider="dr-johnson">
+                            <div class="appointment-content">
+                                <div class="patient-name">Michael Chen</div>
+                                <div class="appointment-time">11:00 - 12:00</div>
+                                <div class="appointment-type">Follow-up</div>
+                                <div class="appointment-status">Confirmed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="day-column" data-day="tuesday">
+                    <div class="day-header">
+                        <div class="day-name">Tuesday</div>
+                        <div class="day-date">Jul 30</div>
+                    </div>
+                    <div class="day-slots">
+                        <div class="appointment" style="top: 120px; height: 60px; background: #FF9800;" data-status="pending" data-provider="dr-williams">
+                            <div class="appointment-content">
+                                <div class="patient-name">Emily Rodriguez</div>
+                                <div class="appointment-time">10:00 - 11:00</div>
+                                <div class="appointment-type">Consultation</div>
+                                <div class="appointment-status">Pending</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="day-column" data-day="wednesday">
+                    <div class="day-header">
+                        <div class="day-name">Wednesday</div>
+                        <div class="day-date">Jul 31</div>
+                    </div>
+                    <div class="day-slots">
+                        <div class="appointment" style="top: 240px; height: 60px; background: #9C27B0;" data-status="no-show" data-provider="dr-brown">
+                            <div class="appointment-content">
+                                <div class="patient-name">David Kim</div>
+                                <div class="appointment-time">2:00 - 3:00</div>
+                                <div class="appointment-type">Physical Exam</div>
+                                <div class="appointment-status">No Show</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="day-column" data-day="thursday">
+                    <div class="day-header">
+                        <div class="day-name">Thursday</div>
+                        <div class="day-date">Aug 1</div>
+                    </div>
+                    <div class="day-slots">
+                        <div class="appointment" style="top: 60px; height: 60px; background: #F44336;" data-status="cancelled" data-provider="dr-davis">
+                            <div class="appointment-content">
+                                <div class="patient-name">Lisa Thompson</div>
+                                <div class="appointment-time">9:00 - 10:00</div>
+                                <div class="appointment-type">Urgent Care</div>
+                                <div class="appointment-status">Cancelled</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="day-column" data-day="friday">
+                    <div class="day-header">
+                        <div class="day-name">Friday</div>
+                        <div class="day-date">Aug 2</div>
+                    </div>
+                    <div class="day-slots">
+                        <div class="appointment" style="top: 180px; height: 60px; background: #607D8B;" data-status="confirmed" data-provider="dr-smith">
+                            <div class="appointment-content">
+                                <div class="patient-name">Robert Wilson</div>
+                                <div class="appointment-time">11:00 - 12:00</div>
+                                <div class="appointment-type">Vaccination</div>
+                                <div class="appointment-status">Confirmed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="day-column weekend" data-day="saturday">
+                    <div class="day-header">
+                        <div class="day-name">Saturday</div>
+                        <div class="day-date">Aug 3</div>
+                    </div>
+                    <div class="day-slots">
+                        <!-- Weekend - no appointments -->
+                    </div>
+                </div>
+
+                <div class="day-column weekend" data-day="sunday">
+                    <div class="day-header">
+                        <div class="day-name">Sunday</div>
+                        <div class="day-date">Aug 4</div>
+                    </div>
+                    <div class="day-slots">
+                        <!-- Weekend - no appointments -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Appointment Modal -->
+    <div class="modal" id="addAppointmentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Appointment</h2>
+                <button class="close-btn" id="closeAddAppointmentModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="addAppointmentForm">
+                    <div class="form-group">
+                        <label for="appointmentType">Type</label>
+                        <select id="appointmentType" required>
+                            <option value="">Select appointment type</option>
+                            <option value="annual-checkup">Annual Checkup</option>
+                            <option value="follow-up">Follow-up</option>
+                            <option value="consultation">Consultation</option>
+                            <option value="physical-exam">Physical Exam</option>
+                            <option value="vaccination">Vaccination</option>
+                            <option value="urgent-care">Urgent Care</option>
+                            <option value="walk-in">Walk-In</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="patientName">Patient Name</label>
+                        <select id="patientNameDropdown" required>
+                            <option value="">Select patient</option>
+                            <option value="sarah-johnson">Sarah Johnson</option>
+                            <option value="michael-chen">Michael Chen</option>
+                            <option value="emily-rodriguez">Emily Rodriguez</option>
+                            <option value="david-kim">David Kim</option>
+                            <option value="lisa-thompson">Lisa Thompson</option>
+                            <option value="robert-wilson">Robert Wilson</option>
+                            <option value="jennifer-garcia">Jennifer Garcia</option>
+                            <option value="thomas-martinez">Thomas Martinez</option>
+                            <option value="amanda-lee">Amanda Lee</option>
+                            <option value="christopher-taylor">Christopher Taylor</option>
+                            <option value="new-patient">+ New Patient</option>
+                        </select>
+                        <input type="text" id="patientName" placeholder="Enter patient name" style="display: none;">
+                    </div>
+                    
+                    <!-- New Patient Onboarding Fields -->
+                    <div id="newPatientOnboarding" style="display: none;">
+                        <div class="form-group">
+                            <label for="patientEmail">Email</label>
+                            <input type="email" id="patientEmail" placeholder="Enter email address">
+                        </div>
+                        <div class="form-group">
+                            <label for="patientPhone">Phone Number</label>
+                            <input type="tel" id="patientPhone" placeholder="Enter phone number">
+                        </div>
+                        <div class="form-group">
+                            <label for="patientDOB">Date of Birth</label>
+                            <input type="date" id="patientDOB">
+                        </div>
+                        <div class="form-group">
+                            <label for="patientAddress">Address</label>
+                            <textarea id="patientAddress" placeholder="Enter full address" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="patientInsurance">Insurance Provider</label>
+                            <input type="text" id="patientInsurance" placeholder="Enter insurance provider">
+                        </div>
+                        <div class="form-group">
+                            <label for="patientEmergencyContact">Emergency Contact</label>
+                            <input type="text" id="patientEmergencyContact" placeholder="Name and phone number">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentDate">Date</label>
+                        <input type="date" id="appointmentDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentTime">Time</label>
+                        <input type="time" id="appointmentTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentDuration">Duration (minutes)</label>
+                        <select id="appointmentDuration" required>
+                            <option value="15">15 minutes</option>
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60" selected>60 minutes</option>
+                            <option value="90">90 minutes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentNotes">Notes</label>
+                        <textarea id="appointmentNotes" placeholder="Additional notes..." rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelAddAppointment">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Appointment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/schedule.js"></script>
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOMOS QR+ - Provider Dashboard</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="nav-header">
+        <div class="nav-container">
+            <button class="nav-menu-btn">
+                <span class="hamburger-icon">☰</span>
+            </button>
+            <div class="nav-logo">
+                <h1>SOMOS QR+</h1>
+            </div>
+            <div class="nav-provider">
+                <div class="searchable-dropdown" id="searchableDropdown">
+                    <div class="dropdown-trigger" id="dropdownTrigger">
+                        <span class="selected-text" id="selectedText">All</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </div>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="search-container">
+                            <input type="text" class="search-input" id="searchInput" placeholder="Search providers...">
+                            <span class="search-icon">🔍</span>
+                        </div>
+                        <div class="dropdown-options" id="dropdownOptions">
+                            <div class="dropdown-option" data-value="all" data-selected="true">
+                                <span class="option-text">All</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="delmont">
+                                <span class="option-text">Delmont Medical, PC</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider2">
+                                <span class="option-text">Provider 2</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider3">
+                                <span class="option-text">Provider 3</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider4">
+                                <span class="option-text">Provider 4</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-notifications">
+                <button class="notification-btn" id="notificationBtn">
+                    <svg class="notification-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge">3</span>
+                </button>
+                
+                <!-- Notifications Dropdown -->
+                <div class="notifications-dropdown" id="notificationsDropdown">
+                    <div class="notifications-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all-read-btn" id="markAllReadBtn">Mark all read</button>
+                    </div>
+                    
+                    <div class="notifications-list" id="notificationsList">
+                        <div class="notification-item unread" data-id="1">
+                            <div class="notification-icon-small">📋</div>
+                            <div class="notification-content">
+                                <div class="notification-title">New Quality Scorecard Available</div>
+                                <div class="notification-message">Your Q2 2025 quality scorecard is ready for review.</div>
+                                <div class="notification-time">2 hours ago</div>
+                            </div>
+                            <button class="notification-close" data-id="1">×</button>
+                        </div>
+                        
+                        <div class="notification-item unread" data-id="2">
+                            <div class="notification-icon-small">👥</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Patient Appointment Reminder</div>
+                                <div class="notification-message">5 patients have appointments scheduled for tomorrow.</div>
+                                <div class="notification-time">4 hours ago</div>
+                            </div>
+                            <button class="notification-close" data-id="2">×</button>
+                        </div>
+                        
+                        <div class="notification-item unread" data-id="3">
+                            <div class="notification-icon-small">📊</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Monthly Report Generated</div>
+                                <div class="notification-message">Your July 2025 performance report has been generated.</div>
+                                <div class="notification-time">1 day ago</div>
+                            </div>
+                            <button class="notification-close" data-id="3">×</button>
+                        </div>
+                        
+                        <div class="notification-item" data-id="4">
+                            <div class="notification-icon-small">✅</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Document Upload Complete</div>
+                                <div class="notification-message">Patient records have been successfully uploaded.</div>
+                                <div class="notification-time">2 days ago</div>
+                            </div>
+                            <button class="notification-close" data-id="4">×</button>
+                        </div>
+                        
+                        <div class="notification-item" data-id="5">
+                            <div class="notification-icon-small">🔔</div>
+                            <div class="notification-content">
+                                <div class="notification-title">System Maintenance</div>
+                                <div class="notification-message">Scheduled maintenance completed successfully.</div>
+                                <div class="notification-time">3 days ago</div>
+                            </div>
+                            <button class="notification-close" data-id="5">×</button>
+                        </div>
+                    </div>
+                    
+                    <div class="notifications-footer">
+                        <a href="notifications.html" class="view-all-notifications">View all notifications</a>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-profile">
+                <button class="profile-btn">
+                    <div class="avatar">
+                        <div class="avatar-initials">JC</div>
+                    </div>
+                </button>
+                
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <div class="avatar-initials">JC</div>
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name">Joel Cedano</div>
+                            <div class="profile-email">jcedano@somosipa.com</div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-divider"></div>
+                    
+                    <div class="profile-options">
+                        <div class="profile-option" data-action="language">
+                            <span class="option-label">Language</span>
+                            <span class="option-value">
+                                <span class="flag-icon">🇺🇸</span>
+                                English
+                            </span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="invitations">
+                            <span class="option-label">Invitations</span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="logout">
+                            <span class="option-label">Log Out</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Drawer -->
+    <nav class="nav-drawer" id="navDrawer">
+        <div class="drawer-header">
+            <div class="drawer-logo-container">
+                <div class="drawer-logo-circle">
+                    <div class="drawer-avatar-initials">JC</div>
+                </div>
+                <div class="drawer-title">
+                    <span class="drawer-title-text">SOMOS QR</span>
+                    <span class="drawer-title-plus">+</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="drawer-content">
+            <div class="drawer-item active" data-page="dashboard">
+                <span class="drawer-text">Dashboard</span>
+            </div>
+            
+            <div class="drawer-item" data-page="quality-scorecards">
+                <span class="drawer-text">Quality Score Cards</span>
+            </div>
+            
+            <div class="drawer-item" onclick="window.location.href='schedule.html'">
+                <span class="drawer-text">My Schedule</span>
+            </div>
+            
+            <div class="drawer-item" data-page="patients">
+                <span class="drawer-text">My Patients</span>
+            </div>
+            
+            <div class="drawer-item" data-page="reports">
+                <span class="drawer-text">Reports</span>
+            </div>
+            
+            <div class="drawer-item" data-page="resources">
+                <span class="drawer-text">Resources</span>
+            </div>
+            
+            <div class="drawer-divider"></div>
+            
+            <div class="drawer-item" onclick="window.location.href='settings.html'">
+                <span class="drawer-text">Settings</span>
+            </div>
+            
+            <div class="drawer-item" onclick="logout()">
+                <span class="drawer-text">Log Out</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Overlay for closing drawer -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- Logout Dialog -->
+    <div class="logout-dialog" id="logoutDialog">
+        <div class="logout-dialog-content">
+            <div class="logout-dialog-header">
+                <div class="logout-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </div>
+                <h3>Log Out</h3>
+            </div>
+            <div class="logout-dialog-body">
+                <p>Are you sure you want to log out of your account?</p>
+                <p class="logout-subtitle">You'll need to sign in again to access your dashboard.</p>
+            </div>
+            <div class="logout-dialog-footer">
+                <button class="logout-btn-cancel" onclick="closeLogoutDialog()">Cancel</button>
+                <button class="logout-btn-confirm" onclick="confirmLogout()">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <h1 class="welcome-title">Welcome back!</h1>
+        </div>
+
+        <!-- Statistics Grid -->
+        <div class="statistics-grid">
+            <div class="kpi-card">
+                <h3 class="kpi-title">Total Open GIC</h3>
+                <div class="kpi-value">1,250 / 2,100</div>
+                <div class="kpi-rating">
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <h3 class="kpi-title">Total Members RA</h3>
+                <div class="kpi-value">1,950 / 2,400</div>
+                <div class="kpi-rating">
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <h3 class="kpi-title">Members without visits</h3>
+                <div class="kpi-value">200 / 4,000</div>
+                <div class="kpi-rating">
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                    <span class="star filled">★</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Chart -->
+        <div class="chart-card">
+            <h2 class="chart-title">My Panel</h2>
+            <div class="chart-container">
+                <canvas id="panelChart"></canvas>
+            </div>
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #1976d2;"></span>
+                    <span class="legend-label">EP</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #4caf50;"></span>
+                    <span class="legend-label">MCD</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #4dd0e1;"></span>
+                    <span class="legend-label">MCR</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Innovation Incentive Program -->
+        <div class="chart-card">
+            <h2 class="chart-title">SOMOS Innovation Incentive Program</h2>
+            
+            <!-- Provider Toggles -->
+            <div class="provider-toggles">
+                <button class="provider-toggle-btn active" data-provider="all">
+                    All
+                </button>
+                <button class="provider-toggle-btn" data-provider="emblem">
+                    Emblem
+                </button>
+                <button class="provider-toggle-btn" data-provider="anthem">
+                    Anthem
+                </button>
+            </div>
+            
+            <div class="incentive-stats">
+                <div class="stat-item">
+                    <h3>Earnings</h3>
+                    <div class="stat-value">$xx,xxx</div>
+                </div>
+                <div class="stat-item">
+                    <h3>Potential</h3>
+                    <div class="stat-value">$xx,xxx</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="incentiveChart"></canvas>
+            </div>
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #388e3c;"></span>
+                    <span class="legend-label">Earnings</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: #a5d6a7;"></span>
+                    <span class="legend-label">Potential</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Schedule -->
+        <div class="schedule-card">
+            <div class="schedule-header">
+                <h2 class="schedule-title">Today's Schedule</h2>
+                <div class="schedule-actions">
+                    <button class="btn-view-all" onclick="window.location.href='schedule.html'">
+                        <span class="icon">📅</span>
+                        View All
+                    </button>
+                    <button class="btn-expand" id="expandSchedule">
+                        <span class="icon">▼</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="schedule-content" id="scheduleContent">
+                <div class="appointment-item">
+                    <div class="appointment-info">
+                        <div class="patient-name">Sarah Williams</div>
+                        <div class="appointment-time">9:00 AM</div>
+                    </div>
+                    <div class="appointment-tags">
+                        <span class="tag gic">GIC</span>
+                        <span class="tag status confirmed">Confirmed</span>
+                    </div>
+                </div>
+                
+                <div class="appointment-item">
+                    <div class="appointment-info">
+                        <div class="patient-name">Michael Chen</div>
+                        <div class="appointment-time">9:30 AM</div>
+                    </div>
+                    <div class="appointment-tags">
+                        <span class="tag ra">RA</span>
+                        <span class="tag status pending">Pending</span>
+                    </div>
+                </div>
+                
+                <div class="appointment-item">
+                    <div class="appointment-info">
+                        <div class="patient-name">Emily Johnson</div>
+                        <div class="appointment-time">10:00 AM</div>
+                    </div>
+                    <div class="appointment-tags">
+                        <span class="tag gic">GIC</span>
+                        <span class="tag ra">RA</span>
+                        <span class="tag status confirmed">Confirmed</span>
+                    </div>
+                </div>
+                
+                <div class="appointment-item">
+                    <div class="appointment-info">
+                        <div class="patient-name">Robert Davis</div>
+                        <div class="appointment-time">10:30 AM</div>
+                    </div>
+                    <div class="appointment-tags">
+                        <span class="tag status cancelled">Cancelled</span>
+                    </div>
+                </div>
+                
+                <div class="appointment-item">
+                    <div class="appointment-info">
+                        <div class="patient-name">Jennifer Lopez</div>
+                        <div class="appointment-time">11:00 AM</div>
+                    </div>
+                    <div class="appointment-tags">
+                        <span class="tag gic">GIC</span>
+                        <span class="tag status confirmed">Confirmed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/dashboard.js"></script>
+</body>
+</html> 

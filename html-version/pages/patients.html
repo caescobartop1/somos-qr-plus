@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Patients - SOMOS QR+</title>
+    <link rel="stylesheet" href="../css/patients.css">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="nav-header">
+        <div class="nav-container">
+            <button class="nav-menu-btn">
+                <span class="hamburger-icon">☰</span>
+            </button>
+            <div class="nav-logo">
+                <h1>SOMOS QR+</h1>
+            </div>
+            <div class="nav-provider">
+                <div class="searchable-dropdown" id="searchableDropdown">
+                    <div class="dropdown-trigger" id="dropdownTrigger">
+                        <span class="selected-text" id="selectedText">All</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </div>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="search-container">
+                            <input type="text" class="search-input" id="searchInput" placeholder="Search providers...">
+                            <span class="search-icon">🔍</span>
+                        </div>
+                        <div class="dropdown-options" id="dropdownOptions">
+                            <div class="dropdown-option" data-value="all" data-selected="true">
+                                <span class="option-text">All</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="delmont">
+                                <span class="option-text">Delmont Medical, PC</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider2">
+                                <span class="option-text">Provider 2</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider3">
+                                <span class="option-text">Provider 3</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                            <div class="dropdown-option" data-value="provider4">
+                                <span class="option-text">Provider 4</span>
+                                <span class="checkmark">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-notifications">
+                <button class="notification-btn" id="notificationBtn">
+                    <svg class="notification-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge">3</span>
+                </button>
+                
+                <!-- Notifications Dropdown -->
+                <div class="notifications-dropdown" id="notificationsDropdown">
+                    <div class="notifications-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all-read-btn" id="markAllReadBtn">Mark all read</button>
+                    </div>
+                    
+                    <div class="notifications-list" id="notificationsList">
+                        <div class="notification-item unread" data-id="1">
+                            <div class="notification-icon-small">👥</div>
+                            <div class="notification-content">
+                                <div class="notification-title">New Patient Registration</div>
+                                <div class="notification-message">A new patient has been registered to your practice.</div>
+                                <div class="notification-time">30 minutes ago</div>
+                            </div>
+                            <button class="notification-close" data-id="1">×</button>
+                        </div>
+                        
+                        <div class="notification-item unread" data-id="2">
+                            <div class="notification-icon-small">📋</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Patient Records Updated</div>
+                                <div class="notification-message">Patient records have been updated for 3 patients.</div>
+                                <div class="notification-time">2 hours ago</div>
+                            </div>
+                            <button class="notification-close" data-id="2">×</button>
+                        </div>
+                        
+                        <div class="notification-item unread" data-id="3">
+                            <div class="notification-icon-small">📊</div>
+                            <div class="notification-content">
+                                <div class="notification-title">Monthly Report Generated</div>
+                                <div class="notification-message">Your July 2025 performance report has been generated.</div>
+                                <div class="notification-time">1 day ago</div>
+                            </div>
+                            <button class="notification-close" data-id="3">×</button>
+                        </div>
+                    </div>
+                    
+                    <div class="notifications-footer">
+                        <a href="notifications.html" class="view-all-notifications">View all notifications</a>
+                    </div>
+                </div>
+            </div>
+            <div class="nav-profile">
+                <button class="profile-btn">
+                    <div class="avatar">
+                        <div class="avatar-initials">JC</div>
+                    </div>
+                </button>
+                
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <div class="avatar-initials">JC</div>
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name">Joel Cedano</div>
+                            <div class="profile-email">jcedano@somosipa.com</div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-divider"></div>
+                    
+                    <div class="profile-options">
+                        <div class="profile-option" data-action="language">
+                            <span class="option-label">Language</span>
+                            <span class="option-value">
+                                <span class="flag-icon">🇺🇸</span>
+                                English
+                            </span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="invitations">
+                            <span class="option-label">Invitations</span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="logout">
+                            <span class="option-label">Log Out</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Drawer -->
+    <nav class="nav-drawer" id="navDrawer">
+        <div class="drawer-header">
+            <div class="drawer-logo-container">
+                <div class="drawer-logo-circle">
+                    <div class="drawer-avatar-initials">JC</div>
+                </div>
+                <div class="drawer-title">
+                    <span class="drawer-title-text">SOMOS QR</span>
+                    <span class="drawer-title-plus">+</span>
+                </div>
+            </div>
+        </div>
+        <div class="drawer-content">
+            <div class="drawer-item" data-page="dashboard">
+                <span class="drawer-text">Dashboard</span>
+            </div>
+            <div class="drawer-item" data-page="quality-scorecards">
+                <span class="drawer-text">Quality Score Cards</span>
+            </div>
+            <div class="drawer-item" onclick="window.location.href='schedule.html'">
+                <span class="drawer-text">My Schedule</span>
+            </div>
+            <div class="drawer-item active" data-page="patients">
+                <span class="drawer-text">My Patients</span>
+            </div>
+            <div class="drawer-item" data-page="reports">
+                <span class="drawer-text">Reports</span>
+            </div>
+            <div class="drawer-item" data-page="resources">
+                <span class="drawer-text">Resources</span>
+            </div>
+            <div class="drawer-divider"></div>
+            <div class="drawer-item" onclick="window.location.href='settings.html'">
+                <span class="drawer-text">Settings</span>
+            </div>
+            <div class="drawer-item" onclick="logout()">
+                <span class="drawer-text">Log Out</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Logout Dialog -->
+    <div class="logout-dialog" id="logoutDialog">
+        <div class="logout-dialog-content">
+            <div class="logout-dialog-header">
+                <div class="logout-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </div>
+                <h3>Log Out</h3>
+            </div>
+            <div class="logout-dialog-body">
+                <p>Are you sure you want to log out of your account?</p>
+                <p class="logout-subtitle">You'll need to sign in again to access your dashboard.</p>
+            </div>
+            <div class="logout-dialog-footer">
+                <button class="logout-btn-cancel" onclick="closeLogoutDialog()">Cancel</button>
+                <button class="logout-btn-confirm" onclick="confirmLogout()">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">My Patients</h1>
+            </div>
+
+            <!-- Patients Table Container -->
+            <div class="table-container">
+                <!-- Search and Filter Bar -->
+                <div class="search-filter-bar">
+                    <div class="search-container">
+                        <input type="text" class="search-input" placeholder="Search">
+                        <span class="search-icon">🔍</span>
+                    </div>
+                    <div class="filter-container">
+                        <button class="filter-btn">
+                            <span class="filter-icon">⋮</span>
+                        </button>
+                        <div class="tooltip">Filter by MCO, Provider, or DOB</div>
+                    </div>
+                </div>
+
+                <!-- Patients Table -->
+                <div class="table-wrapper">
+                    <table class="patients-table">
+                        <thead>
+                            <tr>
+                                <th>Full Name</th>
+                                <th>DOB</th>
+                                <th>MCO</th>
+                                <th>GIC</th>
+                                <th>RA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>James Anderson</td>
+                                <td>3/15/1965</td>
+                                <td>HealthFirst</td>
+                                <td>85</td>
+                                <td>92</td>
+                            </tr>
+                            <tr>
+                                <td>Maria Rodriguez</td>
+                                <td>7/22/1978</td>
+                                <td>MetroPlus</td>
+                                <td>67</td>
+                                <td>74</td>
+                            </tr>
+                            <tr>
+                                <td>Robert Johnson</td>
+                                <td>11/30/1982</td>
+                                <td>Fidelis Care</td>
+                                <td>91</td>
+                                <td>88</td>
+                            </tr>
+                            <tr>
+                                <td>Sarah Williams</td>
+                                <td>4/12/1995</td>
+                                <td>Empire BlueCross BlueShield</td>
+                                <td>78</td>
+                                <td>82</td>
+                            </tr>
+                            <tr>
+                                <td>David Chen</td>
+                                <td>9/3/1973</td>
+                                <td>UnitedHealthcare Community Plan</td>
+                                <td>73</td>
+                                <td>79</td>
+                            </tr>
+                            <tr>
+                                <td>Jennifer Lopez</td>
+                                <td>2/28/1988</td>
+                                <td>HealthFirst</td>
+                                <td>89</td>
+                                <td>95</td>
+                            </tr>
+                            <tr>
+                                <td>Michael Davis</td>
+                                <td>6/17/1969</td>
+                                <td>MetroPlus</td>
+                                <td>71</td>
+                                <td>68</td>
+                            </tr>
+                            <tr>
+                                <td>Lisa Thompson</td>
+                                <td>12/5/1991</td>
+                                <td>Fidelis Care</td>
+                                <td>94</td>
+                                <td>91</td>
+                            </tr>
+                            <tr>
+                                <td>William Martinez</td>
+                                <td>8/9/1984</td>
+                                <td>Empire BlueCross BlueShield</td>
+                                <td>76</td>
+                                <td>83</td>
+                            </tr>
+                            <tr>
+                                <td>Emily Wilson</td>
+                                <td>1/14/1976</td>
+                                <td>UnitedHealthcare Community Plan</td>
+                                <td>82</td>
+                                <td>87</td>
+                            </tr>
+                            <tr>
+                                <td>Christopher Lee</td>
+                                <td>5/20/1993</td>
+                                <td>HealthFirst</td>
+                                <td>88</td>
+                                <td>93</td>
+                            </tr>
+                            <tr>
+                                <td>Amanda Brown</td>
+                                <td>10/8/1987</td>
+                                <td>MetroPlus</td>
+                                <td>75</td>
+                                <td>81</td>
+                            </tr>
+                            <tr>
+                                <td>Daniel Kim</td>
+                                <td>7/31/1972</td>
+                                <td>Fidelis Care</td>
+                                <td>69</td>
+                                <td>76</td>
+                            </tr>
+                            <tr>
+                                <td>Jessica Taylor</td>
+                                <td>3/25/1990</td>
+                                <td>Empire BlueCross BlueShield</td>
+                                <td>86</td>
+                                <td>89</td>
+                            </tr>
+                            <tr>
+                                <td>Kevin Patel</td>
+                                <td>11/12/1981</td>
+                                <td>UnitedHealthcare Community Plan</td>
+                                <td>72</td>
+                                <td>77</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <div class="pagination-left">
+                        <span class="rows-text">Rows per page:</span>
+                        <select class="page-size-select">
+                            <option value="15">15</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div class="pagination-right">
+                        <span class="page-info">Page 1 of 1</span>
+                        <div class="pagination-buttons">
+                            <button class="page-btn" disabled>⏮️</button>
+                            <button class="page-btn" disabled>◀</button>
+                            <button class="page-btn" disabled>▶</button>
+                            <button class="page-btn" disabled>⏭️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Patient Profile Modal -->
+    <div class="patient-modal" id="patientModal">
+        <div class="patient-modal-content">
+            <div class="patient-modal-header">
+                <h2>Patient Profile</h2>
+                <button class="patient-modal-close" id="patientModalClose">✕</button>
+            </div>
+            
+            <div class="patient-modal-body">
+                <!-- Provider Selection -->
+                <div class="provider-section">
+                    <label>Provider</label>
+                    <select class="provider-dropdown">
+                        <option>Select a Provider</option>
+                        <option>Dr. Maria Garcia</option>
+                        <option>Dr. Sarah Chen</option>
+                        <option>Dr. John Smith</option>
+                        <option>Dr. Michael Brown</option>
+                        <option>Dr. James Wilson</option>
+                    </select>
+                </div>
+
+                <!-- Patient Name and Tabs -->
+                <div class="patient-header">
+                    <input type="text" class="patient-name" value="Rosario Campos" readonly>
+                    <div class="patient-tabs">
+                        <button class="tab-btn active">No Shows</button>
+                        <button class="tab-btn">Completed Visits</button>
+                    </div>
+                </div>
+
+                <!-- Patient Demographics -->
+                <div class="demographics-card">
+                    <div class="demographics-left">
+                        <div class="demographic-item">
+                            <label>Last DOS:</label>
+                            <span></span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>DOB:</label>
+                            <span>11/30/1981</span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>Phone:</label>
+                            <span>7187020504</span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>Recert Date:</label>
+                            <span>09/30/2025</span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>Next DOS:</label>
+                            <span></span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>Address:</label>
+                            <span>8917 55th Ave # 1fl, Elmhurst NY, 11373</span>
+                        </div>
+                    </div>
+                    <div class="demographics-right">
+                        <div class="demographic-item">
+                            <label>DOS Status:</label>
+                            <span></span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>Gender:</label>
+                            <span>F</span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>Secondary Phone:</label>
+                            <span></span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>Email:</label>
+                            <span></span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>Language:</label>
+                            <span>SPA</span>
+                        </div>
+                        <div class="demographic-item">
+                            <label>MCO:</label>
+                            <span>Anthem</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Care Gaps Section -->
+                <div class="care-gaps-card">
+                    <h3>Care Gaps</h3>
+                    <div class="table-container">
+                        <table class="care-gaps-table">
+                            <thead>
+                                <tr>
+                                    <th>GAP</th>
+                                    <th>Description</th>
+                                    <th>Completed</th>
+                                    <th>App</th>
+                                    <th>EHR</th>
+                                    <th>Claim</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>BCS</td>
+                                    <td>Breast Cancer Screen...</td>
+                                    <td><input type="checkbox"></td>
+                                    <td><input type="checkbox"></td>
+                                    <td><input type="checkbox"></td>
+                                    <td><input type="checkbox"></td>
+                                </tr>
+                                <tr>
+                                    <td>AWV</td>
+                                    <td>Annual Wellness Visi...</td>
+                                    <td><input type="checkbox" checked></td>
+                                    <td><input type="checkbox"></td>
+                                    <td><input type="checkbox" checked></td>
+                                    <td><input type="checkbox" checked></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="pagination">
+                            <button class="page-btn" disabled><<</button>
+                            <button class="page-btn" disabled><</button>
+                            <button class="page-btn active">1</button>
+                            <button class="page-btn">></button>
+                            <button class="page-btn">>></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Adjustment Section -->
+                <div class="risk-adjustment-card">
+                    <h3>Risk Adjustment</h3>
+                    <div class="table-container">
+                        <table class="risk-adjustment-table">
+                            <thead>
+                                <tr>
+                                    <th>HCC</th>
+                                    <th>ICD 10</th>
+                                    <th>Present</th>
+                                    <th>Inact</th>
+                                    <th>App</th>
+                                    <th>EHR</th>
+                                    <th>Claim</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="7" class="no-records">No records found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="pagination">
+                            <button class="page-btn" disabled><<</button>
+                            <button class="page-btn" disabled><</button>
+                            <button class="page-btn" disabled>1</button>
+                            <button class="page-btn" disabled>></button>
+                            <button class="page-btn" disabled>>></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div class="filter-modal" id="filterModal">
+        <div class="filter-modal-content">
+            <div class="filter-modal-header">
+                <h2>Filter Patients</h2>
+                <button class="filter-modal-close" id="filterModalClose">✕</button>
+            </div>
+            
+            <div class="filter-modal-body">
+                <div class="filter-section">
+                    <label for="mcoFilter">MCO</label>
+                    <select id="mcoFilter" class="filter-dropdown">
+                        <option value="">Select MCO</option>
+                        <option value="All">All</option>
+                        <option value="HealthFirst">HealthFirst</option>
+                        <option value="MetroPlus">MetroPlus</option>
+                        <option value="Fidelis Care">Fidelis Care</option>
+                        <option value="Empire BlueCross BlueShield">Empire BlueCross BlueShield</option>
+                        <option value="UnitedHealthcare Community Plan">UnitedHealthcare Community Plan</option>
+                    </select>
+                </div>
+                
+                <div class="filter-section">
+                    <label for="providerFilter">Provider</label>
+                    <select id="providerFilter" class="filter-dropdown">
+                        <option value="">Select Provider</option>
+                        <option value="All">All</option>
+                        <option value="Dr. John Smith">Dr. John Smith</option>
+                        <option value="Dr. Maria Garcia">Dr. Maria Garcia</option>
+                        <option value="Dr. James Wilson">Dr. James Wilson</option>
+                        <option value="Dr. Sarah Chen">Dr. Sarah Chen</option>
+                        <option value="Dr. Michael Brown">Dr. Michael Brown</option>
+                    </select>
+                </div>
+                
+                <div class="filter-section">
+                    <label for="dobFilter">Date of Birth</label>
+                    <input type="text" id="dobFilter" class="filter-input" placeholder="MM/DD/YYYY" maxlength="10">
+                </div>
+            </div>
+            
+            <div class="filter-modal-footer">
+                <button class="filter-btn-clear" id="filterClear">Clear</button>
+                <button class="filter-btn-apply" id="filterApply">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirmation-modal" id="confirmationModal">
+        <div class="confirmation-modal-content">
+            <div class="confirmation-icon">?</div>
+            <div class="confirmation-text">Are you sure about this selection?</div>
+            <div class="confirmation-buttons">
+                <button class="confirmation-btn-yes" id="confirmYes">Yes</button>
+                <button class="confirmation-btn-no" id="confirmNo">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="error-modal" id="errorModal">
+        <div class="error-modal-content">
+            <div class="error-icon">✕</div>
+            <div class="error-title">Patient Profile</div>
+            <div class="error-text">Please select a provider to perform this operation.</div>
+            <button class="error-btn-ok" id="errorOk">OK</button>
+        </div>
+    </div>
+
+    <script src="../js/patients.js"></script>
+    <script>
+        // Patient Modal Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const patientModal = document.getElementById('patientModal');
+            const patientModalClose = document.getElementById('patientModalClose');
+            const tableRows = document.querySelectorAll('.patients-table tbody tr');
+
+            // Make table rows clickable
+            tableRows.forEach(row => {
+                row.addEventListener('click', function() {
+                    // Check if the row has GIC data (numerical values)
+                    const gicCell = this.querySelector('td:nth-child(4)');
+                    if (gicCell && !isNaN(gicCell.textContent)) {
+                        patientModal.classList.add('show');
+                        document.body.style.overflow = 'hidden';
+                    }
+                });
+            });
+
+            // Close modal
+            patientModalClose.addEventListener('click', function() {
+                patientModal.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            });
+
+            // Close modal when clicking outside
+            patientModal.addEventListener('click', function(e) {
+                if (e.target === patientModal) {
+                    patientModal.classList.remove('show');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+
+            // Tab functionality
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Checkbox functionality
+            const checkboxes = document.querySelectorAll('.care-gaps-table input[type="checkbox"]');
+            const confirmationModal = document.getElementById('confirmationModal');
+            const errorModal = document.getElementById('errorModal');
+            const confirmYes = document.getElementById('confirmYes');
+            const confirmNo = document.getElementById('confirmNo');
+            const errorOk = document.getElementById('errorOk');
+            const providerDropdown = document.querySelector('.provider-dropdown');
+
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevent default checkbox behavior
+                    
+                    // Check if a provider is selected
+                    const selectedProvider = providerDropdown.value;
+                    
+                    if (selectedProvider && selectedProvider !== 'Select a Provider') {
+                        // Show confirmation modal
+                        confirmationModal.classList.add('show');
+                        document.body.style.overflow = 'hidden';
+                        
+                        // Store the checkbox for later use
+                        confirmationModal.dataset.checkboxId = Array.from(checkboxes).indexOf(this);
+                    } else {
+                        // Show error modal
+                        errorModal.classList.add('show');
+                        document.body.style.overflow = 'hidden';
+                    }
+                });
+            });
+
+            // Confirmation modal handlers
+            confirmYes.addEventListener('click', function() {
+                const checkboxIndex = parseInt(confirmationModal.dataset.checkboxId);
+                const checkbox = checkboxes[checkboxIndex];
+                checkbox.checked = !checkbox.checked; // Toggle the checkbox
+                
+                confirmationModal.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            });
+
+            confirmNo.addEventListener('click', function() {
+                confirmationModal.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            });
+
+            // Error modal handler
+            errorOk.addEventListener('click', function() {
+                errorModal.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            });
+
+            // Close modals when clicking outside
+            confirmationModal.addEventListener('click', function(e) {
+                if (e.target === confirmationModal) {
+                    confirmationModal.classList.remove('show');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+
+            errorModal.addEventListener('click', function(e) {
+                if (e.target === errorModal) {
+                    errorModal.classList.remove('show');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

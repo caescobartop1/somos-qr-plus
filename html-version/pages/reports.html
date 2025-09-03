@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - SOMOS QR+</title>
+    <link rel="stylesheet" href="../css/reports.css">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <header class="nav-header">
+        <div class="nav-container">
+            <button class="nav-menu-btn">
+                <span class="hamburger-icon">☰</span>
+            </button>
+            <div class="nav-logo">
+                <h1>SOMOS QR+</h1>
+            </div>
+            <div class="nav-provider">
+                <select class="provider-dropdown" id="providerDropdown">
+                    <option value="all" selected>All</option>
+                    <option value="delmont">Delmont Medical, PC</option>
+                    <option value="provider2">Provider 2</option>
+                    <option value="provider3">Provider 3</option>
+                    <option value="provider4">Provider 4</option>
+                </select>
+            </div>
+            <div class="nav-profile">
+                <button class="profile-btn">
+                    <div class="avatar">
+                        <div class="avatar-initials">JC</div>
+                    </div>
+                </button>
+                
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown" id="profileDropdown">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <div class="avatar-initials">JC</div>
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name">Joel Cedano</div>
+                            <div class="profile-email">jcedano@somosipa.com</div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-divider"></div>
+                    
+                    <div class="profile-options">
+                        <div class="profile-option" data-action="language">
+                            <span class="option-label">Language</span>
+                            <span class="option-value">
+                                <span class="flag-icon">🇺🇸</span>
+                                English
+                            </span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="invitations">
+                            <span class="option-label">Invitations</span>
+                        </div>
+                        
+                        <div class="profile-option" data-action="logout">
+                            <span class="option-label">Log Out</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Drawer -->
+    <nav class="nav-drawer" id="navDrawer">
+        <div class="drawer-header">
+            <div class="drawer-logo-container">
+                <div class="drawer-logo-circle">
+                    <div class="drawer-avatar-initials">JC</div>
+                </div>
+                <div class="drawer-title">
+                    <span class="drawer-title-text">SOMOS QR</span>
+                    <span class="drawer-title-plus">+</span>
+                </div>
+            </div>
+        </div>
+        <div class="drawer-content">
+            <div class="drawer-item" data-page="dashboard">
+                <span class="drawer-text">Dashboard</span>
+            </div>
+            <div class="drawer-item" data-page="quality-scorecards">
+                <span class="drawer-text">Quality Score Cards</span>
+            </div>
+            <div class="drawer-item" onclick="window.location.href='schedule.html'">
+                <span class="drawer-text">My Schedule</span>
+            </div>
+            <div class="drawer-item" data-page="patients">
+                <span class="drawer-text">My Patients</span>
+            </div>
+            <div class="drawer-item active" data-page="reports">
+                <span class="drawer-text">Reports</span>
+            </div>
+            <div class="drawer-item" data-page="resources">
+                <span class="drawer-text">Resources</span>
+            </div>
+            <div class="drawer-divider"></div>
+            <div class="drawer-item" onclick="window.location.href='settings.html'">
+                <span class="drawer-text">Settings</span>
+            </div>
+            <div class="drawer-item" onclick="logout()">
+                <span class="drawer-text">Log Out</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Logout Dialog -->
+    <div class="logout-dialog" id="logoutDialog">
+        <div class="logout-dialog-content">
+            <div class="logout-dialog-header">
+                <div class="logout-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </div>
+                <h3>Log Out</h3>
+            </div>
+            <div class="logout-dialog-body">
+                <p>Are you sure you want to log out of your account?</p>
+                <p class="logout-subtitle">You'll need to sign in again to access your dashboard.</p>
+            </div>
+            <div class="logout-dialog-footer">
+                <button class="logout-btn-cancel" onclick="closeLogoutDialog()">Cancel</button>
+                <button class="logout-btn-confirm" onclick="confirmLogout()">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Reports</h1>
+                </div>
+            </div>
+
+            <!-- KPI Cards Grid -->
+            <div class="kpi-grid">
+                <!-- GIC Card (Active) -->
+                <div class="kpi-card active">
+                    <div class="kpi-header">
+                        <h3 class="kpi-title">GIC</h3>
+                        <div class="ra-navigation">
+                            <button class="nav-arrow prev-arrow" data-direction="prev">‹</button>
+                            <span class="timeframe-indicator">TODAY</span>
+                            <button class="nav-arrow next-arrow" data-direction="next">›</button>
+                        </div>
+                        <div class="kpi-date">TODAY</div>
+                        <div class="kpi-date-value">07-29-2025</div>
+                    </div>
+                    <div class="kpi-metrics">
+                        <div class="metric-bar missed">
+                            <div class="metric-label">Missed</div>
+                            <div class="metric-value">0</div>
+                        </div>
+                        <div class="metric-bar completed">
+                            <div class="metric-label">Completed</div>
+                            <div class="metric-value">0</div>
+                        </div>
+                    </div>
+                    <div class="kpi-rank">
+                        <div class="rank-text">RANK 0/0</div>
+                        <div class="star-rating">
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                        </div>
+                        <div class="network-rank">9 of 2,118 providers</div>
+                    </div>
+                </div>
+
+                <!-- RA Card -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <h3 class="kpi-title">RA</h3>
+                        <div class="ra-navigation">
+                            <button class="nav-arrow prev-arrow" data-direction="prev">‹</button>
+                            <span class="timeframe-indicator">TODAY</span>
+                            <button class="nav-arrow next-arrow" data-direction="next">›</button>
+                        </div>
+                        <div class="kpi-date">TODAY</div>
+                        <div class="kpi-date-value">07-29-2025</div>
+                    </div>
+                    <div class="kpi-metrics">
+                        <div class="metric-bar missed">
+                            <div class="metric-label">Missed</div>
+                            <div class="metric-value">0</div>
+                        </div>
+                        <div class="metric-bar completed">
+                            <div class="metric-label">Completed</div>
+                            <div class="metric-value">0</div>
+                        </div>
+                    </div>
+                    <div class="kpi-rank">
+                        <div class="rank-text">RANK 0/0</div>
+                        <div class="star-rating">
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                        </div>
+                        <div class="network-rank">9 of 2,118 providers</div>
+                    </div>
+                </div>
+
+                <!-- APPT Card -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <h3 class="kpi-title">APPT</h3>
+                        <div class="ra-navigation">
+                            <span class="nav-arrow prev-arrow">‹</span>
+                            <span class="timeframe-indicator">TODAY</span>
+                            <span class="nav-arrow next-arrow">›</span>
+                        </div>
+                        <div class="kpi-date">TODAY</div>
+                        <div class="kpi-date-value">07-29-2025</div>
+                    </div>
+                    <div class="kpi-metrics">
+                        <div class="metric-bar scheduled">
+                            <div class="metric-label">Scheduled</div>
+                            <div class="metric-value">8</div>
+                        </div>
+                        <div class="metric-bar completed">
+                            <div class="metric-label">Completed</div>
+                            <div class="metric-value">6</div>
+                        </div>
+                        <div class="metric-bar missed">
+                            <div class="metric-label">Missed</div>
+                            <div class="metric-value">2</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- MWOV's Card -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <h3 class="kpi-title">MWOV's</h3>
+                        <div class="ra-navigation">
+                            <button class="nav-arrow prev-arrow" data-direction="prev">‹</button>
+                            <span class="timeframe-indicator">LAST 30 DAYS</span>
+                            <button class="nav-arrow next-arrow" data-direction="next">›</button>
+                        </div>
+                    </div>
+                    <div class="pie-chart-container">
+                        <div class="pie-chart-wrapper">
+                            <canvas id="mwovPieChart" width="120" height="120"></canvas>
+                            <div class="pie-chart-center">
+                                <div class="pie-chart-percentage">100%</div>
+                            </div>
+                        </div>
+                        <div class="pie-chart-legend">
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: #2196f3;"></span>
+                                <span class="legend-text">No Visits: 45 patients</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: #4caf50;"></span>
+                                <span class="legend-text">With Visits: 23 patients</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- SIIP Card -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <h3 class="kpi-title">SIIP</h3>
+                        <div class="ra-navigation">
+                            <button class="nav-arrow prev-arrow" data-direction="prev">‹</button>
+                            <span class="timeframe-indicator">TODAY</span>
+                            <button class="nav-arrow next-arrow" data-direction="next">›</button>
+                        </div>
+                        <div class="kpi-date">TODAY</div>
+                        <div class="kpi-date-value">07-29-2025</div>
+                    </div>
+                    <div class="kpi-metrics">
+                        <div class="metric-bar completed">
+                            <div class="metric-label">Completed</div>
+                            <div class="metric-value">2</div>
+                        </div>
+                        <div class="metric-bar missed">
+                            <div class="metric-label">Open</div>
+                            <div class="metric-value">3</div>
+                        </div>
+                    </div>
+                    <div class="kpi-summary">
+                        <div class="summary-text">Total: 5 appointments</div>
+                        <div class="summary-earnings">Earnings: $20.00</div>
+                    </div>
+                </div>
+
+                <!-- STAFF LOGIN Card -->
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <h3 class="kpi-title">STAFF LOGIN</h3>
+                        <div class="kpi-date">LAST 4 LOGINS</div>
+                    </div>
+                    <div class="login-activity-list">
+                        <div class="login-activity-item">
+                            <div class="login-user-info">
+                                <div class="login-avatar">JC</div>
+                                <div class="login-details">
+                                    <div class="login-name">Joel Cedano</div>
+                                    <div class="login-time">Today, 2:34 PM</div>
+                                </div>
+                            </div>
+                            <div class="login-status active">Active</div>
+                        </div>
+                        <div class="login-activity-item">
+                            <div class="login-user-info">
+                                <div class="login-avatar">MG</div>
+                                <div class="login-details">
+                                    <div class="login-name">Maria Garcia</div>
+                                    <div class="login-time">Today, 1:15 PM</div>
+                                </div>
+                            </div>
+                            <div class="login-status">Online</div>
+                        </div>
+
+                        <div class="login-activity-item">
+                            <div class="login-user-info">
+                                <div class="login-avatar">JS</div>
+                                <div class="login-details">
+                                    <div class="login-name">John Smith</div>
+                                    <div class="login-time">Today, 9:23 AM</div>
+                                </div>
+                            </div>
+                            <div class="login-status offline">Offline</div>
+                        </div>
+                        <div class="login-activity-item">
+                            <div class="login-user-info">
+                                <div class="login-avatar">MB</div>
+                                <div class="login-details">
+                                    <div class="login-name">Michael Brown</div>
+                                    <div class="login-time">Yesterday, 4:17 PM</div>
+                                </div>
+                            </div>
+                            <div class="login-status offline">Offline</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Table Container -->
+            <div class="table-container">
+                <!-- Table Controls -->
+                <div class="table-controls">
+                    <div class="table-controls-left">
+                        <button class="collapse-btn" id="collapseBtn">
+                            <span class="collapse-icon">▼</span>
+                        </button>
+                    </div>
+                    <div class="table-controls-center">
+                        <h2 class="table-title" id="currentTableTitle">GIC Detailed Report</h2>
+                    </div>
+                    <div class="table-controls-right">
+                        <a href="#" class="export-link">
+                            <span class="export-icon">↗</span>
+                            Export
+                        </a>
+                    </div>
+                </div>
+
+                <!-- GIC Table -->
+                <div class="table-wrapper" id="gic-table" data-table="gic">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable">
+                                    NAME
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    MCO
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    DOB
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    APPT
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    MEASURE
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    STATUS
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    PHONE
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                            </tr>
+                            <tr class="filter-row">
+                                <th>
+                                    <input type="text" class="column-filter" id="nameFilter" placeholder="Filter name...">
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="mcoFilter">
+                                        <option value="">All MCOs</option>
+                                        <option value="Healthfirst">Healthfirst</option>
+                                        <option value="Anthem">Anthem</option>
+                                        <option value="Emblem">Emblem</option>
+                                        <option value="Molina">Molina</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="dobFilter" placeholder="Filter DOB...">
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="apptFilter">
+                                        <option value="">All Types</option>
+                                        <option value="KED">KED</option>
+                                        <option value="CBP">CBP</option>
+                                        <option value="AWV">AWV</option>
+                                        <option value="COL">COL</option>
+                                        <option value="CCS">CCS</option>
+                                        <option value="PPC">PPC</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="measureFilter">
+                                        <option value="">All Measures</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Open">Open</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="statusFilter">
+                                        <option value="">All Statuses</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Open">Open</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="phoneFilter" placeholder="Filter phone...">
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Argentina D Baez Melo</td>
+                                <td>Healthfirst</td>
+                                <td>01-31-1959</td>
+                                <td>KED</td>
+                                <td>Completed</td>
+                                <td>Completed</td>
+                                <td>17189601223</td>
+                            </tr>
+                            <tr>
+                                <td>Eliezer Feliz</td>
+                                <td>Anthem</td>
+                                <td>05-15-1972</td>
+                                <td>CBP</td>
+                                <td>Open</td>
+                                <td>Open</td>
+                                <td>6466448650</td>
+                            </tr>
+                            <tr>
+                                <td>Camilo Rosario</td>
+                                <td>Emblem</td>
+                                <td>03-22-1985</td>
+                                <td>AWV</td>
+                                <td>Completed</td>
+                                <td>Completed</td>
+                                <td>7185551234</td>
+                            </tr>
+                            <tr>
+                                <td>Maria Rodriguez</td>
+                                <td>Molina</td>
+                                <td>07-08-1968</td>
+                                <td>COL</td>
+                                <td>Open</td>
+                                <td>Open</td>
+                                <td>9178889999</td>
+                            </tr>
+                            <tr>
+                                <td>Juan Carlos Lopez</td>
+                                <td>Healthfirst</td>
+                                <td>11-14-1975</td>
+                                <td>CCS</td>
+                                <td>Completed</td>
+                                <td>Completed</td>
+                                <td>6467778888</td>
+                            </tr>
+                            <tr>
+                                <td>Ana Martinez</td>
+                                <td>Anthem</td>
+                                <td>09-03-1982</td>
+                                <td>PPC</td>
+                                <td>Open</td>
+                                <td>Open</td>
+                                <td>7186667777</td>
+                            </tr>
+                            <tr>
+                                <td>Roberto Sanchez</td>
+                                <td>Emblem</td>
+                                <td>02-18-1965</td>
+                                <td>AWV</td>
+                                <td>Completed</td>
+                                <td>Completed</td>
+                                <td>9175556666</td>
+                            </tr>
+                            <tr>
+                                <td>Carmen Torres</td>
+                                <td>Molina</td>
+                                <td>12-25-1978</td>
+                                <td>KED</td>
+                                <td>Open</td>
+                                <td>Open</td>
+                                <td>6464445555</td>
+                            </tr>
+                            <tr>
+                                <td>Luis Gonzalez</td>
+                                <td>Healthfirst</td>
+                                <td>04-07-1980</td>
+                                <td>CBP</td>
+                                <td>Completed</td>
+                                <td>Completed</td>
+                                <td>7183334444</td>
+                            </tr>
+                            <tr>
+                                <td>Isabella Silva</td>
+                                <td>Anthem</td>
+                                <td>08-12-1970</td>
+                                <td>COL</td>
+                                <td>Open</td>
+                                <td>Open</td>
+                                <td>9172223333</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- RA Table -->
+                <div class="table-wrapper" id="ra-table" data-table="ra" style="display: none;">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable">
+                                    NAME
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    MCO
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    DOB
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    HCC/ICD10
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    STATUS
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    LAST DOS
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    PHONE
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                            </tr>
+                            <tr class="filter-row">
+                                <th>
+                                    <input type="text" class="column-filter" id="raNameFilter" placeholder="Filter name...">
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="raMcoFilter">
+                                        <option value="">All MCOs</option>
+                                        <option value="Healthfirst">Healthfirst</option>
+                                        <option value="Anthem">Anthem</option>
+                                        <option value="Emblem">Emblem</option>
+                                        <option value="Molina">Molina</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="raDobFilter" placeholder="Filter DOB...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="raHccFilter" placeholder="Filter HCC/ICD10...">
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="raStatusFilter">
+                                        <option value="">All Statuses</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Open">Open</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="raDosFilter" placeholder="Filter DOS...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="raPhoneFilter" placeholder="Filter phone...">
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Miriam Bernal</td>
+                                <td>Healthfirst</td>
+                                <td>05-05-1940</td>
+                                <td>F333</td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>2129239344</td>
+                            </tr>
+                            <tr>
+                                <td>Andres Estevez</td>
+                                <td>Healthfirst</td>
+                                <td>10-17-1949</td>
+                                <td>G40A09</td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>2125684972</td>
+                            </tr>
+                            <tr>
+                                <td>Carlos Gonzalez</td>
+                                <td>Healthfirst</td>
+                                <td>08-14-1956</td>
+                                <td>C180, C182, C189</td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>3475892631</td>
+                            </tr>
+                            <tr>
+                                <td>Carlos Yciano Jimenez</td>
+                                <td>Healthfirst</td>
+                                <td>08-12-1953</td>
+                                <td>E119</td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>9174032576</td>
+                            </tr>
+                            <tr>
+                                <td>Fiordaliza Jorge</td>
+                                <td>Healthfirst</td>
+                                <td>05-19-1962</td>
+                                <td></td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>3474655701</td>
+                            </tr>
+                            <tr>
+                                <td>Elizabeth Hernandez</td>
+                                <td>Healthfirst</td>
+                                <td>05-12-1953</td>
+                                <td></td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>16465252673</td>
+                            </tr>
+                            <tr>
+                                <td>Juan M Santos Tavarez</td>
+                                <td>Healthfirst</td>
+                                <td>01-23-1958</td>
+                                <td></td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>13479805448</td>
+                            </tr>
+                            <tr>
+                                <td>Juana Serrano</td>
+                                <td>Healthfirst</td>
+                                <td>12-21-1953</td>
+                                <td></td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>6463162672</td>
+                            </tr>
+                            <tr>
+                                <td>Francisco Monsanto</td>
+                                <td>Healthfirst</td>
+                                <td>11-06-1939</td>
+                                <td></td>
+                                <td>Open</td>
+                                <td></td>
+                                <td>7185378048</td>
+                            </tr>
+                            <tr>
+                                <td>Nury Caraballo</td>
+                                <td>Healthfirst</td>
+                                <td>05-09-1952</td>
+                                <td></td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>3473260066</td>
+                            </tr>
+                            <tr>
+                                <td>Elias Sepulveda Quinones</td>
+                                <td>Healthfirst</td>
+                                <td>04-02-1947</td>
+                                <td></td>
+                                <td>Completed</td>
+                                <td></td>
+                                <td>6464846810</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- APPT Table -->
+                <div class="table-wrapper" id="appt-table" data-table="appt" style="display: none;">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable">
+                                    NAME
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    MCO
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    DOB
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    LAST DOS
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    MISSED DATE
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    PHONE
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    ADDRESS
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                            </tr>
+                            <tr class="filter-row">
+                                <th>
+                                    <input type="text" class="column-filter" id="apptNameFilter" placeholder="Filter name...">
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="apptMcoFilter">
+                                        <option value="">All MCOs</option>
+                                        <option value="Healthfirst">Healthfirst</option>
+                                        <option value="Anthem">Anthem</option>
+                                        <option value="Emblem">Emblem</option>
+                                        <option value="Molina">Molina</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="apptDobFilter" placeholder="Filter DOB...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="apptDosFilter" placeholder="Filter DOS...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="apptMissedFilter" placeholder="Filter missed date...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="apptPhoneFilter" placeholder="Filter phone...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="apptAddressFilter" placeholder="Filter address...">
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Rosa Martinez</td>
+                                <td>Anthem</td>
+                                <td>03-15-1955</td>
+                                <td>01-15-2024</td>
+                                <td>02-20-2024</td>
+                                <td>7185551234</td>
+                                <td>123 Main St, Brooklyn, NY</td>
+                            </tr>
+                            <tr>
+                                <td>Jose Rodriguez</td>
+                                <td>Emblem</td>
+                                <td>07-22-1948</td>
+                                <td>12-10-2023</td>
+                                <td>01-15-2024</td>
+                                <td>9176667777</td>
+                                <td>456 Oak Ave, Queens, NY</td>
+                            </tr>
+                            <tr>
+                                <td>Maria Lopez</td>
+                                <td>Molina</td>
+                                <td>11-08-1960</td>
+                                <td>02-05-2024</td>
+                                <td>03-10-2024</td>
+                                <td>6464445555</td>
+                                <td>789 Pine St, Bronx, NY</td>
+                            </tr>
+                            <tr>
+                                <td>Carlos Santos</td>
+                                <td>Healthfirst</td>
+                                <td>09-14-1952</td>
+                                <td>01-28-2024</td>
+                                <td>02-15-2024</td>
+                                <td>2123334444</td>
+                                <td>321 Elm St, Manhattan, NY</td>
+                            </tr>
+                            <tr>
+                                <td>Ana Garcia</td>
+                                <td>Anthem</td>
+                                <td>05-30-1958</td>
+                                <td>12-20-2023</td>
+                                <td>01-25-2024</td>
+                                <td>7187778888</td>
+                                <td>654 Maple Dr, Staten Island, NY</td>
+                            </tr>
+                            <tr>
+                                <td>Luis Torres</td>
+                                <td>Emblem</td>
+                                <td>02-18-1945</td>
+                                <td>01-10-2024</td>
+                                <td>02-05-2024</td>
+                                <td>9178889999</td>
+                                <td>987 Cedar Ln, Brooklyn, NY</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- MWOV's Table -->
+                <div class="table-wrapper" id="mwov-table" data-table="mwov" style="display: none;">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable">
+                                    NAME
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    MCO
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    DOB
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    LAST DOS
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    PHONE
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    ADDRESS
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                            </tr>
+                            <tr class="filter-row">
+                                <th>
+                                    <input type="text" class="column-filter" id="mwovNameFilter" placeholder="Filter name...">
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="mwovMcoFilter">
+                                        <option value="">All MCOs</option>
+                                        <option value="Healthfirst">Healthfirst</option>
+                                        <option value="Anthem">Anthem</option>
+                                        <option value="Emblem">Emblem</option>
+                                        <option value="Molina">Molina</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="mwovDobFilter" placeholder="Filter DOB...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="mwovDosFilter" placeholder="Filter DOS...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="mwovPhoneFilter" placeholder="Filter phone...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="mwovAddressFilter" placeholder="Filter address...">
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Navidad Santana</td>
+                                <td>Anthem</td>
+                                <td>12-24-1973</td>
+                                <td></td>
+                                <td>3477794449</td>
+                                <td>87 Melrose St Apt 4d, Brooklyn, NY, 11206</td>
+                            </tr>
+                            <tr>
+                                <td>Teresa Garcia</td>
+                                <td>Anthem</td>
+                                <td>07-05-1962</td>
+                                <td></td>
+                                <td>6463997597</td>
+                                <td>1654 Monroe Ave Apt 4f, Bronx, NY, 10457</td>
+                            </tr>
+                            <tr>
+                                <td>Jean Robert Augustin</td>
+                                <td>Anthem</td>
+                                <td>01-13-1969</td>
+                                <td></td>
+                                <td>3479981694</td>
+                                <td>Undomiciled, Apt 1d, New York, NY, 10031</td>
+                            </tr>
+                            <tr>
+                                <td>Argelia Jaquez De Heredia</td>
+                                <td>Anthem</td>
+                                <td>03-18-1958</td>
+                                <td></td>
+                                <td>7185559876</td>
+                                <td>2345 Grand Concourse Apt 2b, Bronx, NY, 10458</td>
+                            </tr>
+                            <tr>
+                                <td>Gerardino Cruz</td>
+                                <td>Anthem</td>
+                                <td>09-22-1971</td>
+                                <td></td>
+                                <td>9174443333</td>
+                                <td>4567 Jerome Ave Apt 5c, Bronx, NY, 10468</td>
+                            </tr>
+                            <tr>
+                                <td>Yahaira Perez De Castillo</td>
+                                <td>Anthem</td>
+                                <td>11-14-1965</td>
+                                <td></td>
+                                <td>6467778888</td>
+                                <td>7890 Sedgwick Ave Apt 3a, Bronx, NY, 10453</td>
+                            </tr>
+                            <tr>
+                                <td>Glenis Ariasfernandez</td>
+                                <td>Anthem</td>
+                                <td>05-30-1974</td>
+                                <td></td>
+                                <td>3476665555</td>
+                                <td>1234 Webster Ave Apt 6d, Bronx, NY, 10456</td>
+                            </tr>
+                            <tr>
+                                <td>Viaines Brito Mendoza</td>
+                                <td>Emblem</td>
+                                <td>08-07-1968</td>
+                                <td></td>
+                                <td>7189990000</td>
+                                <td>5678 East Tremont Ave Apt 4e, Bronx, NY, 10460</td>
+                            </tr>
+                            <tr>
+                                <td>Luz Urena</td>
+                                <td>Anthem</td>
+                                <td>02-11-1959</td>
+                                <td></td>
+                                <td>9173332222</td>
+                                <td>9012 Westchester Ave Apt 1f, Bronx, NY, 10461</td>
+                            </tr>
+                            <tr>
+                                <td>Yenesi Ortizdehidalgo</td>
+                                <td>Emblem</td>
+                                <td>06-25-1972</td>
+                                <td></td>
+                                <td>6461112222</td>
+                                <td>3456 Southern Blvd Apt 7g, Bronx, NY, 10459</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SIIP Table -->
+                <div class="table-wrapper" id="siip-table" data-table="siip" style="display: none;">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable">
+                                    ID
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    APPT
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    MEASURE
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    STATUS
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    PHONE
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    Earnings
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    Potential
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                            </tr>
+                            <tr class="filter-row">
+                                <th>
+                                    <input type="text" class="column-filter" id="siipIdFilter" placeholder="Filter ID...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="siipApptFilter" placeholder="Filter appointment...">
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="siipMeasureFilter">
+                                        <option value="">All Measures</option>
+                                        <option value="AWV">AWV</option>
+                                        <option value="HBD">HBD</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <select class="column-filter" id="siipStatusFilter">
+                                        <option value="">All Statuses</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Open">Open</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="siipPhoneFilter" placeholder="Filter phone...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="siipEarningsFilter" placeholder="Filter earnings...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="siipPotentialFilter" placeholder="Filter potential...">
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1959</td>
+                                <td>05-23-2025</td>
+                                <td>AWV</td>
+                                <td>Open</td>
+                                <td>3477010754</td>
+                                <td>$ 0.00</td>
+                                <td>$ 10.00</td>
+                            </tr>
+                            <tr>
+                                <td>1965</td>
+                                <td>03-31-2025</td>
+                                <td>AWV</td>
+                                <td>Open</td>
+                                <td>7185366340</td>
+                                <td>$ 0.00</td>
+                                <td>$ 10.00</td>
+                            </tr>
+                            <tr>
+                                <td>1931</td>
+                                <td>05-23-2025</td>
+                                <td>AWV</td>
+                                <td>Completed</td>
+                                <td>5169415555</td>
+                                <td>$ 10.00</td>
+                                <td>$ 10.00</td>
+                            </tr>
+                            <tr>
+                                <td>1983</td>
+                                <td>03-31-2025</td>
+                                <td>AWV</td>
+                                <td>Open</td>
+                                <td>5167700117</td>
+                                <td>$ 0.00</td>
+                                <td>$ 10.00</td>
+                            </tr>
+                            <tr>
+                                <td>1950</td>
+                                <td>05-23-2025</td>
+                                <td>HBD</td>
+                                <td>Completed</td>
+                                <td>5169988581</td>
+                                <td>$ 10.00</td>
+                                <td>$ 10.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- STAFF LOGIN Table -->
+                <div class="table-wrapper" id="staff-login-table" data-table="staff-login" style="display: none;">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable">
+                                    NAME
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    USER
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                                <th class="sortable">
+                                    LAST LOGIN
+                                    <span class="sort-icon">↕</span>
+                                </th>
+                            </tr>
+                            <tr class="filter-row">
+                                <th>
+                                    <input type="text" class="column-filter" id="staffNameFilter" placeholder="Filter name...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="staffUserFilter" placeholder="Filter user...">
+                                </th>
+                                <th>
+                                    <input type="text" class="column-filter" id="staffLoginFilter" placeholder="Filter login date...">
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Mirza Morales-Diaz</td>
+                                <td>broadwayinternalmed@gmail.com</td>
+                                <td>04-29-2025</td>
+                            </tr>
+                            <tr>
+                                <td>Joel Cedano</td>
+                                <td>joel.cedano@somos.com</td>
+                                <td>07-29-2025</td>
+                            </tr>
+                            <tr>
+                                <td>Maria Garcia</td>
+                                <td>maria.garcia@somos.com</td>
+                                <td>07-28-2025</td>
+                            </tr>
+                            <tr>
+                                <td>John Smith</td>
+                                <td>john.smith@somos.com</td>
+                                <td>07-27-2025</td>
+                            </tr>
+                            <tr>
+                                <td>Michael Brown</td>
+                                <td>michael.brown@somos.com</td>
+                                <td>07-26-2025</td>
+                            </tr>
+                            <tr>
+                                <td>Sarah Chen</td>
+                                <td>sarah.chen@somos.com</td>
+                                <td>07-25-2025</td>
+                            </tr>
+                            <tr>
+                                <td>David Wilson</td>
+                                <td>david.wilson@somos.com</td>
+                                <td>07-24-2025</td>
+                            </tr>
+                            <tr>
+                                <td>Lisa Rodriguez</td>
+                                <td>lisa.rodriguez@somos.com</td>
+                                <td>07-23-2025</td>
+                            </tr>
+                            <tr>
+                                <td>Robert Johnson</td>
+                                <td>robert.johnson@somos.com</td>
+                                <td>07-22-2025</td>
+                            </tr>
+                            <tr>
+                                <td>Jennifer Davis</td>
+                                <td>jennifer.davis@somos.com</td>
+                                <td>07-21-2025</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <div class="pagination-controls">
+                        <button class="page-btn" id="firstPage"><<</button>
+                        <button class="page-btn" id="prevPage"><</button>
+                        <div class="page-numbers">
+                            <button class="page-number active" data-page="1">1</button>
+                            <button class="page-number" data-page="2">2</button>
+                            <button class="page-number" data-page="3">3</button>
+                            <button class="page-number" data-page="4">4</button>
+                            <button class="page-number" data-page="5">5</button>
+                        </div>
+                        <button class="page-btn" id="nextPage">></button>
+                        <button class="page-btn" id="lastPage">>></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Export Dialog Modal -->
+    <div class="export-modal" id="exportModal">
+        <div class="export-modal-content">
+            <div class="export-modal-header">
+                <h2>Select Fields</h2>
+                <button class="export-modal-close" id="closeExportModal">×</button>
+            </div>
+            <div class="export-modal-body">
+                <div class="field-list">
+                    <div class="field-item">
+                        <input type="checkbox" id="selectAll" class="field-checkbox">
+                        <label for="selectAll" class="field-label">Fields</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldName" class="field-checkbox" checked>
+                        <label for="fieldName" class="field-label">Name</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldMCO" class="field-checkbox" checked>
+                        <label for="fieldMCO" class="field-label">MCO</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldDOB" class="field-checkbox" checked>
+                        <label for="fieldDOB" class="field-label">Date of Birth</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldAppt" class="field-checkbox" checked>
+                        <label for="fieldAppt" class="field-label">Appointment Date</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldMeasure" class="field-checkbox" checked>
+                        <label for="fieldMeasure" class="field-label">Measure Code</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldMeasureDesc" class="field-checkbox">
+                        <label for="fieldMeasureDesc" class="field-label">Measure Description</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldStatus" class="field-checkbox" checked>
+                        <label for="fieldStatus" class="field-label">Status</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldPhone" class="field-checkbox" checked>
+                        <label for="fieldPhone" class="field-label">Phone Number</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldLOB" class="field-checkbox">
+                        <label for="fieldLOB" class="field-label">Line Of Business</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldPeriod" class="field-checkbox">
+                        <label for="fieldPeriod" class="field-label">Reporting Period</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldPCP" class="field-checkbox">
+                        <label for="fieldPCP" class="field-label">PCP Name</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldGender" class="field-checkbox">
+                        <label for="fieldGender" class="field-label">Gender</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldMemberID" class="field-checkbox">
+                        <label for="fieldMemberID" class="field-label">Member ID</label>
+                    </div>
+                    <div class="field-item">
+                        <input type="checkbox" id="fieldNonUser" class="field-checkbox">
+                        <label for="fieldNonUser" class="field-label">Non User Flag</label>
+                    </div>
+                </div>
+            </div>
+            <div class="export-modal-footer">
+                <button class="export-btn-close" id="cancelExport">Close</button>
+                <button class="export-btn-apply" id="applyExport">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/reports.js"></script>
+</body>
+</html> 
