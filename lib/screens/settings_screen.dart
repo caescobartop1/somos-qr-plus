@@ -38,8 +38,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // Navigation Header
                   Container(
                     width: double.infinity,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       border: Border(
@@ -73,7 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(width: 16),
-        
+
                         // Logo/Title
                         const Expanded(
                           child: Center(
@@ -95,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                         ),
-        
+
                         // Avatar with Dropdown
                         PopupMenuButton<String>(
                           offset: const Offset(0, 50),
@@ -140,7 +140,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               value: 'user_info',
                               enabled: false,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
                                 child: Row(
                                   children: [
                                     // User Avatar
@@ -289,7 +290,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ],
                     ),
                   ),
-        
+
                   // Main Content
                   Expanded(
                     child: SingleChildScrollView(
@@ -317,7 +318,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-        
+
             // Drawer Overlay
             if (_isDrawerOpen)
               GestureDetector(
@@ -330,7 +331,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: Colors.black.withOpacity(0.5),
                 ),
               ),
-        
+
             // Navigation Drawer
             AnimatedPositioned(
               duration: const Duration(milliseconds: 300),
@@ -368,7 +369,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               height: 80,
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                                  colors: [
+                                    Color(0xFF667eea),
+                                    Color(0xFF764ba2)
+                                  ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
@@ -415,7 +419,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ],
                         ),
                       ),
-        
+
                       // Drawer Content
                       Expanded(
                         child: Container(
@@ -424,10 +428,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             padding: EdgeInsets.zero,
                             children: [
                               _buildDrawerItem(
-                                  'Dashboard', Icons.dashboard, false, () {}),
-                              _buildDrawerItem(
-                                  'Quality Score Cards', Icons.assessment, false,
-                                  () {
+                                  'Dashboard', Icons.dashboard, false, () {
+                                Get.toNamed(RouteHelper.getDashboardRoute());
+                              }),
+                              _buildDrawerItem('Quality Score Cards',
+                                  Icons.assessment, false, () {
                                 Get.toNamed(
                                     RouteHelper.getQualityScoreCardsRoute());
                               }),
@@ -439,14 +444,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   'Reports', Icons.bar_chart, false, () {}),
                               _buildDrawerItem(
                                   'Resources', Icons.folder, false, () {}),
-        
+
                               // Divider
                               Container(
                                 height: 1,
                                 color: const Color(0xFFE0E0E0),
                                 margin: const EdgeInsets.symmetric(vertical: 8),
                               ),
-        
+
                               _buildDrawerItem(
                                   'Settings', Icons.settings, true, () {}),
                               _buildDrawerItem('Log Out', Icons.logout, false,

@@ -119,7 +119,7 @@ class AuthController extends GetxController {
     });
 
     if (response.statusCode == 200) {
-      Get.offAllNamed(RouteHelper.getQualityScoreCardsRoute());
+      Get.offAllNamed(RouteHelper.getDashboardRoute());
       apiClient.updateHeader(response.body['access']);
       _user = User.fromJson(response.body['user']);
       await sharedPreferences.setString(

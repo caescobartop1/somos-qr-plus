@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:get/get.dart';
+import 'package:somos_qr_plus/helpers/route_helper.dart';
+
+import '../controllers/auth_controller.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -99,56 +103,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Stack(
-        children: [
-          // Main Content
-          Column(
+    return GetBuilder<AuthController>(builder: (authController) {
+      final initials = (authController.user?.firstName.isNotEmpty == true
+              ? authController.user!.firstName[0]
+              : '') +
+          (authController.user?.lastName.isNotEmpty == true
+              ? authController.user!.lastName[0]
+              : '');
+      final fullName =
+          '${authController.user?.firstName ?? ''} ${authController.user?.lastName ?? ''}'
+              .trim();
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: SafeArea(
+          child: Stack(
             children: [
-              _buildNavigationHeader(),
-                              Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildWelcomeSection(),
-                      const SizedBox(height: 32),
-                      _buildStatisticsGrid(),
-                      const SizedBox(height: 32),
-                      _buildPanelChart(),
-                      const SizedBox(height: 32),
-                      _buildIncentiveChart(),
-                      const SizedBox(height: 32),
-                      _buildScheduleCard(),
-                    ],
+              // Main Content
+              Column(
+                children: [
+                  _buildNavigationHeader(initials, fullName, authController),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildWelcomeSection(),
+                          const SizedBox(height: 32),
+                          _buildStatisticsGrid(),
+                          const SizedBox(height: 32),
+                          _buildPanelChart(),
+                          const SizedBox(height: 32),
+                          _buildIncentiveChart(),
+                          const SizedBox(height: 32),
+                          _buildScheduleCard(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Drawer Overlay
+              if (_isDrawerOpen)
+                GestureDetector(
+                  onTap: () => setState(() => _isDrawerOpen = false),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.5),
                   ),
                 ),
-              ),
+
+              // Navigation Drawer
+              if (_isDrawerOpen) _buildNavigationDrawer(authController),
+
+              // Logout Dialog
+              if (_showLogoutDialog) _buildLogoutDialog(),
             ],
           ),
-          
-          // Drawer Overlay
-          if (_isDrawerOpen)
-            GestureDetector(
-              onTap: () => setState(() => _isDrawerOpen = false),
-              child: Container(
-                color: Colors.black.withOpacity(0.5),
-              ),
-            ),
-          
-          // Navigation Drawer
-          if (_isDrawerOpen) _buildNavigationDrawer(),
-          
-          // Logout Dialog
-          if (_showLogoutDialog) _buildLogoutDialog(),
-        ],
-      ),
-    );
+        ),
+      );
+    });
   }
 
-  Widget _buildNavigationHeader() {
+  Widget _buildNavigationHeader(
+      String initials, String fullName, AuthController authController) {
     return Container(
       height: 64,
       decoration: BoxDecoration(
@@ -175,9 +193,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
-            
+
             const SizedBox(width: 8),
-            
+
             // Logo
             const Expanded(
               child: Text(
@@ -190,19 +208,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 textAlign: TextAlign.center,
               ),
             ),
-            
+
             // Provider Dropdown
             _buildProviderDropdown(),
-            
+
             const SizedBox(width: 8),
-            
+
             // Notifications
             _buildNotificationsButton(),
-            
+
             const SizedBox(width: 8),
-            
+
             // Profile
-            _buildProfileButton(),
+            _buildProfileButton(initials, fullName, authController),
           ],
         ),
       ),
@@ -211,48 +229,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildProviderDropdown() {
     return PopupMenuButton<String>(
-      offset: const Offset(0, 40),
+      offset: const Offset(0, 50),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      color: Colors.white,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        width: 80, // 👈 ancho fijo
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: Colors.grey[300]!),
           borderRadius: BorderRadius.circular(6),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 3,
-              offset: const Offset(0, 1),
-            ),
-          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _selectedProvider,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF333333),
+            Expanded(
+              // 👈 Para controlar el texto
+              child: Text(
+                _selectedProvider,
+                overflow: TextOverflow.ellipsis, // 👈 recorta con ...
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF333333),
+                ),
               ),
             ),
-            const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down, size: 14, color: Color(0xFF666666)),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: Color(0xFF666666),
+            ),
           ],
         ),
       ),
       itemBuilder: (context) => _providers.map((provider) {
         return PopupMenuItem<String>(
           value: provider,
-          child: Text(provider),
+          child: SizedBox(
+            width: 180, // 👈 también controlas el ancho en la lista
+            child: Text(
+              provider,
+              overflow: TextOverflow.ellipsis, // 👈 mismo efecto
+              maxLines: 1,
+              style: TextStyle(
+                fontSize: 14,
+                color: _selectedProvider == provider
+                    ? const Color(0xFF1976D2)
+                    : const Color(0xFF333333),
+                fontWeight: _selectedProvider == provider
+                    ? FontWeight.w600
+                    : FontWeight.w400,
+              ),
+            ),
+          ),
         );
       }).toList(),
       onSelected: (value) {
         setState(() {
           _selectedProvider = value;
         });
-        _showSuccessMessage('Dashboard updated for $value');
       },
     );
   }
@@ -269,7 +307,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.notifications_outlined, color: Color(0xFF333333)),
+            child: const Icon(Icons.notifications_outlined,
+                color: Color(0xFF333333)),
           ),
           if (_unreadNotifications > 0)
             Positioned(
@@ -324,7 +363,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              ..._notifications.map((notification) => _buildNotificationItem(notification)),
+              ..._notifications
+                  .map((notification) => _buildNotificationItem(notification)),
               const SizedBox(height: 8),
               const Center(
                 child: Text(
@@ -388,7 +428,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           IconButton(
             onPressed: () {
               setState(() {
-                _notifications.removeWhere((n) => n['id'] == notification['id']);
+                _notifications
+                    .removeWhere((n) => n['id'] == notification['id']);
                 if (notification['unread']) {
                   _unreadNotifications--;
                 }
@@ -404,7 +445,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildProfileButton() {
+  Widget _buildProfileButton(
+      String initials, String fullName, AuthController authController) {
     return PopupMenuButton<String>(
       offset: const Offset(0, 40),
       child: Container(
@@ -426,9 +468,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            'JC',
+            initials,
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w600,
@@ -468,12 +510,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Joel Cedano',
+                          fullName,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -481,7 +523,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         Text(
-                          'jcedano@somosipa.com',
+                          authController.user?.email ?? '',
                           style: TextStyle(
                             fontSize: 14,
                             color: Color(0xFF666666),
@@ -495,7 +537,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const Divider(height: 32),
               _buildProfileOption('Language', '🇺🇸 English'),
               _buildProfileOption('Invitations', ''),
-              _buildProfileOption('Log Out', ''),
+              GestureDetector(
+                  onTap: () {
+                    authController.logout();
+                  },
+                  child: _buildProfileOption('Log Out', '')),
             ],
           ),
         ),
@@ -531,7 +577,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildNavigationDrawer() {
+  Widget _buildNavigationDrawer(AuthController authController) {
     return Positioned(
       left: 0,
       top: 0,
@@ -563,7 +609,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     height: 80,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(40),
-                      border: Border.all(color: const Color(0xFF4CAF50), width: 3),
+                      border:
+                          Border.all(color: const Color(0xFF4CAF50), width: 3),
                       gradient: const LinearGradient(
                         colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
                         begin: Alignment.topLeft,
@@ -607,22 +654,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-            
+
             // Drawer Items
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
                   _buildDrawerItem('Dashboard', true),
-                  _buildDrawerItem('Quality Score Cards', false),
+                  _buildDrawerItem('Quality Score Cards', false, onTap: () {
+                    Get.toNamed(RouteHelper.getQualityScoreCardsRoute());
+                  }),
                   _buildDrawerItem('My Schedule', false),
                   _buildDrawerItem('My Patients', false),
                   _buildDrawerItem('Reports', false),
                   _buildDrawerItem('Resources', false),
                   const Divider(height: 32),
-                  _buildDrawerItem('Settings', false),
+                  _buildDrawerItem('Settings', false, onTap: () {
+                    Get.toNamed(RouteHelper.getSettingsRoute());
+                  }),
                   _buildDrawerItem('Log Out', false, onTap: () {
-                    setState(() => _showLogoutDialog = true);
+                    authController.logout();
                   }),
                 ],
               ),
@@ -683,10 +734,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             color: isActive ? const Color(0xFF1976D2) : const Color(0xFF333333),
           ),
         ),
-        onTap: onTap ?? () {
-          // Handle navigation
-          setState(() => _isDrawerOpen = false);
-        },
+        onTap: onTap ??
+            () {
+              // Handle navigation
+              setState(() => _isDrawerOpen = false);
+            },
       ),
     );
   }
@@ -743,48 +795,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF666666),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 27,
-              fontWeight: FontWeight.w900,
-              color: Colors.black,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: List.generate(5, (index) => const Padding(
-              padding: EdgeInsets.only(right: 2),
-              child: Icon(
-                Icons.star,
-                color: Color(0xFFFFC107),
-                size: 16,
+      child: FittedBox(
+        alignment: Alignment.topLeft,
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF666666),
               ),
-            )),
-          ),
-          const SizedBox(height: 4),
-          // Add rating text like in HTML version
-          const Text(
-            '4.5/5',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF666666),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 27,
+                fontWeight: FontWeight.w900,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: List.generate(
+                5,
+                (index) => const Padding(
+                  padding: EdgeInsets.only(right: 2),
+                  child: Icon(
+                    Icons.star,
+                    color: Color(0xFFFFC107),
+                    size: 16,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '4.5/5',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF666666),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -825,18 +884,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 barTouchData: BarTouchData(enabled: false),
                 titlesData: FlTitlesData(
                   show: true,
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        const labels = ['Anthem', 'Emblem', 'Healthfirst', 'Humana', 'Metroplus', 'Molina', 'United'];
-                        const abbreviations = ['ANT', 'EMB', 'HF', 'HUM', 'MET', 'MOL', 'UNI'];
+                        const labels = [
+                          'Anthem',
+                          'Emblem',
+                          'Healthfirst',
+                          'Humana',
+                          'Metroplus',
+                          'Molina',
+                          'United'
+                        ];
+                        const abbreviations = [
+                          'ANT',
+                          'EMB',
+                          'HF',
+                          'HUM',
+                          'MET',
+                          'MOL',
+                          'UNI'
+                        ];
                         if (value >= 0 && value < labels.length) {
                           return Text(
                             abbreviations[value.toInt()],
-                            style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+                            style: const TextStyle(
+                                color: Color(0xFF666666), fontSize: 12),
                           );
                         }
                         return const Text('');
@@ -850,50 +928,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       getTitlesWidget: (value, meta) {
                         return Text(
                           value.toInt().toString(),
-                          style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+                          style: const TextStyle(
+                              color: Color(0xFF666666), fontSize: 12),
                         );
                       },
                     ),
                   ),
                 ),
                 borderData: FlBorderData(show: false),
-                                  barGroups: [
-                    BarChartGroupData(x: 0, barRods: [
-                      BarChartRodData(toY: 238, color: const Color(0xFF1976D2), width: 7),
-                      BarChartRodData(toY: 714, color: const Color(0xFF4CAF50), width: 7),
-                      BarChartRodData(toY: 0, color: const Color(0xFF4DD0E1), width: 7),
-                    ]),
-                    BarChartGroupData(x: 1, barRods: [
-                      BarChartRodData(toY: 238, color: const Color(0xFF1976D2), width: 7),
-                      BarChartRodData(toY: 96, color: const Color(0xFF4CAF50), width: 7),
-                      BarChartRodData(toY: 0, color: const Color(0xFF4DD0E1), width: 7),
-                    ]),
-                    BarChartGroupData(x: 2, barRods: [
-                      BarChartRodData(toY: 550, color: const Color(0xFF1976D2), width: 7),
-                      BarChartRodData(toY: 700, color: const Color(0xFF4CAF50), width: 7),
-                      BarChartRodData(toY: 750, color: const Color(0xFF4DD0E1), width: 7),
-                    ]),
-                    BarChartGroupData(x: 3, barRods: [
-                      BarChartRodData(toY: 170, color: const Color(0xFF1976D2), width: 7),
-                      BarChartRodData(toY: 240, color: const Color(0xFF4CAF50), width: 7),
-                      BarChartRodData(toY: 190, color: const Color(0xFF4DD0E1), width: 7),
-                    ]),
-                    BarChartGroupData(x: 4, barRods: [
-                      BarChartRodData(toY: 476, color: const Color(0xFF1976D2), width: 7),
-                      BarChartRodData(toY: 238, color: const Color(0xFF4CAF50), width: 7),
-                      BarChartRodData(toY: 0, color: const Color(0xFF4DD0E1), width: 7),
-                    ]),
-                    BarChartGroupData(x: 5, barRods: [
-                      BarChartRodData(toY: 0, color: const Color(0xFF1976D2), width: 7),
-                      BarChartRodData(toY: 476, color: const Color(0xFF4CAF50), width: 7),
-                      BarChartRodData(toY: 572, color: const Color(0xFF4DD0E1), width: 7),
-                    ]),
-                    BarChartGroupData(x: 6, barRods: [
-                      BarChartRodData(toY: 238, color: const Color(0xFF1976D2), width: 7),
-                      BarChartRodData(toY: 96, color: const Color(0xFF4CAF50), width: 7),
-                      BarChartRodData(toY: 0, color: const Color(0xFF4DD0E1), width: 7),
-                    ]),
-                  ],
+                barGroups: [
+                  BarChartGroupData(x: 0, barRods: [
+                    BarChartRodData(
+                        toY: 238, color: const Color(0xFF1976D2), width: 7),
+                    BarChartRodData(
+                        toY: 714, color: const Color(0xFF4CAF50), width: 7),
+                    BarChartRodData(
+                        toY: 0, color: const Color(0xFF4DD0E1), width: 7),
+                  ]),
+                  BarChartGroupData(x: 1, barRods: [
+                    BarChartRodData(
+                        toY: 238, color: const Color(0xFF1976D2), width: 7),
+                    BarChartRodData(
+                        toY: 96, color: const Color(0xFF4CAF50), width: 7),
+                    BarChartRodData(
+                        toY: 0, color: const Color(0xFF4DD0E1), width: 7),
+                  ]),
+                  BarChartGroupData(x: 2, barRods: [
+                    BarChartRodData(
+                        toY: 550, color: const Color(0xFF1976D2), width: 7),
+                    BarChartRodData(
+                        toY: 700, color: const Color(0xFF4CAF50), width: 7),
+                    BarChartRodData(
+                        toY: 750, color: const Color(0xFF4DD0E1), width: 7),
+                  ]),
+                  BarChartGroupData(x: 3, barRods: [
+                    BarChartRodData(
+                        toY: 170, color: const Color(0xFF1976D2), width: 7),
+                    BarChartRodData(
+                        toY: 240, color: const Color(0xFF4CAF50), width: 7),
+                    BarChartRodData(
+                        toY: 190, color: const Color(0xFF4DD0E1), width: 7),
+                  ]),
+                  BarChartGroupData(x: 4, barRods: [
+                    BarChartRodData(
+                        toY: 476, color: const Color(0xFF1976D2), width: 7),
+                    BarChartRodData(
+                        toY: 238, color: const Color(0xFF4CAF50), width: 7),
+                    BarChartRodData(
+                        toY: 0, color: const Color(0xFF4DD0E1), width: 7),
+                  ]),
+                  BarChartGroupData(x: 5, barRods: [
+                    BarChartRodData(
+                        toY: 0, color: const Color(0xFF1976D2), width: 7),
+                    BarChartRodData(
+                        toY: 476, color: const Color(0xFF4CAF50), width: 7),
+                    BarChartRodData(
+                        toY: 572, color: const Color(0xFF4DD0E1), width: 7),
+                  ]),
+                  BarChartGroupData(x: 6, barRods: [
+                    BarChartRodData(
+                        toY: 238, color: const Color(0xFF1976D2), width: 7),
+                    BarChartRodData(
+                        toY: 96, color: const Color(0xFF4CAF50), width: 7),
+                    BarChartRodData(
+                        toY: 0, color: const Color(0xFF4DD0E1), width: 7),
+                  ]),
+                ],
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
@@ -979,7 +1079,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Provider Toggles
           Container(
             padding: const EdgeInsets.all(4),
@@ -1004,7 +1104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Stats
           Row(
             children: [
@@ -1059,173 +1159,201 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Chart
           SizedBox(
             height: 300,
-                        child: PageView(
+            child: PageView(
               children: [
                 // First chart - Categories 1-7
                 Padding(
                   padding: const EdgeInsets.only(top: 20),
                   child: BarChart(
-                   BarChartData(
-                     alignment: BarChartAlignment.spaceAround,
-                     maxY: 5000,
-                    barTouchData: BarTouchData(enabled: false),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                                                     getTitlesWidget: (value, meta) {
-                             const labels = ['AWV', 'BCS', 'CBP', 'CCS', 'CDC-E', 'CDC-1C', 'COL'];
-                            if (value >= 0 && value < labels.length) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  labels[value.toInt()],
-                                  style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
-                                ),
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: 5000,
+                      barTouchData: BarTouchData(enabled: false),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              const labels = [
+                                'AWV',
+                                'BCS',
+                                'CBP',
+                                'CCS',
+                                'CDC-E',
+                                'CDC-1C',
+                                'COL'
+                              ];
+                              if (value >= 0 && value < labels.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    labels[value.toInt()],
+                                    style: const TextStyle(
+                                        color: Color(0xFF666666), fontSize: 12),
+                                  ),
+                                );
+                              }
+                              return const Text('');
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 40,
+                            getTitlesWidget: (value, meta) {
+                              return Text(
+                                '\$${value.toInt()}',
+                                style: const TextStyle(
+                                    color: Color(0xFF666666), fontSize: 12),
                               );
-                            }
-                            return const Text('');
-                          },
+                            },
+                          ),
                         ),
                       ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 40,
-                          getTitlesWidget: (value, meta) {
-                            return Text(
-                              '\$${value.toInt()}',
-                              style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    borderData: FlBorderData(show: false),
-                                         barGroups: List.generate(7, (index) {
-                       final earnings = [1764, 1596, 2142, 1218, 1428, 1932, 1344][index];
-                       final potential = [1960, 2240, 1680, 2870, 2520, 1540, 2660][index];
-                       
-                       return BarChartGroupData(
-                         x: index,
-                         barRods: [
-                           BarChartRodData(
-                             toY: earnings.toDouble(),
-                             color: const Color(0xFF388E3C),
-                             width: 7,
-                           ),
-                           BarChartRodData(
-                             toY: potential.toDouble(),
-                             color: const Color(0xFFA5D6A7),
-                             width: 7,
-                           ),
-                         ],
-                       );
-                     }),
-                    gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: false,
-                      horizontalInterval: 1000,
-                      getDrawingHorizontalLine: (value) {
-                        return FlLine(
-                          color: Colors.grey.shade300,
-                          strokeWidth: 1,
+                      borderData: FlBorderData(show: false),
+                      barGroups: List.generate(7, (index) {
+                        final earnings =
+                            [1764, 1596, 2142, 1218, 1428, 1932, 1344][index];
+                        final potential =
+                            [1960, 2240, 1680, 2870, 2520, 1540, 2660][index];
+
+                        return BarChartGroupData(
+                          x: index,
+                          barRods: [
+                            BarChartRodData(
+                              toY: earnings.toDouble(),
+                              color: const Color(0xFF388E3C),
+                              width: 7,
+                            ),
+                            BarChartRodData(
+                              toY: potential.toDouble(),
+                              color: const Color(0xFFA5D6A7),
+                              width: 7,
+                            ),
+                          ],
                         );
-                      },
-                                        ),
-                  ),
-                ),
-              ),
-              // Second chart - Categories 8-14
-              Padding(
-                padding: const EdgeInsets.only(top: 20),
-                child: BarChart(
-                   BarChartData(
-                     alignment: BarChartAlignment.spaceAround,
-                     maxY: 5000,
-                    barTouchData: BarTouchData(enabled: false),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            const labels = ['PCR', 'POD', 'PPC', 'SAA', 'W30', 'WCV', 'HVL'];
-                            if (value >= 0 && value < labels.length) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  labels[value.toInt()],
-                                  style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
-                                ),
-                              );
-                            }
-                            return const Text('');
-                          },
-                        ),
+                      }),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: 1000,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: Colors.grey.shade300,
+                            strokeWidth: 1,
+                          );
+                        },
                       ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 40,
-                          getTitlesWidget: (value, meta) {
-                            return Text(
-                              '\$${value.toInt()}',
-                              style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    borderData: FlBorderData(show: false),
-                                         barGroups: List.generate(7, (index) {
-                       final earnings = [2016, 1638, 1848, 1512, 2184, 1722, 1554][index];
-                       final potential = [1400, 2170, 1820, 2380, 1260, 2030, 2310][index];
-                       
-                       return BarChartGroupData(
-                         x: index,
-                         barRods: [
-                           BarChartRodData(
-                             toY: earnings.toDouble(),
-                             color: const Color(0xFF388E3C),
-                             width: 7,
-                           ),
-                           BarChartRodData(
-                             toY: potential.toDouble(),
-                             color: const Color(0xFFA5D6A7),
-                             width: 7,
-                           ),
-                         ],
-                       );
-                     }),
-                    gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: false,
-                      horizontalInterval: 1000,
-                      getDrawingHorizontalLine: (value) {
-                        return FlLine(
-                          color: Colors.grey.shade300,
-                          strokeWidth: 1,
-                        );
-                      },
                     ),
                   ),
                 ),
-              ),
-            ],
+                // Second chart - Categories 8-14
+                Padding(
+                  padding: const EdgeInsets.only(top: 20),
+                  child: BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: 5000,
+                      barTouchData: BarTouchData(enabled: false),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              const labels = [
+                                'PCR',
+                                'POD',
+                                'PPC',
+                                'SAA',
+                                'W30',
+                                'WCV',
+                                'HVL'
+                              ];
+                              if (value >= 0 && value < labels.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    labels[value.toInt()],
+                                    style: const TextStyle(
+                                        color: Color(0xFF666666), fontSize: 12),
+                                  ),
+                                );
+                              }
+                              return const Text('');
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 40,
+                            getTitlesWidget: (value, meta) {
+                              return Text(
+                                '\$${value.toInt()}',
+                                style: const TextStyle(
+                                    color: Color(0xFF666666), fontSize: 12),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      barGroups: List.generate(7, (index) {
+                        final earnings =
+                            [2016, 1638, 1848, 1512, 2184, 1722, 1554][index];
+                        final potential =
+                            [1400, 2170, 1820, 2380, 1260, 2030, 2310][index];
+
+                        return BarChartGroupData(
+                          x: index,
+                          barRods: [
+                            BarChartRodData(
+                              toY: earnings.toDouble(),
+                              color: const Color(0xFF388E3C),
+                              width: 7,
+                            ),
+                            BarChartRodData(
+                              toY: potential.toDouble(),
+                              color: const Color(0xFFA5D6A7),
+                              width: 7,
+                            ),
+                          ],
+                        );
+                      }),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: 1000,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: Colors.grey.shade300,
+                            strokeWidth: 1,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Legend
           LayoutBuilder(
             builder: (context, constraints) {
@@ -1253,7 +1381,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _selectedIncentiveProvider = provider;
         });
-        _showSuccessMessage('Showing data for ${provider == 'all' ? 'All providers' : label}');
+        _showSuccessMessage(
+            'Showing data for ${provider == 'all' ? 'All providers' : label}');
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1291,7 +1420,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.only(top: 16, left: 16, bottom: 16, right: 0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1322,7 +1451,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         });
                       },
                       icon: Icon(
-                        _isScheduleExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
+                        _isScheduleExpanded
+                            ? Icons.keyboard_arrow_down
+                            : Icons.keyboard_arrow_right,
                       ),
                     ),
                   ],
@@ -1330,10 +1461,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-          
+
           // Content
           if (_isScheduleExpanded)
-            ..._appointments.map((appointment) => _buildAppointmentItem(appointment)),
+            ..._appointments
+                .map((appointment) => _buildAppointmentItem(appointment)),
         ],
       ),
     );
@@ -1376,7 +1508,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: (appointment['tags'] as List<String>).map((tag) {
               Color backgroundColor;
               Color textColor;
-              
+
               switch (tag) {
                 case 'GIC':
                   backgroundColor = const Color(0xFFE3F2FD);
@@ -1402,7 +1534,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   backgroundColor = Colors.grey.shade200;
                   textColor = Colors.grey.shade700;
               }
-              
+
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -1489,7 +1621,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-              
+
               // Body
               const Padding(
                 padding: EdgeInsets.all(24),
@@ -1515,7 +1647,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-              
+
               // Footer
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
