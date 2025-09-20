@@ -6,12 +6,15 @@ import 'package:somos_qr_plus/screens/auth/login_screen.dart';
 import 'package:somos_qr_plus/screens/auth/reset_password_screen.dart';
 import 'package:somos_qr_plus/screens/auth/two_factor_screen.dart';
 import 'package:somos_qr_plus/screens/dashboard_screen.dart';
+import 'package:somos_qr_plus/screens/invitation_screen.dart';
+import 'package:somos_qr_plus/screens/my_invitations_screen.dart';
 import 'package:somos_qr_plus/screens/patients_screen.dart';
 import 'package:somos_qr_plus/screens/quality_scorecards_screen.dart';
 import 'package:somos_qr_plus/screens/reports_screen.dart';
 import 'package:somos_qr_plus/screens/resources_screen.dart';
 import 'package:somos_qr_plus/screens/schedule_screen.dart';
 import 'package:somos_qr_plus/screens/settings_screen.dart';
+import 'package:somos_qr_plus/screens/user_management_screen.dart';
 
 class RouteHelper {
   static const String initial = '/';
@@ -27,6 +30,9 @@ class RouteHelper {
   static const String reports = '/reports';
   static const String schedule = '/schedule';
   static const String resources = '/resources';
+  static const String invitations = '/invitations';
+  static const String myInvitations = '/myInvitations';
+  static const String userManagement = '/userManagement';
 
   static String getLoginRoute() => login;
   static String getDashboardRoute() => dashboard;
@@ -39,6 +45,9 @@ class RouteHelper {
   static String getPatientsRoute() => patients;
   static String getReportsRoute() => reports;
   static String getResourcesRoute() => resources;
+  static String getInvitationsRoute() => invitations;
+  static String getMyInvitationsRoute() => myInvitations;
+  static String getUserManagementRoute() => userManagement;
   static String getScheduleRoute() => schedule;
   static String getInitialRoute() => login;
 
@@ -54,6 +63,9 @@ class RouteHelper {
     GetPage(name: reports, page: () => ReportsScreen()),
     GetPage(name: schedule, page: () => ScheduleScreen()),
     GetPage(name: resources, page: () => ResourcesScreen()),
+    GetPage(name: invitations, page: () => InvitationScreen()),
+    GetPage(name: myInvitations, page: () => MyInvitationsScreen()),
+    GetPage(name: userManagement, page: () => UserManagementScreen()),
     GetPage(name: dashboard, page: () => DashboardScreen()),
   ];
 

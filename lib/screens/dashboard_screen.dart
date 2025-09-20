@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
-import 'package:go_router/go_router.dart';
+
 import 'package:intl/intl.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
@@ -924,7 +924,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     TextButton.icon(
                       onPressed: () {
-                        context.go('/schedule');
+                        Get.offAllNamed(RouteHelper.getScheduleRoute());
                       },
                       icon: const Text('📅'),
                       label: const Text(
