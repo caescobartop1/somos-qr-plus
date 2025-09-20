@@ -124,6 +124,10 @@ class AuthController extends GetxController {
       _user = User.fromJson(response.body['user']);
       await sharedPreferences.setString(
           AppConstants.token, response.body['access']);
+      await sharedPreferences.setString(
+          AppConstants.refreshToken, response.body['refresh']);
+      apiClient.refreshToken = response.body['refresh'];
+      update();
     } else {
       final message = response.body['message'];
       Get.snackbar(

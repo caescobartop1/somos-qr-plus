@@ -23,4 +23,13 @@ class AppConstants {
   static const String forgotPasswordUrl = '/auth/password/reset/';
   static const String forgotPasswordConfirmUrl =
       '/auth/password/reset/confirm/';
+
+   // Practice
+
+   static const String practiceUrl = '/accounts/practice/';
+   static const String practiceDetailsUrl = '/catalog/kpi/';
+   static const String panelDetailsUrl = '/catalog/practice_mco_product/';
+   static const String mocListDetailsUrl = '/accounts/mco_list/';
+   static const String bonusDetailsUrl = '/accounts/bonus_chart_data/';
+   static const String scheduleUrl = '/accounts/schedule/';
 }

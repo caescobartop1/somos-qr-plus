@@ -17,19 +17,54 @@ class ApiClient extends GetxService {
   final SharedPreferences sharedPreferences;
   static final String noInternetMessage = 'connection_to_api_server_failed'.tr;
   final int timeoutInSeconds = 40;
+  final Future<String?> Function()? onTokenRefresh;
+  bool _didRetry401 = false;
 
   String? token;
+  String? refreshToken;
   late Map<String, String> _mainHeaders;
 
-  ApiClient({required this.appBaseUrl, required this.appBaseAuthUrl, required this.sharedPreferences}) {
+  ApiClient(
+      {required this.appBaseUrl,
+      required this.appBaseAuthUrl,
+      required this.sharedPreferences,
+      this.onTokenRefresh}) {
     token = sharedPreferences.getString(AppConstants.token);
+    refreshToken = sharedPreferences.getString(AppConstants.refreshToken);
     if (kDebugMode) {
       print('Token: $token');
+      print('refreshToken: $refreshToken');
     }
     updateHeader(token);
     if (token != null) {
       // Get.offAllNamed(RouteHelper.getQualityScoreCardsRoute());
     }
+  }
+  Future<Response> _sendWith401Retry({
+    required Future<http.Response> Function() send,
+    required String uri,
+    required bool handleError,
+  }) async {
+    http.Response res = await send();
+    if (res.statusCode == 401 && !_didRetry401 && onTokenRefresh != null) {
+      _didRetry401 = true;
+      try {
+        final newToken = await onTokenRefresh!();
+        print(newToken);
+        if (newToken != null && newToken.isNotEmpty) {
+          token = newToken;
+          sharedPreferences.setString(AppConstants.token, newToken);
+          updateHeader(newToken);
+          res = await send();
+        }
+      } catch (_) {
+        // si falla el refresh, seguimos con el 401 original
+      } finally {
+        _didRetry401 = false;
+      }
+    }
+
+    return handleResponse(res, uri, handleError);
   }
 
   Map<String, String> updateHeader(String? token, {bool setHeader = true}) {
@@ -54,22 +89,22 @@ class ApiClient extends GetxService {
   Future<Response> getData(String uri,
       {Map<String, dynamic>? query,
       Map<String, String>? headers,
-      bool handleError = true, 
+      bool handleError = true,
       bool useApi = false}) async {
     try {
-      final fullUri =
-          Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl) + uri).replace(queryParameters: query);
+      final fullUri = Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl) + uri)
+          .replace(queryParameters: query);
       if (kDebugMode) {
         print('====> API Call: $uri\nHeader: ${headers ?? _mainHeaders}');
         print(fullUri);
       }
-      http.Response response = await http
-          .get(
-            fullUri,
-            headers: headers ?? _mainHeaders,
-          )
-          .timeout(Duration(seconds: timeoutInSeconds));
-      return handleResponse(response, uri, handleError);
+      return _sendWith401Retry(
+        send: () => http
+            .get(fullUri, headers: headers ?? _mainHeaders)
+            .timeout(Duration(seconds: timeoutInSeconds)),
+        uri: uri,
+        handleError: handleError,
+      );
     } catch (e) {
       if (kDebugMode) {
         print('------------${e.toString()}');
@@ -78,17 +113,14 @@ class ApiClient extends GetxService {
     }
   }
 
-  Future<Response> postData(
-    String uri,
-    dynamic body, {
-    Map<String, String>? headers,
-    int? timeout,
-    bool handleError = true,
-    Map<String, String>? queryParams,
-    bool useApi = false
-  }) async {
+  Future<Response> postData(String uri, dynamic body,
+      {Map<String, String>? headers,
+      int? timeout,
+      bool handleError = true,
+      Map<String, String>? queryParams,
+      bool useApi = false}) async {
     try {
-      final url = Uri.parse((useApi? appBaseUrl : appBaseAuthUrl)).replace(
+      final url = Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl)).replace(
         path: uri,
         queryParameters: queryParams,
       );
@@ -98,14 +130,17 @@ class ApiClient extends GetxService {
         print('====> API Body: $body');
       }
 
-      http.Response response = await http
-          .post(
-            url,
-            body: jsonEncode(body),
-            headers: headers ?? _mainHeaders,
-          )
-          .timeout(Duration(seconds: timeout ?? timeoutInSeconds));
-      return handleResponse(response, uri, handleError);
+      return _sendWith401Retry(
+        send: () => http
+            .post(
+              url,
+              body: jsonEncode(body),
+              headers: headers ?? _mainHeaders,
+            )
+            .timeout(Duration(seconds: timeout ?? timeoutInSeconds)),
+        uri: uri,
+        handleError: handleError,
+      );
     } catch (e) {
       print(e);
       return Response(statusCode: 1, statusText: noInternetMessage);
@@ -114,14 +149,16 @@ class ApiClient extends GetxService {
 
   Future<Response> postMultipartData(
       String uri, Map<String, String> body, List<MultipartBody> multipartBody,
-      {Map<String, String>? headers, bool handleError = true, bool useApi = false}) async {
+      {Map<String, String>? headers,
+      bool handleError = true,
+      bool useApi = false}) async {
     try {
       if (kDebugMode) {
         print('====> API Call: $uri\nHeader: ${headers ?? _mainHeaders}');
         print('====> API Body: $body with ${multipartBody.length} picture');
       }
-      http.MultipartRequest request =
-          http.MultipartRequest('POST', Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl) + uri));
+      http.MultipartRequest request = http.MultipartRequest(
+          'POST', Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl) + uri));
       request.headers.addAll(headers ?? _mainHeaders);
       for (MultipartBody multipart in multipartBody) {
         if (multipart.file != null) {
@@ -146,7 +183,7 @@ class ApiClient extends GetxService {
   Future<Uint8List?> downloadFile(String uri,
       {Map<String, String>? headers, bool useApi = false}) async {
     try {
-      final fullUri = Uri.parse((useApi? appBaseUrl : appBaseAuthUrl) + uri);
+      final fullUri = Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl) + uri);
 
       if (kDebugMode) {
         print('====> Downloading File: $uri');
@@ -176,38 +213,44 @@ class ApiClient extends GetxService {
   }
 
   Future<Response> putData(String uri, dynamic body,
-      {Map<String, String>? headers, bool handleError = true, bool useApi = false}) async {
+      {Map<String, String>? headers,
+      bool handleError = true,
+      bool useApi = false}) async {
     try {
       if (kDebugMode) {
         print('====> API Call: $uri\nHeader: ${headers ?? _mainHeaders}');
         print('====> API Body: $body');
       }
-      http.Response response = await http
-          .put(
-            Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl) + uri),
-            body: jsonEncode(body),
-            headers: headers ?? _mainHeaders,
-          )
-          .timeout(Duration(seconds: timeoutInSeconds));
-      return handleResponse(response, uri, handleError);
+      final url = Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl) + uri);
+      return _sendWith401Retry(
+        send: () => http
+            .put(url, body: jsonEncode(body), headers: headers ?? _mainHeaders)
+            .timeout(Duration(seconds: timeoutInSeconds)),
+        uri: uri,
+        handleError: handleError,
+      );
     } catch (e) {
       return Response(statusCode: 1, statusText: noInternetMessage);
     }
   }
 
   Future<Response> deleteData(String uri,
-      {Map<String, String>? headers, bool handleError = true, bool useApi = false}) async {
+      {Map<String, String>? headers,
+      bool handleError = true,
+      bool useApi = false}) async {
     try {
       if (kDebugMode) {
         print('====> API Call: $uri\nHeader: ${headers ?? _mainHeaders}');
       }
-      http.Response response = await http
-          .delete(
-            Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl) + uri),
-            headers: headers ?? _mainHeaders,
-          )
-          .timeout(Duration(seconds: timeoutInSeconds));
-      return handleResponse(response, uri, handleError);
+      final url = Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl) + uri);
+
+      return _sendWith401Retry(
+        send: () => http
+            .delete(url, headers: headers ?? _mainHeaders)
+            .timeout(Duration(seconds: timeoutInSeconds)),
+        uri: uri,
+        handleError: handleError,
+      );
     } catch (e) {
       return Response(statusCode: 1, statusText: noInternetMessage);
     }

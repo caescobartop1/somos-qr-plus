@@ -6,7 +6,11 @@ import 'package:somos_qr_plus/screens/auth/login_screen.dart';
 import 'package:somos_qr_plus/screens/auth/reset_password_screen.dart';
 import 'package:somos_qr_plus/screens/auth/two_factor_screen.dart';
 import 'package:somos_qr_plus/screens/dashboard_screen.dart';
+import 'package:somos_qr_plus/screens/patients_screen.dart';
 import 'package:somos_qr_plus/screens/quality_scorecards_screen.dart';
+import 'package:somos_qr_plus/screens/reports_screen.dart';
+import 'package:somos_qr_plus/screens/resources_screen.dart';
+import 'package:somos_qr_plus/screens/schedule_screen.dart';
 import 'package:somos_qr_plus/screens/settings_screen.dart';
 
 class RouteHelper {
@@ -19,6 +23,10 @@ class RouteHelper {
   static const String twoFactorAuth = '/2fa';
   static const String settings = '/settings';
   static const String qualityScoreCards = '/quality-scorecards';
+  static const String patients = '/patients';
+  static const String reports = '/reports';
+  static const String schedule = '/schedule';
+  static const String resources = '/resources';
 
   static String getLoginRoute() => login;
   static String getDashboardRoute() => dashboard;
@@ -28,6 +36,10 @@ class RouteHelper {
   static String getTwoFactorAuthRoute() => twoFactorAuth;
   static String getSettingsRoute() => settings;
   static String getQualityScoreCardsRoute() => qualityScoreCards;
+  static String getPatientsRoute() => patients;
+  static String getReportsRoute() => reports;
+  static String getResourcesRoute() => resources;
+  static String getScheduleRoute() => schedule;
   static String getInitialRoute() => login;
 
   static List<GetPage> routes = [
@@ -38,6 +50,10 @@ class RouteHelper {
     GetPage(name: twoFactorAuth, page: () => TwoFactorScreen()),
     GetPage(name: settings, page: () => SettingsScreen()),
     GetPage(name: qualityScoreCards, page: () => QualityScorecardsScreen()),
+    GetPage(name: patients, page: () => PatientsScreen()),
+    GetPage(name: reports, page: () => ReportsScreen()),
+    GetPage(name: schedule, page: () => ScheduleScreen()),
+    GetPage(name: resources, page: () => ResourcesScreen()),
     GetPage(name: dashboard, page: () => DashboardScreen()),
   ];
 

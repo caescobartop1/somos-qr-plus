@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/models/provider.dart';
+import '../widgets/app_header_widget.dart';
+import '../widgets/app_drawer_widget.dart';
+import '../widgets/provider_dropdown_widget.dart';
 
 class QualityScorecardsScreen extends StatefulWidget {
   const QualityScorecardsScreen({super.key});
@@ -14,74 +19,113 @@ class QualityScorecardsScreen extends StatefulWidget {
 
 class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
   bool _isDrawerOpen = false;
-  String _selectedProvider = 'All';
-  bool _showNotifications = false;
-  int _notificationCount = 3;
-  int _unreadNotifications = 3;
+  Provider _selectedProvider = new Provider(name: 'All', id: '-1');
+  int _currentPage = 0;
+  int _rowsPerPage = 20;
+  bool _showLogoutDialog = false;
 
-  final List<String> _providers = [
-    'All',
-    'Delmont Medical, PC',
-    'Provider 2',
-    'Provider 3',
-    'Provider 4',
-  ];
-  final List<Map<String, dynamic>> _notifications = [
+  final List<Map<String, dynamic>> _qualityMetrics = [
     {
-      'id': '1',
-      'title': 'New Quality Scorecard Available',
-      'message': 'Your Q2 2025 quality scorecard is ready for review.',
-      'time': '2 hours ago',
-      'icon': '📋',
-      'unread': true,
+      'measure': 'COA-PA',
+      'closed': ['123', '456', '789'],
+      'benchmarks': ['50%', '75%', '90%'],
+      'hitsNeeded': ['10', '20', '30'],
     },
     {
-      'id': '2',
-      'title': 'Patient Appointment Reminder',
-      'message': '5 patients have appointments scheduled for tomorrow.',
-      'time': '4 hours ago',
-      'icon': '👥',
-      'unread': true,
+      'measure': 'CCS',
+      'closed': ['234', '567', '890'],
+      'benchmarks': ['55%', '80%', '95%'],
+      'hitsNeeded': ['15', '25', '35'],
     },
     {
-      'id': '3',
-      'title': 'Monthly Report Generated',
-      'message': 'Your July 2025 performance report has been generated.',
-      'time': '1 day ago',
-      'icon': '📊',
-      'unread': true,
+      'measure': 'CAW',
+      'closed': ['345', '678', '901'],
+      'benchmarks': ['60%', '85%', '92%'],
+      'hitsNeeded': ['12', '22', '32'],
     },
     {
-      'id': '4',
-      'title': 'Document Upload Complete',
-      'message': 'Patient records have been successfully uploaded.',
-      'time': '2 days ago',
-      'icon': '✅',
-      'unread': false,
+      'measure': 'CIS-3',
+      'closed': ['456', '789', '012'],
+      'benchmarks': ['65%', '88%', '94%'],
+      'hitsNeeded': ['18', '28', '38'],
     },
     {
-      'id': '5',
-      'title': 'System Maintenance',
-      'message': 'Scheduled maintenance completed successfully.',
-      'time': '3 days ago',
-      'icon': '🔔',
-      'unread': false,
+      'measure': 'CRC',
+      'closed': ['567', '890', '123'],
+      'benchmarks': ['70%', '90%', '96%'],
+      'hitsNeeded': ['14', '24', '34'],
+    },
+    {
+      'measure': 'CDC-EE',
+      'closed': ['678', '901', '234'],
+      'benchmarks': ['75%', '92%', '98%'],
+      'hitsNeeded': ['16', '26', '36'],
+    },
+    {
+      'measure': 'CDC-HbA1c',
+      'closed': ['789', '012', '345'],
+      'benchmarks': ['80%', '94%', '99%'],
+      'hitsNeeded': ['13', '23', '33'],
+    },
+    {
+      'measure': 'CHBP',
+      'closed': ['890', '123', '456'],
+      'benchmarks': ['85%', '96%', '100%'],
+      'hitsNeeded': ['17', '27', '37'],
+    },
+    {
+      'measure': 'FUA-7',
+      'closed': ['901', '234', '567'],
+      'benchmarks': ['90%', '98%', '100%'],
+      'hitsNeeded': ['11', '21', '31'],
+    },
+    {
+      'measure': 'MAC',
+      'closed': ['012', '345', '678'],
+      'benchmarks': ['95%', '99%', '100%'],
+      'hitsNeeded': ['19', '29', '39'],
+    },
+    {
+      'measure': 'MAH',
+      'closed': ['123', '456', '789'],
+      'benchmarks': ['100%', '100%', '100%'],
+      'hitsNeeded': ['0', '0', '0'],
+    },
+    {
+      'measure': 'MAD',
+      'closed': ['234', '567', '890'],
+      'benchmarks': ['45%', '70%', '85%'],
+      'hitsNeeded': ['25', '40', '55'],
+    },
+    {
+      'measure': 'OMF',
+      'closed': ['345', '678', '901'],
+      'benchmarks': ['40%', '65%', '80%'],
+      'hitsNeeded': ['30', '45', '60'],
+    },
+    {
+      'measure': 'PPC-PP',
+      'closed': ['456', '789', '012'],
+      'benchmarks': ['35%', '60%', '75%'],
+      'hitsNeeded': ['35', '50', '65'],
+    },
+    {
+      'measure': 'ST-DM',
+      'closed': ['567', '890', '123'],
+      'benchmarks': ['30%', '55%', '70%'],
+      'hitsNeeded': ['40', '55', '70'],
+    },
+    {
+      'measure': 'TOC-MR',
+      'closed': ['678', '901', '234'],
+      'benchmarks': ['25%', '50%', '65%'],
+      'hitsNeeded': ['45', '60', '75'],
     },
   ];
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<AuthController>(builder: (authController) {
-      final initials = (authController.user?.firstName.isNotEmpty == true
-              ? authController.user!.firstName[0]
-              : '') +
-          (authController.user?.lastName.isNotEmpty == true
-              ? authController.user!.lastName[0]
-              : '');
-      final fullName =
-          '${authController.user?.firstName ?? ''} ${authController.user?.lastName ?? ''}'
-              .trim();
-
+    return GetBuilder<PracticeController>(builder: (practiceController) {
       return SafeArea(
         child: Stack(
           children: [
@@ -89,337 +133,42 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
               backgroundColor: const Color(0xFFF5F5F5),
               body: Column(
                 children: [
-                  // Navigation Header
+                  // Header
+                  AppHeaderWidget(
+                    onMenuPressed: () {
+                      setState(() {
+                        _isDrawerOpen = true;
+                      });
+                    },
+                    onProfileAction: (action) {
+                      _handleProfileAction(action);
+                    },
+                  ),
+
+                  // Provider Dropdown
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       border: Border(
-                        bottom: BorderSide(color: Colors.grey[200]!),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                          bottom: BorderSide(color: Colors.grey.shade200)),
                     ),
                     child: Row(
                       children: [
-                        // Hamburger Menu
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _isDrawerOpen = true;
-                            });
-                          },
-                          icon: const Icon(
-                            Icons.menu,
-                            color: Color(0xFF333333),
-                            size: 28,
-                          ),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            padding: const EdgeInsets.all(8),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Logo/Title
-                        const Expanded(
-                          child: Center(
-                            child: Text(
-                              'SOMOS QR+',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF000000),
-                                letterSpacing: 2.0,
-                                shadows: [
-                                  Shadow(
-                                    offset: Offset(0, 0),
-                                    blurRadius: 0,
-                                    color: Color(0xFF000000),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Provider Dropdown
-                        Container(
-                          margin: const EdgeInsets.only(right: 16),
-                          child: PopupMenuButton<String>(
-                            offset: const Offset(0, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            color: Colors.white,
-                            child: Container(
-                              width: 80, // 👈 ancho fijo
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[300]!),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Expanded(
-                                    // 👈 Para controlar el texto
-                                    child: Text(
-                                      _selectedProvider,
-                                      overflow: TextOverflow
-                                          .ellipsis, // 👈 recorta con ...
-                                      maxLines: 1,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Color(0xFF333333),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down,
-                                    size: 16,
-                                    color: Color(0xFF666666),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            itemBuilder: (context) =>
-                                _providers.map((provider) {
-                              return PopupMenuItem<String>(
-                                value: provider,
-                                child: SizedBox(
-                                  width:
-                                      180,
-                                  child: Text(
-                                    provider,
-                                    overflow: TextOverflow
-                                        .ellipsis,
-                                    maxLines: 1,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: _selectedProvider == provider
-                                          ? const Color(0xFF1976D2)
-                                          : const Color(0xFF333333),
-                                      fontWeight: _selectedProvider == provider
-                                          ? FontWeight.w600
-                                          : FontWeight.w400,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                            onSelected: (value) {
+                        Expanded(
+                          child: ProviderDropdownWidget(
+                            selectedProvider: _selectedProvider,
+                            providers: practiceController.practices,
+                            onProviderChanged: (provider) {
                               setState(() {
-                                _selectedProvider = value;
+                                _selectedProvider = provider;
                               });
+                              _showSuccessMessage(
+                                  'Quality scorecards updated for $provider');
                             },
+                            maxWidth: 300,
                           ),
-                        ),
-
-                        // Notifications
-                        _buildNotificationsButton(),
-
-                        const SizedBox(width: 16),
-
-                        // Avatar with Dropdown
-                        PopupMenuButton<String>(
-                          offset: const Offset(0, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          color: Colors.white,
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(50),
-                              border: Border.all(color: Colors.white, width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                initials,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                          itemBuilder: (context) => [
-                            // User Info Section
-                            PopupMenuItem<String>(
-                              value: 'user_info',
-                              enabled: false,
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                child: Row(
-                                  children: [
-                                    // User Avatar
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [
-                                            Color(0xFF667eea),
-                                            Color(0xFF764ba2)
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(50),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          initials,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    // User Details
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            fullName,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF333333),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            authController.user?.email ?? '',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Divider
-                            const PopupMenuDivider(),
-                            // Language Option
-                            PopupMenuItem<String>(
-                              value: 'language',
-                              child: Row(
-                                children: [
-                                  const Text(
-                                    'Language',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF333333),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.flag,
-                                          size: 16,
-                                          color: Color(0xFF666666),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'English',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Invitations Option
-                            const PopupMenuItem<String>(
-                              value: 'invitations',
-                              child: Text(
-                                'Invitations',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                            ),
-                            // Log Out Option
-                            const PopupMenuItem<String>(
-                              value: 'logout',
-                              child: Text(
-                                'Log Out',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                            ),
-                          ],
-                          onSelected: (value) {
-                            switch (value) {
-                              case 'language':
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Language clicked')),
-                                );
-                                break;
-                              case 'invitations':
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Invitations clicked')),
-                                );
-                                break;
-                              case 'logout':
-                                authController.logout();
-                                break;
-                            }
-                          },
                         ),
                       ],
                     ),
@@ -427,371 +176,707 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
 
                   // Main Content
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Page Title
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 20),
-                            child: Text(
-                              'Quality Score Cards',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF333333),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isMobile = constraints.maxWidth < 600;
+                        return SingleChildScrollView(
+                          padding: EdgeInsets.all(isMobile ? 16 : 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Page Title
+                              Padding(
+                                padding:
+                                    EdgeInsets.only(bottom: isMobile ? 16 : 20),
+                                child: const Text(
+                                  'Quality Score Cards',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF333333),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
 
-                          // Score Cards Table
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
+                              // Score Cards Table
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey[300]!),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 3,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: DataTable(
-                                headingRowHeight: 80,
-                                dataRowHeight: 60,
-                                columnSpacing: 0,
-                                border: TableBorder.all(
-                                  color: Colors.grey[200]!,
-                                  width: 1,
-                                ),
-                                columns: [
-                                  // Measures Column
-                                  DataColumn(
-                                    label: Container(
-                                      padding: const EdgeInsets.all(16),
-                                      child: const Text(
-                                        'Measures',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF333333),
+                                child: Column(
+                                  children: [
+                                    // Table
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: DataTable(
+                                        headingRowHeight: isMobile ? 80 : 100,
+                                        dataRowHeight: isMobile ? 45 : 50,
+                                        columnSpacing: 0,
+                                        border: TableBorder.all(
+                                          color: Colors.grey[300]!,
+                                          width: 1,
                                         ),
+                                        columns: [
+                                          // Measures Column
+                                          DataColumn(
+                                            label: Container(
+                                              width: isMobile ? 100 : 120,
+                                              padding: EdgeInsets.all(
+                                                  isMobile ? 12 : 16),
+                                              decoration: const BoxDecoration(
+                                                color: Color(0xFFF8F9FA),
+                                              ),
+                                              child: Text(
+                                                'Measures',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color:
+                                                      const Color(0xFF333333),
+                                                  fontSize: isMobile ? 12 : 14,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          // Closed Section
+                                          ...List.generate(
+                                              3,
+                                              (index) => DataColumn(
+                                                    label: Container(
+                                                      width: isMobile ? 70 : 80,
+                                                      padding: EdgeInsets.all(
+                                                          isMobile ? 6 : 8),
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                        color:
+                                                            Color(0xFFE8F5E8),
+                                                      ),
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Closed',
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: const Color(
+                                                                  0xFF333333),
+                                                              fontSize: isMobile
+                                                                  ? 12
+                                                                  : 14,
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 4),
+                                                          Text(
+                                                            index == 0
+                                                                ? 'MCO'
+                                                                : index == 1
+                                                                    ? 'CLAIM'
+                                                                    : 'EHR*',
+                                                            style: TextStyle(
+                                                              fontSize: isMobile
+                                                                  ? 10
+                                                                  : 12,
+                                                              color: Colors
+                                                                  .grey[600],
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  )),
+                                          // Benchmarks Section
+                                          ...List.generate(
+                                              3,
+                                              (index) => DataColumn(
+                                                    label: Container(
+                                                      width:
+                                                          isMobile ? 90 : 100,
+                                                      padding: EdgeInsets.all(
+                                                          isMobile ? 6 : 8),
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                        color:
+                                                            Color(0xFFF0F8F0),
+                                                      ),
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Benchmarks',
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: const Color(
+                                                                  0xFF333333),
+                                                              fontSize: isMobile
+                                                                  ? 12
+                                                                  : 14,
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 4),
+                                                          Text(
+                                                            index == 0
+                                                                ? '50TH/3 START'
+                                                                : index == 1
+                                                                    ? '75TH/4 START'
+                                                                    : '90TH/5STAR',
+                                                            style: TextStyle(
+                                                              fontSize: isMobile
+                                                                  ? 9
+                                                                  : 11,
+                                                              color: Colors
+                                                                  .grey[600],
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  )),
+                                          // Hits Needed Section
+                                          ...List.generate(
+                                              3,
+                                              (index) => DataColumn(
+                                                    label: Container(
+                                                      width:
+                                                          isMobile ? 90 : 100,
+                                                      padding: EdgeInsets.all(
+                                                          isMobile ? 6 : 8),
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                        color:
+                                                            Color(0xFFF8F9FA),
+                                                      ),
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Hits Needed',
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: const Color(
+                                                                  0xFF333333),
+                                                              fontSize: isMobile
+                                                                  ? 12
+                                                                  : 14,
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          const SizedBox(
+                                                              height: 4),
+                                                          Text(
+                                                            index == 0
+                                                                ? '50TH/3 START'
+                                                                : index == 1
+                                                                    ? '75TH/4 START'
+                                                                    : '90TH/5STAR',
+                                                            style: TextStyle(
+                                                              fontSize: isMobile
+                                                                  ? 9
+                                                                  : 11,
+                                                              color: Colors
+                                                                  .grey[600],
+                                                            ),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  )),
+                                        ],
+                                        rows: _getCurrentPageRows(),
                                       ),
                                     ),
-                                  ),
-                                  // Closed Section
-                                  ...List.generate(
-                                      3,
-                                      (index) => DataColumn(
-                                            label: Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFE3F2FD),
-                                                border: Border(
-                                                  bottom: BorderSide(
-                                                      color: Colors.grey[200]!),
+
+                                    // Pagination
+                                    Container(
+                                      padding:
+                                          EdgeInsets.all(isMobile ? 12 : 16),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8F9FA),
+                                        border: Border(
+                                          top: BorderSide(
+                                              color: Colors.grey[300]!),
+                                        ),
+                                      ),
+                                      child: isMobile
+                                          ? Column(
+                                              children: [
+                                                // Mobile: Stack rows per page and info
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        Text(
+                                                          'Rows per page:',
+                                                          style: TextStyle(
+                                                            fontSize: isMobile
+                                                                ? 12
+                                                                : 14,
+                                                            color: const Color(
+                                                                0xFF666666),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 8),
+                                                        Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 4),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors.white,
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4),
+                                                            border: Border.all(
+                                                                color:
+                                                                    Colors.grey[
+                                                                        300]!),
+                                                          ),
+                                                          child:
+                                                              DropdownButtonHideUnderline(
+                                                            child:
+                                                                DropdownButton<
+                                                                    int>(
+                                                              value:
+                                                                  _rowsPerPage,
+                                                              style: TextStyle(
+                                                                fontSize:
+                                                                    isMobile
+                                                                        ? 12
+                                                                        : 14,
+                                                                color: const Color(
+                                                                    0xFF333333),
+                                                              ),
+                                                              items: const [
+                                                                DropdownMenuItem(
+                                                                    value: 20,
+                                                                    child: Text(
+                                                                        '20')),
+                                                                DropdownMenuItem(
+                                                                    value: 40,
+                                                                    child: Text(
+                                                                        '40')),
+                                                                DropdownMenuItem(
+                                                                    value: 60,
+                                                                    child: Text(
+                                                                        '60')),
+                                                                DropdownMenuItem(
+                                                                    value: 80,
+                                                                    child: Text(
+                                                                        '80')),
+                                                                DropdownMenuItem(
+                                                                    value: 100,
+                                                                    child: Text(
+                                                                        '100')),
+                                                              ],
+                                                              onChanged: (int?
+                                                                  newValue) {
+                                                                if (newValue !=
+                                                                    null) {
+                                                                  setState(() {
+                                                                    _rowsPerPage =
+                                                                        newValue;
+                                                                    _currentPage =
+                                                                        0;
+                                                                  });
+                                                                }
+                                                              },
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    Text(
+                                                      _getPageInfo(),
+                                                      style: TextStyle(
+                                                        fontSize:
+                                                            isMobile ? 12 : 14,
+                                                        color: const Color(
+                                                            0xFF666666),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ),
-                                              child: Column(
-                                                children: [
-                                                  const Text(
-                                                    'Closed',
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Color(0xFF1976D2),
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    index == 0
-                                                        ? 'MCO'
-                                                        : index == 1
-                                                            ? 'CLAIM'
-                                                            : 'EHR*',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          )),
-                                  // Benchmarks Section
-                                  ...List.generate(
-                                      3,
-                                      (index) => DataColumn(
-                                            label: Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFF3E5F5),
-                                                border: Border(
-                                                  bottom: BorderSide(
-                                                      color: Colors.grey[200]!),
+                                                const SizedBox(height: 12),
+                                                // Mobile: Center pagination buttons
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    _buildPaginationButton(
+                                                        '⏮️',
+                                                        _currentPage == 0,
+                                                        () => _goToFirstPage()),
+                                                    const SizedBox(width: 4),
+                                                    _buildPaginationButton(
+                                                        '◀',
+                                                        _currentPage == 0,
+                                                        () =>
+                                                            _goToPreviousPage()),
+                                                    const SizedBox(width: 4),
+                                                    _buildPaginationButton(
+                                                        '▶',
+                                                        _currentPage >=
+                                                            _getTotalPages() -
+                                                                1,
+                                                        () => _goToNextPage()),
+                                                    const SizedBox(width: 4),
+                                                    _buildPaginationButton(
+                                                        '⏭️',
+                                                        _currentPage >=
+                                                            _getTotalPages() -
+                                                                1,
+                                                        () => _goToLastPage()),
+                                                  ],
                                                 ),
-                                              ),
-                                              child: Column(
-                                                children: [
-                                                  const Text(
-                                                    'Benchmarks',
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Color(0xFF7B1FA2),
-                                                      fontSize: 12,
+                                              ],
+                                            )
+                                          : Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                // Desktop: Left side - Rows per page and info
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      'Rows per page:',
+                                                      style: TextStyle(
+                                                        fontSize:
+                                                            isMobile ? 12 : 14,
+                                                        color: const Color(
+                                                            0xFF666666),
+                                                      ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    index == 0
-                                                        ? '50TH/3 START'
-                                                        : index == 1
-                                                            ? '75TH/4 START'
-                                                            : '90TH/5STAR',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.grey[600],
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(4),
+                                                        border: Border.all(
+                                                            color: Colors
+                                                                .grey[300]!),
+                                                      ),
+                                                      child:
+                                                          DropdownButtonHideUnderline(
+                                                        child:
+                                                            DropdownButton<int>(
+                                                          value: _rowsPerPage,
+                                                          style: TextStyle(
+                                                            fontSize: isMobile
+                                                                ? 12
+                                                                : 14,
+                                                            color: const Color(
+                                                                0xFF333333),
+                                                          ),
+                                                          items: const [
+                                                            DropdownMenuItem(
+                                                                value: 20,
+                                                                child:
+                                                                    Text('20')),
+                                                            DropdownMenuItem(
+                                                                value: 40,
+                                                                child:
+                                                                    Text('40')),
+                                                            DropdownMenuItem(
+                                                                value: 60,
+                                                                child:
+                                                                    Text('60')),
+                                                            DropdownMenuItem(
+                                                                value: 80,
+                                                                child:
+                                                                    Text('80')),
+                                                            DropdownMenuItem(
+                                                                value: 100,
+                                                                child: Text(
+                                                                    '100')),
+                                                          ],
+                                                          onChanged:
+                                                              (int? newValue) {
+                                                            if (newValue !=
+                                                                null) {
+                                                              setState(() {
+                                                                _rowsPerPage =
+                                                                    newValue;
+                                                                _currentPage =
+                                                                    0;
+                                                              });
+                                                            }
+                                                          },
+                                                        ),
+                                                      ),
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          )),
-                                  // Hits Needed Section
-                                  ...List.generate(
-                                      3,
-                                      (index) => DataColumn(
-                                            label: Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFE8F5E8),
-                                                border: Border(
-                                                  bottom: BorderSide(
-                                                      color: Colors.grey[200]!),
+                                                    const SizedBox(width: 32),
+                                                    Text(
+                                                      _getPageInfo(),
+                                                      style: TextStyle(
+                                                        fontSize:
+                                                            isMobile ? 12 : 14,
+                                                        color: const Color(
+                                                            0xFF666666),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ),
-                                              child: Column(
-                                                children: [
-                                                  const Text(
-                                                    'Hits Needed',
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Color(0xFF2E7D32),
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    index == 0
-                                                        ? '50TH/3 START'
-                                                        : index == 1
-                                                            ? '75TH/4 START'
-                                                            : '90TH/5STAR',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.grey[600],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
+
+                                                // Desktop: Right side - Pagination buttons
+                                                Row(
+                                                  children: [
+                                                    _buildPaginationButton(
+                                                        '⏮️',
+                                                        _currentPage == 0,
+                                                        () => _goToFirstPage()),
+                                                    const SizedBox(width: 4),
+                                                    _buildPaginationButton(
+                                                        '◀',
+                                                        _currentPage == 0,
+                                                        () =>
+                                                            _goToPreviousPage()),
+                                                    const SizedBox(width: 4),
+                                                    _buildPaginationButton(
+                                                        '▶',
+                                                        _currentPage >=
+                                                            _getTotalPages() -
+                                                                1,
+                                                        () => _goToNextPage()),
+                                                    const SizedBox(width: 4),
+                                                    _buildPaginationButton(
+                                                        '⏭️',
+                                                        _currentPage >=
+                                                            _getTotalPages() -
+                                                                1,
+                                                        () => _goToLastPage()),
+                                                  ],
+                                                ),
+                                              ],
                                             ),
-                                          )),
-                                ],
-                                rows: [
-                                  _buildDataRow(
-                                      'COA-PA',
-                                      ['123', '456', '789'],
-                                      ['50%', '75%', '90%'],
-                                      ['10', '20', '30']),
-                                  _buildDataRow(
-                                      'CCS',
-                                      ['234', '567', '890'],
-                                      ['55%', '80%', '95%'],
-                                      ['15', '25', '35']),
-                                  _buildDataRow(
-                                      'CAW',
-                                      ['345', '678', '901'],
-                                      ['60%', '85%', '92%'],
-                                      ['12', '22', '32']),
-                                  _buildDataRow(
-                                      'CBP',
-                                      ['456', '789', '012'],
-                                      ['65%', '90%', '98%'],
-                                      ['18', '28', '38']),
-                                  _buildDataRow(
-                                      'CBC',
-                                      ['567', '890', '123'],
-                                      ['70%', '95%', '99%'],
-                                      ['25', '35', '45']),
-                                ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Drawer Overlay
-            if (_isDrawerOpen)
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isDrawerOpen = false;
-                  });
-                },
-                child: Container(
-                  color: Colors.black.withOpacity(0.5),
-                ),
-              ),
-
             // Navigation Drawer
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              left: _isDrawerOpen ? 0 : -280,
-              top: 0,
-              bottom: 0,
-              width: 280,
-              child: Material(
-                color: Colors.white,
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 8,
-                        offset: const Offset(2, 0),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Drawer Header
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF1976D2),
-                        ),
-                        child: Column(
-                          children: [
-                            // Avatar Circle
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF667eea),
-                                    Color(0xFF764ba2)
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(50),
-                                border: Border.all(
-                                    color: const Color(0xFF4CAF50), width: 3),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'JC',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            // Title
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'SOMOS QR',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w100,
-                                    letterSpacing: -1.2,
-                                  ),
-                                ),
-                                const Text(
-                                  '+',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w100,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Drawer Content
-                      Expanded(
-                        child: Container(
-                          color: Colors.white,
-                          child: ListView(
-                            padding: EdgeInsets.zero,
-                            children: [
-                              _buildDrawerItem(
-                                  'Dashboard', Icons.dashboard, false, () {
-                                Get.toNamed(RouteHelper.getDashboardRoute());
-                              }),
-                              _buildDrawerItem('Quality Score Cards',
-                                  Icons.assessment, true, () {}),
-                              _buildDrawerItem(
-                                  'My Schedule', Icons.schedule, false, () {}),
-                              _buildDrawerItem(
-                                  'My Patients', Icons.people, false, () {}),
-                              _buildDrawerItem(
-                                  'Reports', Icons.bar_chart, false, () {}),
-                              _buildDrawerItem(
-                                  'Resources', Icons.folder, false, () {}),
-
-                              // Divider
-                              Container(
-                                height: 1,
-                                color: const Color(0xFFE0E0E0),
-                                margin: const EdgeInsets.symmetric(vertical: 8),
-                              ),
-
-                              _buildDrawerItem(
-                                  'Settings', Icons.settings, false, () {
-                                Get.toNamed(RouteHelper.getSettingsRoute());
-                              }),
-                              _buildDrawerItem('Log Out', Icons.logout, false,
-                                  () {
-                                authController.logout();
-                              }),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            AppDrawerWidget(
+              isOpen: _isDrawerOpen,
+              onClose: () {
+                setState(() {
+                  _isDrawerOpen = false;
+                });
+              },
+              onNavigation: (route) {
+                setState(() {
+                  _isDrawerOpen = false;
+                });
+                _handleNavigation(route);
+              },
+              activeRoute: 'quality',
             ),
+            if (_showLogoutDialog) _buildLogoutDialog(),
           ],
         ),
       );
     });
+  }
+
+  void _handleNavigation(String route) {
+    switch (route) {
+      case 'dashboard':
+        Get.offAllNamed(RouteHelper.getDashboardRoute());
+        break;
+      case 'quality':
+        // Already on quality page
+        break;
+      case 'schedule':
+        Get.offAllNamed(RouteHelper.getScheduleRoute());
+        break;
+      case 'patients':
+        Get.offAllNamed(RouteHelper.getPatientsRoute());
+        break;
+      case 'reports':
+        Get.offAllNamed(RouteHelper.getReportsRoute());
+        break;
+      case 'resources':
+        Get.offAllNamed(RouteHelper.getResourcesRoute());
+        break;
+      case 'settings':
+        Get.offAllNamed(RouteHelper.getSettingsRoute());
+        break;
+      case 'logout':
+        setState(() {
+          _showLogoutDialog = true;
+        });
+        break;
+    }
+  }
+
+  void _handleProfileAction(String action) {
+    switch (action) {
+      case 'language':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Language clicked')),
+        );
+        break;
+      case 'invitations':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invitations clicked')),
+        );
+        break;
+      case 'logout':
+        setState(() {
+          _showLogoutDialog = true;
+        });
+        break;
+    }
+  }
+
+  List<DataRow> _getCurrentPageRows() {
+    final startIndex = _currentPage * _rowsPerPage;
+    final endIndex =
+        (startIndex + _rowsPerPage).clamp(0, _qualityMetrics.length);
+
+    return _qualityMetrics
+        .sublist(startIndex, endIndex)
+        .map((metric) => _buildDataRow(
+              metric['measure'],
+              metric['closed'],
+              metric['benchmarks'],
+              metric['hitsNeeded'],
+            ))
+        .toList();
+  }
+
+  int _getTotalPages() {
+    return (_qualityMetrics.length / _rowsPerPage).ceil();
+  }
+
+  String _getPageInfo() {
+    final startIndex = _currentPage * _rowsPerPage + 1;
+    final endIndex =
+        ((_currentPage + 1) * _rowsPerPage).clamp(0, _qualityMetrics.length);
+    return '$startIndex-$endIndex of ${_qualityMetrics.length}';
+  }
+
+  void _goToFirstPage() {
+    if (_currentPage > 0) {
+      setState(() {
+        _currentPage = 0;
+      });
+    }
+  }
+
+  void _goToPreviousPage() {
+    if (_currentPage > 0) {
+      setState(() {
+        _currentPage--;
+      });
+    }
+  }
+
+  void _goToNextPage() {
+    if (_currentPage < _getTotalPages() - 1) {
+      setState(() {
+        _currentPage++;
+      });
+    }
+  }
+
+  void _goToLastPage() {
+    final totalPages = _getTotalPages();
+    if (_currentPage < totalPages - 1) {
+      setState(() {
+        _currentPage = totalPages - 1;
+      });
+    }
+  }
+
+  Widget _buildPaginationButton(
+      String icon, bool isDisabled, VoidCallback onPressed) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isDisabled ? null : onPressed,
+          borderRadius: BorderRadius.circular(4),
+          child: Center(
+            child: Text(
+              icon,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDisabled ? Colors.grey[400] : const Color(0xFF333333),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   DataRow _buildDataRow(String measure, List<String> closed,
@@ -800,200 +885,64 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
       cells: [
         DataCell(
           Container(
-            padding: const EdgeInsets.all(16),
+            width: 120,
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF8F9FA),
+            ),
             child: Text(
               measure,
               style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF333333),
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF1976D2),
+                fontSize: 14,
               ),
             ),
           ),
         ),
         ...closed.map((value) => DataCell(
               Container(
-                padding: const EdgeInsets.all(16),
+                width: 80,
+                padding: const EdgeInsets.all(12),
                 child: Text(
                   value,
                   style: const TextStyle(
                     color: Color(0xFF333333),
+                    fontSize: 14,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             )),
         ...benchmarks.map((value) => DataCell(
               Container(
-                padding: const EdgeInsets.all(16),
+                width: 100,
+                padding: const EdgeInsets.all(12),
                 child: Text(
                   value,
                   style: const TextStyle(
                     color: Color(0xFF333333),
+                    fontSize: 14,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             )),
         ...hitsNeeded.map((value) => DataCell(
               Container(
-                padding: const EdgeInsets.all(16),
+                width: 100,
+                padding: const EdgeInsets.all(12),
                 child: Text(
                   value,
                   style: const TextStyle(
                     color: Color(0xFF333333),
+                    fontSize: 14,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             )),
       ],
-    );
-  }
-
-  Widget _buildNotificationsButton() {
-    return PopupMenuButton<String>(
-      offset: const Offset(0, 40),
-      child: Stack(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(Icons.notifications_outlined,
-                color: Color(0xFF333333)),
-          ),
-          if (_unreadNotifications > 0)
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE74C3C),
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                ),
-                child: Text(
-                  _unreadNotifications.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          enabled: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Notifications',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _unreadNotifications = 0;
-                        for (var notification in _notifications) {
-                          notification['unread'] = false;
-                        }
-                      });
-                      _showSuccessMessage('All notifications marked as read');
-                    },
-                    child: const Text(
-                      'Mark all read',
-                      style: TextStyle(color: Color(0xFF667EEA), fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ..._notifications
-                  .map((notification) => _buildNotificationItem(notification)),
-              const SizedBox(height: 8),
-              const Center(
-                child: Text(
-                  'View all notifications',
-                  style: TextStyle(color: Color(0xFF667EEA), fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNotificationItem(Map<String, dynamic> notification) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: notification['unread'] ? const Color(0xFFF0F7FF) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: notification['unread']
-            ? const Border(left: BorderSide(color: Color(0xFF667EEA), width: 3))
-            : null,
-      ),
-      child: Row(
-        children: [
-          Text(notification['icon'], style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notification['title'],
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  notification['message'],
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF666666),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  notification['time'],
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF999999),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _notifications
-                    .removeWhere((n) => n['id'] == notification['id']);
-                if (notification['unread']) {
-                  _unreadNotifications--;
-                }
-              });
-              _showSuccessMessage('Notification removed');
-            },
-            icon: const Icon(Icons.close, size: 16, color: Color(0xFF999999)),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1008,34 +957,148 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
     );
   }
 
-  Widget _buildDrawerItem(
-      String title, IconData icon, bool isActive, VoidCallback onTap) {
+  Widget _buildLogoutDialog() {
     return Container(
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFE3F2FD) : Colors.transparent,
-        border: Border(
-          left: BorderSide(
-            color: isActive ? const Color(0xFF1976D2) : Colors.transparent,
-            width: 3,
+      color: Colors.black54,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 60,
+                offset: const Offset(0, 20),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFDC3545),
+                        borderRadius: BorderRadius.all(Radius.circular(24)),
+                      ),
+                      child: const Icon(
+                        Icons.logout,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Log Out',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Body
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Text(
+                      'Are you sure you want to log out of your account?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF333333),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      "You'll need to sign in again to access your dashboard.",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF666666),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Footer
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          setState(() => _showLogoutDialog = false);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            color: Color(0xFF666666),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() => _showLogoutDialog = false);
+                          final authController = Get.find<AuthController>();
+                          authController.logout();
+                          // Handle logout
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFDC3545),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text(
+                          'Log Out',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-      ),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: isActive ? const Color(0xFF1976D2) : const Color(0xFF333333),
-          size: 20,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            color: isActive ? const Color(0xFF1976D2) : const Color(0xFF333333),
-            fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-          ),
-        ),
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       ),
     );
   }

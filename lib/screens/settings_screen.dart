@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import '../widgets/app_header_widget.dart';
+import '../widgets/app_drawer_widget.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,491 +19,115 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<AuthController>(builder: (authController) {
-      final initials = (authController.user?.firstName.isNotEmpty == true
-              ? authController.user!.firstName[0]
-              : '') +
-          (authController.user?.lastName.isNotEmpty == true
-              ? authController.user!.lastName[0]
-              : '');
-      final fullName =
-          '${authController.user?.firstName ?? ''} ${authController.user?.lastName ?? ''}'
-              .trim();
-      return SafeArea(
-        child: Stack(
-          children: [
-            Scaffold(
-              backgroundColor: const Color(0xFFF8F9FA),
-              body: Column(
-                children: [
-                  // Navigation Header
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey[200]!),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        // Hamburger Menu
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _isDrawerOpen = true;
-                            });
-                          },
-                          icon: const Icon(
-                            Icons.menu,
-                            color: Color(0xFF333333),
-                            size: 28,
-                          ),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            padding: const EdgeInsets.all(8),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Logo/Title
-                        const Expanded(
-                          child: Center(
-                            child: Text(
-                              'SOMOS QR+',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF000000),
-                                letterSpacing: 2.0,
-                                shadows: [
-                                  Shadow(
-                                    offset: Offset(0, 0),
-                                    blurRadius: 0,
-                                    color: Color(0xFF000000),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Avatar with Dropdown
-                        PopupMenuButton<String>(
-                          offset: const Offset(0, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          color: Colors.white,
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(50),
-                              border: Border.all(color: Colors.white, width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                initials,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                          itemBuilder: (context) => [
-                            // User Info Section
-                            PopupMenuItem<String>(
-                              value: 'user_info',
-                              enabled: false,
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                child: Row(
-                                  children: [
-                                    // User Avatar
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [
-                                            Color(0xFF667eea),
-                                            Color(0xFF764ba2)
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(50),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          initials,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    // User Details
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            fullName,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF333333),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            authController.user?.email ?? '',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            // Divider
-                            const PopupMenuDivider(),
-                            // Language Option
-                            PopupMenuItem<String>(
-                              value: 'language',
-                              child: Row(
-                                children: [
-                                  const Text(
-                                    'Language',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF333333),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.flag,
-                                          size: 16,
-                                          color: Color(0xFF666666),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'English',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Invitations Option
-                            const PopupMenuItem<String>(
-                              value: 'invitations',
-                              child: Text(
-                                'Invitations',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                            ),
-                            // Log Out Option
-                            const PopupMenuItem<String>(
-                              value: 'logout',
-                              child: Text(
-                                'Log Out',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF333333),
-                                ),
-                              ),
-                            ),
-                          ],
-                          onSelected: (value) {
-                            switch (value) {
-                              case 'language':
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Language clicked')),
-                                );
-                                break;
-                              case 'invitations':
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Invitations clicked')),
-                                );
-                                break;
-                              case 'logout':
-                                authController.logout();
-                                break;
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Main Content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Page Title
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 20),
-                            child: Text(
-                              'Settings',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF333333),
-                              ),
-                            ),
-                          ),
-                          _buildSettingsCards(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Drawer Overlay
-            if (_isDrawerOpen)
-              GestureDetector(
-                onTap: () {
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA),
+          body: Column(
+            children: [
+              // Navigation Header
+              AppHeaderWidget(
+                onMenuPressed: () {
                   setState(() {
-                    _isDrawerOpen = false;
+                    _isDrawerOpen = true;
                   });
                 },
-                child: Container(
-                  color: Colors.black.withOpacity(0.5),
-                ),
+                onProfileAction: (value) {
+                  switch (value) {
+                    case 'language':
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Language clicked')),
+                      );
+                      break;
+                    case 'invitations':
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Invitations clicked')),
+                      );
+                      break;
+                    case 'logout':
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Logout clicked')),
+                      );
+                      break;
+                  }
+                },
               ),
 
-            // Navigation Drawer
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              left: _isDrawerOpen ? 0 : -280,
-              top: 0,
-              bottom: 0,
-              width: 280,
-              child: Material(
-                color: Colors.white,
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
-                        blurRadius: 8,
-                        offset: const Offset(2, 0),
-                      ),
-                    ],
-                  ),
+              // Main Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Drawer Header
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF1976D2),
-                        ),
-                        child: Column(
-                          children: [
-                            // Avatar Circle
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF667eea),
-                                    Color(0xFF764ba2)
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(50),
-                                border: Border.all(
-                                    color: const Color(0xFF4CAF50), width: 3),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'JC',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            // Title
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  'SOMOS QR',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w100,
-                                    letterSpacing: -1.2,
-                                  ),
-                                ),
-                                const Text(
-                                  '+',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w100,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Drawer Content
-                      Expanded(
-                        child: Container(
-                          color: Colors.white,
-                          child: ListView(
-                            padding: EdgeInsets.zero,
-                            children: [
-                              _buildDrawerItem(
-                                  'Dashboard', Icons.dashboard, false, () {
-                                Get.toNamed(RouteHelper.getDashboardRoute());
-                              }),
-                              _buildDrawerItem('Quality Score Cards',
-                                  Icons.assessment, false, () {
-                                Get.toNamed(
-                                    RouteHelper.getQualityScoreCardsRoute());
-                              }),
-                              _buildDrawerItem(
-                                  'My Schedule', Icons.schedule, false, () {}),
-                              _buildDrawerItem(
-                                  'My Patients', Icons.people, false, () {}),
-                              _buildDrawerItem(
-                                  'Reports', Icons.bar_chart, false, () {}),
-                              _buildDrawerItem(
-                                  'Resources', Icons.folder, false, () {}),
-
-                              // Divider
-                              Container(
-                                height: 1,
-                                color: const Color(0xFFE0E0E0),
-                                margin: const EdgeInsets.symmetric(vertical: 8),
-                              ),
-
-                              _buildDrawerItem(
-                                  'Settings', Icons.settings, true, () {}),
-                              _buildDrawerItem('Log Out', Icons.logout, false,
-                                  () {
-                                authController.logout();
-                              }),
-                            ],
+                      // Page Title
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 20),
+                        child: Text(
+                          'Settings',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF333333),
                           ),
                         ),
                       ),
+                      _buildSettingsCards(),
                     ],
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      );
-    });
+
+        // Navigation Drawer
+        AppDrawerWidget(
+          isOpen: _isDrawerOpen,
+          onClose: () {
+            setState(() {
+              _isDrawerOpen = false;
+            });
+          },
+          onNavigation: (route) {
+            setState(() {
+              _isDrawerOpen = false;
+            });
+            _handleNavigation(route);
+          },
+          activeRoute: 'settings',
+        ),
+      ],
+    );
   }
 
-  Widget _buildDrawerItem(
-      String title, IconData icon, bool isActive, VoidCallback onTap) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFE3F2FD) : Colors.transparent,
-        border: Border(
-          left: BorderSide(
-            color: isActive ? const Color(0xFF1976D2) : Colors.transparent,
-            width: 3,
-          ),
-        ),
-      ),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: isActive ? const Color(0xFF1976D2) : const Color(0xFF333333),
-          size: 20,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            color: isActive ? const Color(0xFF1976D2) : const Color(0xFF333333),
-            fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-          ),
-        ),
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      ),
-    );
+  void _handleNavigation(String route) {
+    switch (route) {
+      case 'dashboard':
+        Get.offAllNamed(RouteHelper.getDashboardRoute());
+        break;
+      case 'quality':
+        Get.offAllNamed(RouteHelper.getQualityScoreCardsRoute());
+        break;
+      case 'schedule':
+        context.go('/schedule');
+        break;
+      case 'patients':
+        Get.offAllNamed(RouteHelper.getPatientsRoute());
+        break;
+      case 'reports':
+        Get.offAllNamed(RouteHelper.getReportsRoute());
+        break;
+      case 'resources':
+        Get.offAllNamed(RouteHelper.getResourcesRoute());
+        break;
+      case 'settings':
+        // Already on settings page
+        break;
+      case 'logout':
+        // Handle logout logic
+        break;
+    }
   }
 
   Widget _buildSettingsCards() {

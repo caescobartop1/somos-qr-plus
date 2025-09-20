@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:somos_qr_plus/controllers/auth_controller.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
-
-import '../controllers/auth_controller.dart';
+import 'package:somos_qr_plus/models/bonus_detail.dart';
+import 'package:somos_qr_plus/models/provider.dart';
+import 'package:somos_qr_plus/models/schedule.dart';
+import '../widgets/app_header_widget.dart';
+import '../widgets/app_drawer_widget.dart';
+import '../widgets/provider_dropdown_widget.dart';
+// import '../core/constants/providers.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -14,64 +24,9 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isDrawerOpen = false;
-  bool _isNotificationsOpen = false;
-  bool _isProfileOpen = false;
   bool _isScheduleExpanded = true;
-  String _selectedProvider = 'All';
-  String _selectedIncentiveProvider = 'all';
-  int _unreadNotifications = 3;
+  Provider _selectedIncentiveProvider = new Provider(name: 'All', id: '-1');
   bool _showLogoutDialog = false;
-
-  final List<String> _providers = [
-    'All',
-    'Delmont Medical, PC',
-    'Provider 2',
-    'Provider 3',
-    'Provider 4',
-  ];
-
-  final List<Map<String, dynamic>> _notifications = [
-    {
-      'id': '1',
-      'title': 'New Quality Scorecard Available',
-      'message': 'Your Q2 2025 quality scorecard is ready for review.',
-      'time': '2 hours ago',
-      'icon': '📋',
-      'unread': true,
-    },
-    {
-      'id': '2',
-      'title': 'Patient Appointment Reminder',
-      'message': '5 patients have appointments scheduled for tomorrow.',
-      'time': '4 hours ago',
-      'icon': '👥',
-      'unread': true,
-    },
-    {
-      'id': '3',
-      'title': 'Monthly Report Generated',
-      'message': 'Your July 2025 performance report has been generated.',
-      'time': '1 day ago',
-      'icon': '📊',
-      'unread': true,
-    },
-    {
-      'id': '4',
-      'title': 'Document Upload Complete',
-      'message': 'Patient records have been successfully uploaded.',
-      'time': '2 days ago',
-      'icon': '✅',
-      'unread': false,
-    },
-    {
-      'id': '5',
-      'title': 'System Maintenance',
-      'message': 'Scheduled maintenance completed successfully.',
-      'time': '3 days ago',
-      'icon': '🔔',
-      'unread': false,
-    },
-  ];
 
   final List<Map<String, dynamic>> _appointments = [
     {
@@ -100,28 +55,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'tags': ['GIC', 'Confirmed'],
     },
   ];
+  @override
+  void initState() {
+    super.initState();
+    // Lánzalo después del frame para asegurar que el árbol está listo
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _loadData(_selectedIncentiveProvider));
+  }
+
+  Future<void> _loadData(provider) async {
+    final c = Get.find<PracticeController>();
+
+    await c.getPractice('');
+    await c.getPracticeDetails(provider.id);
+    await c.getPanelDetails(provider.id);
+    // await c.mocListDetails(provider.id);
+    await c.getBonusDetails(provider.id);
+    await c.getSchedule(provider.id);
+
+    if (!mounted) return;
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<AuthController>(builder: (authController) {
-      final initials = (authController.user?.firstName.isNotEmpty == true
-              ? authController.user!.firstName[0]
-              : '') +
-          (authController.user?.lastName.isNotEmpty == true
-              ? authController.user!.lastName[0]
-              : '');
-      final fullName =
-          '${authController.user?.firstName ?? ''} ${authController.user?.lastName ?? ''}'
-              .trim();
-      return Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5),
-        body: SafeArea(
-          child: Stack(
+    return GetBuilder<PracticeController>(builder: (practiceController) {
+      return SafeArea(
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: Stack(
             children: [
               // Main Content
               Column(
                 children: [
-                  _buildNavigationHeader(initials, fullName, authController),
+                  AppHeaderWidget(
+                    onMenuPressed: () {
+                      setState(() {
+                        _isDrawerOpen = true;
+                      });
+                    },
+                    onProfileAction: (action) {
+                      _handleProfileAction(action);
+                    },
+                  ),
+
+                  // Provider Dropdown
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                          bottom: BorderSide(color: Colors.grey.shade200)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ProviderDropdownWidget(
+                            selectedProvider: _selectedIncentiveProvider,
+                            providers: practiceController.practices,
+                            onProviderChanged: (provider) {
+                              setState(() {
+                                _selectedIncentiveProvider = provider;
+                              });
+                              _loadData(provider);
+                              _showSuccessMessage(
+                                  'Showing data for ${provider.name}');
+                            },
+                            maxWidth: 300,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
@@ -130,13 +137,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           _buildWelcomeSection(),
                           const SizedBox(height: 32),
-                          _buildStatisticsGrid(),
+                          _buildStatisticsGrid(practiceController),
                           const SizedBox(height: 32),
-                          _buildPanelChart(),
+                          _buildPanelChart(practiceController),
                           const SizedBox(height: 32),
-                          _buildIncentiveChart(),
+                          _buildIncentiveChart(practiceController),
                           const SizedBox(height: 32),
-                          _buildScheduleCard(),
+                          _buildScheduleCard(practiceController),
                         ],
                       ),
                     ),
@@ -144,17 +151,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
 
-              // Drawer Overlay
-              if (_isDrawerOpen)
-                GestureDetector(
-                  onTap: () => setState(() => _isDrawerOpen = false),
-                  child: Container(
-                    color: Colors.black.withOpacity(0.5),
-                  ),
-                ),
-
               // Navigation Drawer
-              if (_isDrawerOpen) _buildNavigationDrawer(authController),
+              AppDrawerWidget(
+                isOpen: _isDrawerOpen,
+                onClose: () {
+                  setState(() {
+                    _isDrawerOpen = false;
+                  });
+                },
+                onNavigation: (route) {
+                  setState(() {
+                    _isDrawerOpen = false;
+                  });
+                  _handleNavigation(route);
+                },
+                activeRoute: 'dashboard',
+              ),
 
               // Logout Dialog
               if (_showLogoutDialog) _buildLogoutDialog(),
@@ -165,582 +177,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  Widget _buildNavigationHeader(
-      String initials, String fullName, AuthController authController) {
-    return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            // Hamburger Menu
-            IconButton(
-              onPressed: () => setState(() => _isDrawerOpen = true),
-              icon: const Icon(Icons.menu, size: 24, color: Color(0xFF333333)),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-
-            const SizedBox(width: 8),
-
-            // Logo
-            const Expanded(
-              child: Text(
-                'SOMOS QR+',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF333333),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-
-            // Provider Dropdown
-            _buildProviderDropdown(),
-
-            const SizedBox(width: 8),
-
-            // Notifications
-            _buildNotificationsButton(),
-
-            const SizedBox(width: 8),
-
-            // Profile
-            _buildProfileButton(initials, fullName, authController),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProviderDropdown() {
-    return PopupMenuButton<String>(
-      offset: const Offset(0, 50),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      color: Colors.white,
-      child: Container(
-        width: 80, // 👈 ancho fijo
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Expanded(
-              // 👈 Para controlar el texto
-              child: Text(
-                _selectedProvider,
-                overflow: TextOverflow.ellipsis, // 👈 recorta con ...
-                maxLines: 1,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF333333),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: Color(0xFF666666),
-            ),
-          ],
-        ),
-      ),
-      itemBuilder: (context) => _providers.map((provider) {
-        return PopupMenuItem<String>(
-          value: provider,
-          child: SizedBox(
-            width: 180, // 👈 también controlas el ancho en la lista
-            child: Text(
-              provider,
-              overflow: TextOverflow.ellipsis, // 👈 mismo efecto
-              maxLines: 1,
-              style: TextStyle(
-                fontSize: 14,
-                color: _selectedProvider == provider
-                    ? const Color(0xFF1976D2)
-                    : const Color(0xFF333333),
-                fontWeight: _selectedProvider == provider
-                    ? FontWeight.w600
-                    : FontWeight.w400,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-      onSelected: (value) {
+  void _handleNavigation(String route) {
+    switch (route) {
+      case 'dashboard':
+        // Already on dashboard page
+        break;
+      case 'quality':
+        Get.offAllNamed(RouteHelper.getQualityScoreCardsRoute());
+        break;
+      case 'schedule':
+        Get.offAllNamed(RouteHelper.getScheduleRoute());
+        break;
+      case 'patients':
+        Get.offAllNamed(RouteHelper.getPatientsRoute());
+        break;
+      case 'reports':
+        Get.offAllNamed(RouteHelper.getReportsRoute());
+        break;
+      case 'resources':
+        Get.offAllNamed(RouteHelper.getResourcesRoute());
+        break;
+      case 'settings':
+        Get.offAllNamed(RouteHelper.getSettingsRoute());
+        break;
+      case 'logout':
         setState(() {
-          _selectedProvider = value;
+          _showLogoutDialog = true;
         });
-      },
-    );
-  }
-
-  Widget _buildNotificationsButton() {
-    return PopupMenuButton<String>(
-      offset: const Offset(0, 40),
-      child: Stack(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(Icons.notifications_outlined,
-                color: Color(0xFF333333)),
-          ),
-          if (_unreadNotifications > 0)
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE74C3C),
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                ),
-                child: Text(
-                  _unreadNotifications.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          enabled: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Notifications',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _unreadNotifications = 0;
-                        for (var notification in _notifications) {
-                          notification['unread'] = false;
-                        }
-                      });
-                      _showSuccessMessage('All notifications marked as read');
-                    },
-                    child: const Text(
-                      'Mark all read',
-                      style: TextStyle(color: Color(0xFF667EEA), fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ..._notifications
-                  .map((notification) => _buildNotificationItem(notification)),
-              const SizedBox(height: 8),
-              const Center(
-                child: Text(
-                  'View all notifications',
-                  style: TextStyle(color: Color(0xFF667EEA), fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNotificationItem(Map<String, dynamic> notification) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: notification['unread'] ? const Color(0xFFF0F7FF) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: notification['unread']
-            ? const Border(left: BorderSide(color: Color(0xFF667EEA), width: 3))
-            : null,
-      ),
-      child: Row(
-        children: [
-          Text(notification['icon'], style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  notification['title'],
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  notification['message'],
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF666666),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  notification['time'],
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF999999),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _notifications
-                    .removeWhere((n) => n['id'] == notification['id']);
-                if (notification['unread']) {
-                  _unreadNotifications--;
-                }
-              });
-              _showSuccessMessage('Notification removed');
-            },
-            icon: const Icon(Icons.close, size: 16, color: Color(0xFF999999)),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileButton(
-      String initials, String fullName, AuthController authController) {
-    return PopupMenuButton<String>(
-      offset: const Offset(0, 40),
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            initials,
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem<String>(
-          enabled: false,
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'JC',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          fullName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        Text(
-                          authController.user?.email ?? '',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF666666),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 32),
-              _buildProfileOption('Language', '🇺🇸 English'),
-              _buildProfileOption('Invitations', ''),
-              GestureDetector(
-                  onTap: () {
-                    authController.logout();
-                  },
-                  child: _buildProfileOption('Log Out', '')),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileOption(String label, String value) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF333333),
-            ),
-          ),
-          if (value.isNotEmpty)
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF666666),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavigationDrawer(AuthController authController) {
-    return Positioned(
-      left: 0,
-      top: 0,
-      bottom: 0,
-      child: Container(
-        width: 280,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(2, 0),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Drawer Header
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Color(0xFF1976D2),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(40),
-                      border:
-                          Border.all(color: const Color(0xFF4CAF50), width: 3),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'JC',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 24,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'SOMOS QR',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w100,
-                          letterSpacing: -1.2,
-                        ),
-                      ),
-                      Text(
-                        '+',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w100,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Drawer Items
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildDrawerItem('Dashboard', true),
-                  _buildDrawerItem('Quality Score Cards', false, onTap: () {
-                    Get.toNamed(RouteHelper.getQualityScoreCardsRoute());
-                  }),
-                  _buildDrawerItem('My Schedule', false),
-                  _buildDrawerItem('My Patients', false),
-                  _buildDrawerItem('Reports', false),
-                  _buildDrawerItem('Resources', false),
-                  const Divider(height: 32),
-                  _buildDrawerItem('Settings', false, onTap: () {
-                    Get.toNamed(RouteHelper.getSettingsRoute());
-                  }),
-                  _buildDrawerItem('Log Out', false, onTap: () {
-                    authController.logout();
-                  }),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getIconForItem(String text) {
-    switch (text) {
-      case 'Dashboard':
-        return Icons.dashboard;
-      case 'Quality Score Cards':
-        return Icons.assessment;
-      case 'My Schedule':
-        return Icons.schedule;
-      case 'My Patients':
-        return Icons.people;
-      case 'Reports':
-        return Icons.bar_chart;
-      case 'Resources':
-        return Icons.folder;
-      case 'Settings':
-        return Icons.settings;
-      case 'Log Out':
-        return Icons.logout;
-      default:
-        return Icons.help;
+        break;
     }
   }
 
-  Widget _buildDrawerItem(String text, bool isActive, {VoidCallback? onTap}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFE3F2FD) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(
-            color: isActive ? const Color(0xFF1976D2) : Colors.transparent,
-            width: 3,
-          ),
-        ),
-      ),
-      child: ListTile(
-        leading: Icon(
-          _getIconForItem(text),
-          color: isActive ? const Color(0xFF1976D2) : const Color(0xFF333333),
-          size: 20,
-        ),
-        title: Text(
-          text,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-            color: isActive ? const Color(0xFF1976D2) : const Color(0xFF333333),
-          ),
-        ),
-        onTap: onTap ??
-            () {
-              // Handle navigation
-              setState(() => _isDrawerOpen = false);
-            },
-      ),
-    );
+  void _handleProfileAction(String action) {
+    switch (action) {
+      case 'language':
+        // Handle language change
+        break;
+      case 'invitations':
+        // Handle invitations
+        break;
+      case 'logout':
+        setState(() {
+          _showLogoutDialog = true;
+        });
+        break;
+    }
   }
 
   Widget _buildWelcomeSection() {
@@ -759,7 +240,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatisticsGrid() {
+  Widget _buildStatisticsGrid(PracticeController practiceController) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
@@ -771,16 +252,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSpacing: isMobile ? 16 : 24,
           childAspectRatio: isMobile ? 2.5 : 1.2,
           children: [
-            _buildKPICard('Total Open GIC', '1,250 / 2,100'),
-            _buildKPICard('Total Members RA', '1,950 / 2,400'),
-            _buildKPICard('Members without visits', '200 / 4,000'),
+            _buildKPICard('Total Open GIC', practiceController),
+            _buildKPICard('Total Members RA', practiceController),
+            _buildKPICard('Members without visits', practiceController),
           ],
         );
       },
     );
   }
 
-  Widget _buildKPICard(String title, String value) {
+  Widget _buildKPICard(String title, PracticeController practiceController) {
+    String value = '';
+    double startValue = 3.5;
+    switch (title) {
+      case 'Total Open GIC':
+        value =
+            '${practiceController.practiceDetails.gic} / ${practiceController.practiceDetails.gicAim}';
+        startValue = practiceController.practiceDetails.gicStar;
+        break;
+
+      case 'Total Members RA':
+        value =
+            '${practiceController.practiceDetails.ra} / ${practiceController.practiceDetails.raAim}';
+        startValue = practiceController.practiceDetails.raStar;
+        break;
+
+      case 'Members without visits':
+        value =
+            '${practiceController.practiceDetails.nu} / ${practiceController.practiceDetails.nuAim}';
+        startValue = practiceController.practiceDetails.nuStar;
+        break;
+
+      default:
+        value = '0 / 0';
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -820,35 +326,148 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: List.generate(
-                5,
-                (index) => const Padding(
-                  padding: EdgeInsets.only(right: 2),
-                  child: Icon(
-                    Icons.star,
-                    color: Color(0xFFFFC107),
-                    size: 16,
-                  ),
-                ),
+            RatingBarIndicator(
+              rating: startValue,
+              itemBuilder: (context, index) => const Icon(
+                Icons.star,
+                color: Color(0xFFFFC107),
               ),
+              itemCount: 5,
+              itemSize: 24.0,
+              direction: Axis.horizontal,
             ),
-            const SizedBox(height: 4),
-            const Text(
-              '4.5/5',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF666666),
-              ),
-            ),
+            // const SizedBox(height: 4),
+            // // Add rating text like in HTML version
+            // const Text(
+            //   '4.5/5',
+            //   style: TextStyle(
+            //     fontSize: 12,
+            //     fontWeight: FontWeight.w500,
+            //     color: Color(0xFF666666),
+            //   ),
+            // ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPanelChart() {
+  Widget _buildPanelChart(PracticeController practiceController) {
+    final data = practiceController.panelDetails;
+
+    // Colores (mantenidos)
+    const colorEP = Color(0xFF1976D2);
+    const colorMCD = Color(0xFF4CAF50);
+    const colorMCR = Color(0xFF4DD0E1);
+
+    // Abreviación a 3 chars (solo letras/números)
+    String _abbr(String name) {
+      final cleaned = name.replaceAll(RegExp(r'[^A-Za-z0-9]'), '');
+      if (cleaned.isEmpty) return '';
+      return (cleaned.length <= 3 ? cleaned : cleaned.substring(0, 3))
+          .toUpperCase();
+    }
+
+    // Si no hay datos, render contenedor con mensaje
+    if (data.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: const SizedBox(
+          height: 300,
+          child: Center(
+            child: Text(
+              'My Panel\nNo data',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, color: Color(0xFF666666)),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Agrupar por MCO y sumar por LOB
+    final Map<String, Map<String, int>> grouped = {};
+    for (final item in data) {
+      final byLob = grouped.putIfAbsent(
+          item.mcoName, () => {'EP': 0, 'MCD': 0, 'MCR': 0});
+      byLob[item.lob] = (byLob[item.lob] ?? 0) + item.members;
+    }
+
+    // Ordenar MCOs por nombre (ajusta si prefieres otro orden)
+    final mcoNames = grouped.keys.toList()..sort();
+
+    // Calcular max para maxY
+    int maxMembers = 0;
+    for (final lobMap in grouped.values) {
+      for (final v in lobMap.values) {
+        if (v > maxMembers) maxMembers = v;
+      }
+    }
+
+    // maxY con margen y redondeo
+    double _niceMaxY(int v) {
+      if (v <= 0) return 1;
+      final withPad = (v * 1.1).ceil(); // +10% de margen
+      if (withPad <= 10) return 10;
+      if (withPad <= 50) return ((withPad / 10).ceil() * 10).toDouble();
+      if (withPad <= 100) return ((withPad / 20).ceil() * 20).toDouble();
+      if (withPad <= 500) return ((withPad / 50).ceil() * 50).toDouble();
+      return ((withPad / 100).ceil() * 100).toDouble();
+    }
+
+    final double maxY = _niceMaxY(maxMembers);
+
+    // Intervalo (aprox 5 líneas)
+    double _niceInterval(double maxY) {
+      final raw = (maxY / 5).ceilToDouble();
+      if (raw <= 1) return 1;
+      if (raw <= 5) return 5;
+      if (raw <= 10) return 10;
+      if (raw <= 20) return 20;
+      if (raw <= 50) return 50;
+      return 100;
+    }
+
+    final double interval = _niceInterval(maxY);
+
+    // Construir grupos de barras
+    final List<BarChartGroupData> barGroups = [];
+    for (int i = 0; i < mcoNames.length; i++) {
+      final mco = mcoNames[i];
+      final lobMap = grouped[mco]!;
+      barGroups.add(
+        BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+                toY: (lobMap['EP'] ?? 0).toDouble(), color: colorEP, width: 7),
+            BarChartRodData(
+                toY: (lobMap['MCD'] ?? 0).toDouble(),
+                color: colorMCD,
+                width: 7),
+            BarChartRodData(
+                toY: (lobMap['MCR'] ?? 0).toDouble(),
+                color: colorMCR,
+                width: 7),
+          ],
+          // opcional: separación entre varillas dentro del grupo
+          barsSpace: 3,
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -880,7 +499,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: 1000,
+                maxY: maxY,
                 barTouchData: BarTouchData(enabled: false),
                 titlesData: FlTitlesData(
                   show: true,
@@ -892,32 +511,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        const labels = [
-                          'Anthem',
-                          'Emblem',
-                          'Healthfirst',
-                          'Humana',
-                          'Metroplus',
-                          'Molina',
-                          'United'
-                        ];
-                        const abbreviations = [
-                          'ANT',
-                          'EMB',
-                          'HF',
-                          'HUM',
-                          'MET',
-                          'MOL',
-                          'UNI'
-                        ];
-                        if (value >= 0 && value < labels.length) {
+                        if (value >= 0 && value < mcoNames.length) {
                           return Text(
-                            abbreviations[value.toInt()],
+                            _abbr(mcoNames[value.toInt()]),
                             style: const TextStyle(
                                 color: Color(0xFF666666), fontSize: 12),
                           );
                         }
-                        return const Text('');
+                        return const SizedBox.shrink();
                       },
                     ),
                   ),
@@ -925,6 +526,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 40,
+                      interval: interval,
                       getTitlesWidget: (value, meta) {
                         return Text(
                           value.toInt().toString(),
@@ -936,68 +538,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 borderData: FlBorderData(show: false),
-                barGroups: [
-                  BarChartGroupData(x: 0, barRods: [
-                    BarChartRodData(
-                        toY: 238, color: const Color(0xFF1976D2), width: 7),
-                    BarChartRodData(
-                        toY: 714, color: const Color(0xFF4CAF50), width: 7),
-                    BarChartRodData(
-                        toY: 0, color: const Color(0xFF4DD0E1), width: 7),
-                  ]),
-                  BarChartGroupData(x: 1, barRods: [
-                    BarChartRodData(
-                        toY: 238, color: const Color(0xFF1976D2), width: 7),
-                    BarChartRodData(
-                        toY: 96, color: const Color(0xFF4CAF50), width: 7),
-                    BarChartRodData(
-                        toY: 0, color: const Color(0xFF4DD0E1), width: 7),
-                  ]),
-                  BarChartGroupData(x: 2, barRods: [
-                    BarChartRodData(
-                        toY: 550, color: const Color(0xFF1976D2), width: 7),
-                    BarChartRodData(
-                        toY: 700, color: const Color(0xFF4CAF50), width: 7),
-                    BarChartRodData(
-                        toY: 750, color: const Color(0xFF4DD0E1), width: 7),
-                  ]),
-                  BarChartGroupData(x: 3, barRods: [
-                    BarChartRodData(
-                        toY: 170, color: const Color(0xFF1976D2), width: 7),
-                    BarChartRodData(
-                        toY: 240, color: const Color(0xFF4CAF50), width: 7),
-                    BarChartRodData(
-                        toY: 190, color: const Color(0xFF4DD0E1), width: 7),
-                  ]),
-                  BarChartGroupData(x: 4, barRods: [
-                    BarChartRodData(
-                        toY: 476, color: const Color(0xFF1976D2), width: 7),
-                    BarChartRodData(
-                        toY: 238, color: const Color(0xFF4CAF50), width: 7),
-                    BarChartRodData(
-                        toY: 0, color: const Color(0xFF4DD0E1), width: 7),
-                  ]),
-                  BarChartGroupData(x: 5, barRods: [
-                    BarChartRodData(
-                        toY: 0, color: const Color(0xFF1976D2), width: 7),
-                    BarChartRodData(
-                        toY: 476, color: const Color(0xFF4CAF50), width: 7),
-                    BarChartRodData(
-                        toY: 572, color: const Color(0xFF4DD0E1), width: 7),
-                  ]),
-                  BarChartGroupData(x: 6, barRods: [
-                    BarChartRodData(
-                        toY: 238, color: const Color(0xFF1976D2), width: 7),
-                    BarChartRodData(
-                        toY: 96, color: const Color(0xFF4CAF50), width: 7),
-                    BarChartRodData(
-                        toY: 0, color: const Color(0xFF4DD0E1), width: 7),
-                  ]),
-                ],
+                barGroups: barGroups,
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  horizontalInterval: 200,
+                  horizontalInterval: interval,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
                       color: Colors.grey.shade300,
@@ -1052,7 +597,182 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildIncentiveChart() {
+  Widget _buildIncentiveChart(PracticeController practiceController) {
+    final data = practiceController.bonusDetails; // List<BonusDetail>
+
+    String _abbr(String label) {
+      // Mapa de abreviaciones conocidas
+      const map = {
+        'AWV-Total': 'AWV',
+        'BCS-Total': 'BCS',
+        'CBP-Total': 'CBP',
+        'CDC-In Control (<9%)': 'CDC-1C',
+        'CDC-Eye Exam': 'CDC-E',
+        'COL-Total': 'COL',
+        'PCR-Readmissions': 'PCR',
+        'POD-Total': 'POD',
+        'PPC-Prenatal': 'PPC',
+        'SAA-Total': 'SAA',
+        'W30A (0 - 15 Months)': 'W30',
+        'WCV-Total': 'WCV',
+        'HVL-Total': 'HVL',
+      };
+      if (map.containsKey(label)) return map[label]!;
+      // Fallback: tomar antes de " (" o "-"
+      final cutParen = label.split(' (').first;
+      final cutDash = cutParen.split('-').first;
+      final cleaned = cutDash.trim();
+      if (cleaned.isEmpty) return '';
+      return cleaned.length <= 4
+          ? cleaned.toUpperCase()
+          : cleaned.substring(0, 4).toUpperCase();
+    }
+
+    String _money(num v) {
+      final f = NumberFormat.currency(symbol: r'$');
+      // Mostrar sin decimales si es entero
+      if (v == v.roundToDouble()) {
+        return '\$${NumberFormat.decimalPattern().format(v)}';
+      }
+      return f.format(v);
+    }
+
+    // Totales
+    final totalEarnings = data.fold<double>(0, (sum, e) => sum + (e.earnings));
+    final totalPotential =
+        data.fold<double>(0, (sum, e) => sum + (e.potential));
+
+    // Paginamos en bloques de 7
+    List<List<BonusDetail>> _chunk(List<BonusDetail> list, int size) {
+      final chunks = <List<BonusDetail>>[];
+      for (var i = 0; i < list.length; i += size) {
+        chunks.add(
+            list.sublist(i, i + size > list.length ? list.length : i + size));
+      }
+      return chunks;
+    }
+
+    double _niceMaxY(double maxVal) {
+      if (maxVal <= 0) return 1;
+      final withPad = (maxVal * 1.1).ceilToDouble(); // +10% margen
+      if (withPad <= 1000) return ((withPad / 100).ceil() * 100).toDouble();
+      if (withPad <= 5000) return ((withPad / 500).ceil() * 500).toDouble();
+      return ((withPad / 1000).ceil() * 1000).toDouble();
+    }
+
+    double _niceInterval(double maxY) {
+      final raw = (maxY / 5).ceilToDouble();
+      if (raw <= 100) return 100;
+      if (raw <= 500) return 500;
+      if (raw <= 1000) return 1000;
+      if (raw <= 2500) return 2500;
+      return 5000;
+    }
+
+    // Construir páginas
+    final pages = _chunk(data, 7).map((pageItems) {
+      // max por página entre earnings y potential
+      double pageMax = 0;
+      for (final it in pageItems) {
+        pageMax = [
+          pageMax,
+          it.earnings,
+          it.potential,
+        ].reduce((a, b) => a > b ? a : b);
+      }
+      final maxY = _niceMaxY(pageMax);
+      final interval = _niceInterval(maxY);
+
+      final barGroups = <BarChartGroupData>[];
+      for (int i = 0; i < pageItems.length; i++) {
+        final it = pageItems[i];
+        barGroups.add(
+          BarChartGroupData(
+            x: i,
+            barsSpace: 3,
+            barRods: [
+              BarChartRodData(
+                toY: it.earnings.toDouble(),
+                color: const Color(0xFF388E3C), // Earnings
+                width: 7,
+              ),
+              BarChartRodData(
+                toY: it.potential.toDouble(),
+                color: const Color(0xFFA5D6A7), // Potential
+                width: 7,
+              ),
+            ],
+          ),
+        );
+      }
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: BarChart(
+          BarChartData(
+            alignment: BarChartAlignment.spaceAround,
+            maxY: maxY,
+            barTouchData: BarTouchData(enabled: false),
+            titlesData: FlTitlesData(
+              show: true,
+              rightTitles:
+                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles:
+                  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  getTitlesWidget: (value, meta) {
+                    if (value >= 0 && value < pageItems.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          _abbr(pageItems[value.toInt()].labelCode),
+                          style: const TextStyle(
+                              color: Color(0xFF666666), fontSize: 12),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 48,
+                  interval: interval,
+                  getTitlesWidget: (value, meta) {
+                    return Text(
+                      '\$${value.toInt()}',
+                      style: const TextStyle(
+                          color: Color(0xFF666666), fontSize: 12),
+                    );
+                  },
+                ),
+              ),
+            ),
+            borderData: FlBorderData(show: false),
+            barGroups: barGroups,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval: interval,
+              getDrawingHorizontalLine: (value) {
+                return FlLine(
+                  color: Colors.grey.shade300,
+                  strokeWidth: 1,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }).toList();
+
+    // Si no hay datos, muestra placeholder
+    final hasData = data.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -1080,31 +800,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Provider Toggles
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isMobile = constraints.maxWidth < 600;
-                return Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: [
-                    _buildProviderToggle('all', 'All'),
-                    _buildProviderToggle('emblem', 'Emblem'),
-                    _buildProviderToggle('anthem', 'Anthem'),
-                  ],
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 20),
-
           // Stats
           Row(
             children: [
@@ -1121,9 +816,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      '\$xx,xxx',
-                      style: TextStyle(
+                    Text(
+                      hasData ? _money(totalEarnings) : '-',
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF333333),
@@ -1145,9 +840,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      '\$xx,xxx',
-                      style: TextStyle(
+                    Text(
+                      hasData ? _money(totalPotential) : '-',
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF333333),
@@ -1160,197 +855,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Chart
+          // Chart / Placeholder
           SizedBox(
             height: 300,
-            child: PageView(
-              children: [
-                // First chart - Categories 1-7
-                Padding(
-                  padding: const EdgeInsets.only(top: 20),
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: 5000,
-                      barTouchData: BarTouchData(enabled: false),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              const labels = [
-                                'AWV',
-                                'BCS',
-                                'CBP',
-                                'CCS',
-                                'CDC-E',
-                                'CDC-1C',
-                                'COL'
-                              ];
-                              if (value >= 0 && value < labels.length) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Text(
-                                    labels[value.toInt()],
-                                    style: const TextStyle(
-                                        color: Color(0xFF666666), fontSize: 12),
-                                  ),
-                                );
-                              }
-                              return const Text('');
-                            },
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 40,
-                            getTitlesWidget: (value, meta) {
-                              return Text(
-                                '\$${value.toInt()}',
-                                style: const TextStyle(
-                                    color: Color(0xFF666666), fontSize: 12),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      barGroups: List.generate(7, (index) {
-                        final earnings =
-                            [1764, 1596, 2142, 1218, 1428, 1932, 1344][index];
-                        final potential =
-                            [1960, 2240, 1680, 2870, 2520, 1540, 2660][index];
-
-                        return BarChartGroupData(
-                          x: index,
-                          barRods: [
-                            BarChartRodData(
-                              toY: earnings.toDouble(),
-                              color: const Color(0xFF388E3C),
-                              width: 7,
-                            ),
-                            BarChartRodData(
-                              toY: potential.toDouble(),
-                              color: const Color(0xFFA5D6A7),
-                              width: 7,
-                            ),
-                          ],
-                        );
-                      }),
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: 1000,
-                        getDrawingHorizontalLine: (value) {
-                          return FlLine(
-                            color: Colors.grey.shade300,
-                            strokeWidth: 1,
-                          );
-                        },
-                      ),
+            child: hasData
+                ? PageView(children: pages)
+                : const Center(
+                    child: Text(
+                      'No data',
+                      style: TextStyle(color: Color(0xFF666666)),
                     ),
                   ),
-                ),
-                // Second chart - Categories 8-14
-                Padding(
-                  padding: const EdgeInsets.only(top: 20),
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: 5000,
-                      barTouchData: BarTouchData(enabled: false),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              const labels = [
-                                'PCR',
-                                'POD',
-                                'PPC',
-                                'SAA',
-                                'W30',
-                                'WCV',
-                                'HVL'
-                              ];
-                              if (value >= 0 && value < labels.length) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Text(
-                                    labels[value.toInt()],
-                                    style: const TextStyle(
-                                        color: Color(0xFF666666), fontSize: 12),
-                                  ),
-                                );
-                              }
-                              return const Text('');
-                            },
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 40,
-                            getTitlesWidget: (value, meta) {
-                              return Text(
-                                '\$${value.toInt()}',
-                                style: const TextStyle(
-                                    color: Color(0xFF666666), fontSize: 12),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      barGroups: List.generate(7, (index) {
-                        final earnings =
-                            [2016, 1638, 1848, 1512, 2184, 1722, 1554][index];
-                        final potential =
-                            [1400, 2170, 1820, 2380, 1260, 2030, 2310][index];
-
-                        return BarChartGroupData(
-                          x: index,
-                          barRods: [
-                            BarChartRodData(
-                              toY: earnings.toDouble(),
-                              color: const Color(0xFF388E3C),
-                              width: 7,
-                            ),
-                            BarChartRodData(
-                              toY: potential.toDouble(),
-                              color: const Color(0xFFA5D6A7),
-                              width: 7,
-                            ),
-                          ],
-                        );
-                      }),
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: 1000,
-                        getDrawingHorizontalLine: (value) {
-                          return FlLine(
-                            color: Colors.grey.shade300,
-                            strokeWidth: 1,
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 24),
 
@@ -1374,35 +889,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildProviderToggle(String provider, String label) {
-    final isActive = _selectedIncentiveProvider == provider;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedIncentiveProvider = provider;
-        });
-        _showSuccessMessage(
-            'Showing data for ${provider == 'all' ? 'All providers' : label}');
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF1976D2) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: isActive ? Colors.white : const Color(0xFF666666),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScheduleCard() {
+  Widget _buildScheduleCard(PracticeController practiceController) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1420,7 +907,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           // Header
           Padding(
-            padding: EdgeInsets.only(top: 16, left: 16, bottom: 16, right: 0),
+            padding:
+                const EdgeInsets.only(top: 16, left: 16, bottom: 16, right: 0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1436,7 +924,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     TextButton.icon(
                       onPressed: () {
-                        // Navigate to schedule page
+                        context.go('/schedule');
                       },
                       icon: const Text('📅'),
                       label: const Text(
@@ -1464,14 +952,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           // Content
           if (_isScheduleExpanded)
-            ..._appointments
-                .map((appointment) => _buildAppointmentItem(appointment)),
+            ...practiceController.scheduleDetails
+                .map((schedule) => _buildAppointmentItem(schedule))
+                .toList(),
         ],
       ),
     );
   }
 
-  Widget _buildAppointmentItem(Map<String, dynamic> appointment) {
+  Widget _buildAppointmentItem(Schedule schedule) {
+    final formattedTime =
+        "${schedule.day.hour.toString().padLeft(2, '0')}:${schedule.day.minute.toString().padLeft(2, '0')}";
+
+    // Generar tags dinámicos según el modelo
+    List<String> tags = [];
+    if (schedule.gic > 0) tags.add("GIC");
+    if (schedule.ra > 0) tags.add("RA");
+    if (schedule.status.isNotEmpty) tags.add(schedule.status);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1486,7 +984,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  appointment['name'],
+                  schedule.memberName,
                   style: const TextStyle(
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF333333),
@@ -1494,7 +992,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  appointment['time'],
+                  formattedTime,
                   style: const TextStyle(
                     color: Color(0xFF666666),
                     fontSize: 14,
@@ -1505,7 +1003,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           Wrap(
             spacing: 8,
-            children: (appointment['tags'] as List<String>).map((tag) {
+            children: tags.map((tag) {
               Color backgroundColor;
               Color textColor;
 
@@ -1676,6 +1174,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           setState(() => _showLogoutDialog = false);
+                          final authController = Get.find<AuthController>();
+                          authController.logout();
                           // Handle logout
                         },
                         style: ElevatedButton.styleFrom(

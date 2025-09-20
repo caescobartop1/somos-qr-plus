@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:somos_qr_plus/core/theme/app_theme.dart';
 
 import 'constants/app_constants.dart';
 import 'controllers/theme_controller.dart';
@@ -20,40 +22,38 @@ Future<void> main() async {
   //   HttpOverrides.global = MyHttpOverrides();
   // }
   await init();
+  final sharedPreferences = await SharedPreferences.getInstance();
+  String token = sharedPreferences.getString(AppConstants.token) ?? '';
   // final languages = await init(); // inicialización de dependencias + idiomas
 
-  runApp(MyApp(
-      // languages: languages
-      ));
+  runApp(MyApp(token: token));
 }
 
 class MyApp extends StatelessWidget {
   // final Map<String, Map<String, String>> languages;
-  const MyApp({super.key
+  final String token;
+  const MyApp(
+      {super.key,
       // , required this.languages
-      });
+      required this.token});
 
   @override
   Widget build(BuildContext context) {
     return GetBuilder<ThemeController>(
       builder: (themeController) {
-        //     return GetBuilder<SplashController>(
-        //       builder: (splashController) {
         return GetMaterialApp(
           title: AppConstants.appName,
-          themeMode: ThemeMode.light,
+          theme: AppTheme.lightTheme,
           debugShowCheckedModeBanner: false,
           navigatorKey: Get.key,
           scrollBehavior: const MaterialScrollBehavior().copyWith(
             dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch},
           ),
-          theme:
-              (themeController.darkTheme ? ThemeData.dark() : ThemeData.light()),
-          initialRoute: RouteHelper.getInitialRoute(),
+          initialRoute: token.isNotEmpty
+              ? RouteHelper.getDashboardRoute()
+              : RouteHelper.getInitialRoute(),
           getPages: RouteHelper.routes,
         );
-        //     },
-        //   );
       },
     );
   }
