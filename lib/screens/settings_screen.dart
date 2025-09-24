@@ -21,83 +21,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Scaffold(
-          backgroundColor: const Color(0xFFF8F9FA),
-          body: Column(
-            children: [
-              // Navigation Header
-              AppHeaderWidget(
-                onMenuPressed: () {
-                  setState(() {
-                    _isDrawerOpen = true;
-                  });
-                },
-                onProfileAction: (value) {
-                  switch (value) {
-                    case 'language':
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Language clicked')),
-                      );
-                      break;
-                    case 'invitations':
-                      context.go('/invitation');
-                      break;
-                    case 'logout':
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Logout clicked')),
-                      );
-                      break;
-                  }
-                },
-              ),
-
-              // Main Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Page Title
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 20),
-                        child: Text(
-                          'Settings',
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF333333),
+    return SafeArea(
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: const Color(0xFFF8F9FA),
+            body: Column(
+              children: [
+                // Navigation Header
+                AppHeaderWidget(
+                  onMenuPressed: () {
+                    setState(() {
+                      _isDrawerOpen = true;
+                    });
+                  },
+                  onProfileAction: (value) {
+                    switch (value) {
+                      case 'language':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Language clicked')),
+                        );
+                        break;
+                      case 'invitations':
+                        Get.offAllNamed(RouteHelper.getInvitationsRoute());
+                        break;
+                      case 'logout':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Logout clicked')),
+                        );
+                        break;
+                    }
+                  },
+                ),
+      
+                // Main Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Page Title
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 20),
+                          child: Text(
+                            'Settings',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF333333),
+                            ),
                           ),
                         ),
-                      ),
-                      _buildSettingsCards(),
-                    ],
+                        _buildSettingsCards(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-
-        // Navigation Drawer
-        AppDrawerWidget(
-          isOpen: _isDrawerOpen,
-          onClose: () {
-            setState(() {
-              _isDrawerOpen = false;
-            });
-          },
-          onNavigation: (route) {
-            setState(() {
-              _isDrawerOpen = false;
-            });
-            _handleNavigation(route);
-          },
-          activeRoute: 'settings',
-        ),
-      ],
+      
+          // Navigation Drawer
+          AppDrawerWidget(
+            isOpen: _isDrawerOpen,
+            onClose: () {
+              setState(() {
+                _isDrawerOpen = false;
+              });
+            },
+            onNavigation: (route) {
+              setState(() {
+                _isDrawerOpen = false;
+              });
+              _handleNavigation(route);
+            },
+            activeRoute: 'settings',
+          ),
+        ],
+      ),
     );
   }
 
@@ -110,7 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Get.offAllNamed(RouteHelper.getQualityScoreCardsRoute());
         break;
       case 'schedule':
-        context.go('/schedule');
+        Get.offAllNamed(RouteHelper.getScheduleRoute());
         break;
       case 'patients':
         Get.offAllNamed(RouteHelper.getPatientsRoute());
@@ -175,14 +177,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: Icons.mail,
           title: 'Invite',
           description: 'Invite colleagues to join',
-          onTap: () => context.go('/invitation'),
+          onTap: () => Get.offAllNamed(RouteHelper.getInvitationsRoute()),
         ),
         const SizedBox(height: 16),
         _buildTappableSettingCard(
           icon: Icons.people,
           title: 'Accounts',
           description: 'Manage your account settings',
-          onTap: () => context.go('/user-management'),
+          onTap: () => Get.offAllNamed(RouteHelper.getUserManagementRoute()),
         ),
       ],
     );

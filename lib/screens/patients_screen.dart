@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
@@ -12,6 +13,7 @@ import '../widgets/app_drawer_widget.dart';
 import '../widgets/provider_dropdown_widget.dart';
 
 import '../models/patient.dart';
+import 'dart:async';
 
 class PatientsScreen extends StatefulWidget {
   const PatientsScreen({super.key});
@@ -24,118 +26,127 @@ class _PatientsScreenState extends State<PatientsScreen> {
   bool _isDrawerOpen = false;
   final TextEditingController _searchController = TextEditingController();
   Provider _selectedProvider = new Provider(name: 'All', id: '-1');
-  List<Patient> _patients = [];
-  List<Patient> _filteredPatients = [];
+
   String _mcoFilter = '';
   String _providerFilter = '';
   String _dobFilter = '';
   int _currentPage = 1;
   int _rowsPerPage = 20;
   bool _showLogoutDialog = false;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     _initializePatients();
-    _filteredPatients = _patients;
     // Lánzalo después del frame para asegurar que el árbol está listo
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _loadData(_selectedProvider));
   }
 
-  void _initializePatients() {
-    _patients = [
-      Patient('James Anderson', '3/15/1965', 'HealthFirst', 85, 92),
-      Patient('Maria Rodriguez', '7/22/1978', 'MetroPlus', 67, 74),
-      Patient('Robert Johnson', '11/30/1982', 'Fidelis Care', 91, 88),
-      Patient(
-          'Sarah Williams', '4/12/1995', 'Empire BlueCross BlueShield', 78, 82),
-      Patient(
-          'David Chen', '9/3/1973', 'UnitedHealthcare Community Plan', 73, 79),
-      Patient('Jennifer Lopez', '2/28/1988', 'HealthFirst', 89, 95),
-      Patient('Michael Davis', '6/17/1969', 'MetroPlus', 71, 68),
-      Patient('Lisa Thompson', '12/5/1991', 'Fidelis Care', 94, 91),
-      Patient('William Martinez', '8/9/1984', 'Empire BlueCross BlueShield', 76,
-          83),
-      Patient('Emily Wilson', '1/14/1976', 'UnitedHealthcare Community Plan',
-          82, 87),
-      Patient('Christopher Lee', '5/20/1993', 'HealthFirst', 88, 93),
-      Patient('Amanda Brown', '10/8/1987', 'MetroPlus', 75, 81),
-      Patient('Daniel Kim', '7/31/1972', 'Fidelis Care', 69, 76),
-      Patient(
-          'Jessica Taylor', '3/25/1990', 'Empire BlueCross BlueShield', 86, 89),
-      Patient('Kevin Patel', '11/12/1981', 'UnitedHealthcare Community Plan',
-          72, 77),
-    ];
-  }
+  void _initializePatients() {}
 
-  void _applyFilters() {
+  void _applyFilters() async {
+    final c = Get.find<PracticeController>();
+    String dobParsed = '';
+    try {
+      final parsed = DateFormat('dd/MM/yyyy').parse(_dobFilter);
+      dobParsed = DateFormat('yyyy-MM-dd').format(parsed);
+    } catch (_) {}
+
+    await c.getPatients(
+      _selectedProvider.id,
+      dob: dobParsed.isEmpty ? null : dobParsed,
+      provider: _providerFilter.isEmpty || _providerFilter == 'All'
+          ? null
+          : _providerFilter,
+      mco: _mcoFilter.isEmpty || _mcoFilter == 'All' ? null : _mcoFilter,
+      search: _searchController.text.isEmpty ? null : _searchController.text,
+    );
+
+    if (!mounted) return;
     setState(() {
-      _filteredPatients = _patients.where((patient) {
-        bool matchesMCO = _mcoFilter.isEmpty ||
-            _mcoFilter == 'All' ||
-            patient.mco == _mcoFilter;
-        bool matchesProvider =
-            _providerFilter.isEmpty || _providerFilter == 'All';
-        bool matchesDOB = _dobFilter.isEmpty || patient.dob == _dobFilter;
-        bool matchesSearch = _searchController.text.isEmpty ||
-            patient.fullName
-                .toLowerCase()
-                .contains(_searchController.text.toLowerCase()) ||
-            patient.dob.contains(_searchController.text) ||
-            patient.mco
-                .toLowerCase()
-                .contains(_searchController.text.toLowerCase());
-
-        return matchesMCO && matchesProvider && matchesDOB && matchesSearch;
-      }).toList();
-
       _currentPage = 1;
     });
   }
 
   void _showPatientProfile(Patient patient) {
+    final c = Get.find<PracticeController>();
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PatientProfileModal(patient: patient),
+        builder: (context) => PatientProfileModal(
+          patient: patient,
+          providers: c.providerList,
+          practice_id: _selectedProvider.id,
+          member_plan_id: 0,
+          schedule_id: 0,
+          shouldUpdate: false,
+        ),
       ),
     );
   }
 
   void _showFilterModal() {
+    final c = Get.find<PracticeController>();
     showDialog(
       context: context,
       builder: (context) => PatientFilterModal(
         mcoFilter: _mcoFilter,
+        mco: c.mcoList,
+        provider: c.providerList,
         providerFilter: _providerFilter,
         dobFilter: _dobFilter,
+        showProvider: true,
         onApply: (mco, provider, dob) {
           setState(() {
             _mcoFilter = mco;
             _providerFilter = provider;
             _dobFilter = dob;
           });
-          _applyFilters();
+          _applyFilters(); // ✅ Llamada a la API con los nuevos filtros
         },
       ),
     );
   }
 
   List<Patient> get _paginatedPatients {
+    final practiceController = Get.find<PracticeController>();
+    final patients = practiceController.patients;
     final startIndex = (_currentPage - 1) * _rowsPerPage;
     final endIndex = startIndex + _rowsPerPage;
-    return _filteredPatients.sublist(
+    return patients.sublist(
       startIndex,
-      endIndex > _filteredPatients.length ? _filteredPatients.length : endIndex,
+      endIndex > patients.length ? patients.length : endIndex,
     );
   }
 
-  int get _totalPages => (_filteredPatients.length / _rowsPerPage).ceil();
-  Future<void> _loadData(provider) async {
-    final c = Get.find<PracticeController>();
+  int get _totalPages {
+    final count = Get.find<PracticeController>().patients.length;
+    return (count / _rowsPerPage).ceil();
+  }
 
-    await c.getPractice('');
+  Future<void> _loadData(Provider provider) async {
+    final c = Get.find<PracticeController>();
+    String dobParsed = '';
+    try {
+      final parsed = DateFormat('dd/MM/yyyy').parse(_dobFilter);
+      dobParsed = DateFormat('yyyy-MM-dd').format(parsed);
+    } catch (_) {}
+
+    await c.getPatients(
+      _selectedProvider.id,
+      dob: dobParsed.isEmpty ? null : dobParsed,
+      provider: _providerFilter.isEmpty || _providerFilter == 'All'
+          ? null
+          : _providerFilter,
+      mco: _mcoFilter.isEmpty || _mcoFilter == 'All' ? null : _mcoFilter,
+      search: _searchController.text.isEmpty ? null : _searchController.text,
+    );
+
+    await c.getMco(_selectedProvider.id);
+    await c.getProvider(_selectedProvider.id);
 
     if (!mounted) return;
     setState(() {});
@@ -257,7 +268,18 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
-                              onChanged: (value) => _applyFilters(),
+                              onChanged: (value) {
+                                // Cancelar timer anterior si existe
+                                if (_debounce?.isActive ?? false)
+                                  _debounce!.cancel();
+
+                                // Iniciar nuevo timer (ej: 500ms)
+                                _debounce = Timer(
+                                    const Duration(milliseconds: 500), () {
+                                  // Llamar al método real después del retraso
+                                  _applyFilters();
+                                });
+                              },
                             ),
                           ),
                         ),

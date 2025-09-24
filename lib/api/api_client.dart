@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:somos_qr_plus/constants/app_constants.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/controllers/auth_controller.dart';
 
 class ApiClient extends GetxService {
   final String appBaseUrl;
@@ -49,14 +50,16 @@ class ApiClient extends GetxService {
     if (res.statusCode == 401 && !_didRetry401 && onTokenRefresh != null) {
       _didRetry401 = true;
       try {
-        final newToken = await onTokenRefresh!();
-        print(newToken);
-        if (newToken != null && newToken.isNotEmpty) {
-          token = newToken;
-          sharedPreferences.setString(AppConstants.token, newToken);
-          updateHeader(newToken);
-          res = await send();
-        }
+        final authController = Get.find<AuthController>();
+        authController.logout();
+        // final newToken = await onTokenRefresh!();
+        // print(newToken);
+        // if (newToken != null && newToken.isNotEmpty) {
+        //   token = newToken;
+        //   sharedPreferences.setString(AppConstants.token, newToken);
+        //   updateHeader(newToken);
+        //   res = await send();
+        // }
       } catch (_) {
         // si falla el refresh, seguimos con el 401 original
       } finally {

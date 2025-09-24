@@ -102,200 +102,202 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Stack(
-        children: [
-          // Main Content
-          Column(
-            children: [
-              // Header
-              AppHeaderWidget(
-                onMenuPressed: () {
-                  setState(() {
-                    _isDrawerOpen = true;
-                  });
-                },
-                onProfileAction: (action) {
-                  _handleProfileAction(action);
-                },
-              ),
-              
-              // Main Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Page Title
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Text(
-                                  'Invitations',
-                                  style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF333333),
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _navigateToMyInvitations,
-                                child: Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1976D2),
-                                    borderRadius: BorderRadius.circular(100),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.15),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      const Icon(
-                                        Icons.mail_outline,
-                                        color: Colors.white,
-                                        size: 28,
-                                      ),
-                                      Positioned(
-                                        right: 0,
-                                        top: 0,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 20,
-                                            minHeight: 20,
-                                          ),
-                                          child: Text(
-                                            '$_pendingInvitationsCount',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Manage user invitations',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF666666),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    // Tab Bar
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                      ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        child: Row(
-                          children: ['Add New', 'View List'].asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final tabName = entry.value;
-                            final isSelected = _tabController.index == index;
-                            
-                            return Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  _tabController.animateTo(index);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? const Color(0xFF1976D2) : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF5F5F5),
+        body: Stack(
+          children: [
+            // Main Content
+            Column(
+              children: [
+                // Header
+                AppHeaderWidget(
+                  onMenuPressed: () {
+                    setState(() {
+                      _isDrawerOpen = true;
+                    });
+                  },
+                  onProfileAction: (action) {
+                    _handleProfileAction(action);
+                  },
+                ),
+                
+                // Main Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Page Title
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Expanded(
                                   child: Text(
-                                    tabName,
-                                    textAlign: TextAlign.center,
+                                    'Invitations',
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.grey.shade700,
+                                      fontSize: 26,
                                       fontWeight: FontWeight.w500,
-                                      fontSize: 14,
+                                      color: Color(0xFF333333),
                                     ),
                                   ),
                                 ),
+                                GestureDetector(
+                                  onTap: _navigateToMyInvitations,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1976D2),
+                                      borderRadius: BorderRadius.circular(100),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.15),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        const Icon(
+                                          Icons.mail_outline,
+                                          color: Colors.white,
+                                          size: 28,
+                                        ),
+                                        Positioned(
+                                          right: 0,
+                                          top: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 20,
+                                              minHeight: 20,
+                                            ),
+                                            child: Text(
+                                              '$_pendingInvitationsCount',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Manage user invitations',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF666666),
                               ),
-                            );
-                          }).toList(),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    
-                    // Tab Content
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildAddNewTab(),
-                          _buildViewListTab(),
-                        ],
+                      
+                      // Tab Bar
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                        ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          child: Row(
+                            children: ['Add New', 'View List'].asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final tabName = entry.value;
+                              final isSelected = _tabController.index == index;
+                              
+                              return Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    _tabController.animateTo(index);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? const Color(0xFF1976D2) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      tabName,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: isSelected ? Colors.white : Colors.grey.shade700,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      
+                      // Tab Content
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildAddNewTab(),
+                            _buildViewListTab(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            
+            // Drawer Overlay (transparent)
+            if (_isDrawerOpen)
+              GestureDetector(
+                onTap: () => setState(() => _isDrawerOpen = false),
+                child: Container(
+                  color: Colors.transparent,
                 ),
               ),
-            ],
-          ),
-          
-          // Drawer Overlay (transparent)
-          if (_isDrawerOpen)
-            GestureDetector(
-              onTap: () => setState(() => _isDrawerOpen = false),
-              child: Container(
-                color: Colors.transparent,
-              ),
+            
+            // Navigation Drawer
+            AppDrawerWidget(
+              isOpen: _isDrawerOpen,
+              onClose: () {
+                setState(() {
+                  _isDrawerOpen = false;
+                });
+              },
+              onNavigation: (route) {
+                setState(() {
+                  _isDrawerOpen = false;
+                });
+                _handleNavigation(route);
+              },
+              activeRoute: 'invitation',
             ),
-          
-          // Navigation Drawer
-          AppDrawerWidget(
-            isOpen: _isDrawerOpen,
-            onClose: () {
-              setState(() {
-                _isDrawerOpen = false;
-              });
-            },
-            onNavigation: (route) {
-              setState(() {
-                _isDrawerOpen = false;
-              });
-              _handleNavigation(route);
-            },
-            activeRoute: 'invitation',
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

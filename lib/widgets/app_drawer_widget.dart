@@ -58,54 +58,24 @@ class AppDrawerWidget extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        // Avatar Circle
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(50),
-                            border: Border.all(color: const Color(0xFF4CAF50), width: 3),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'JC',
-                              style: TextStyle(
+                        // Logo Image
+                        Image.asset(
+                          'assets/images/menu_logo.png',
+                          width: 216,
+                          height: 216,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 216,
+                              height: 216,
+                              color: Colors.grey[100],
+                              child: const Icon(
+                                Icons.medical_services,
+                                size: 108,
                                 color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
                               ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        // Title
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'SOMOS QR',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w100,
-                                letterSpacing: -1.2,
-                              ),
-                            ),
-                            const Text(
-                              '+',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w100,
-                              ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ],
                     ),

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/provider.dart';
+import 'package:somos_qr_plus/models/report_kpi_gic.dart';
 import '../widgets/gic_table_widget.dart';
 import '../widgets/ra_table_widget.dart';
 import '../widgets/appt_table_widget.dart';
@@ -13,6 +15,7 @@ import '../widgets/staff_login_table_widget.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
 import '../widgets/provider_dropdown_widget.dart';
+import 'package:intl/intl.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -86,7 +89,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       'timeframes': [
         {'name': 'TODAY', 'noVisits': 12, 'withVisits': 8},
         {'name': 'LAST 30 DAYS', 'noVisits': 45, 'withVisits': 23},
-        {'name': 'YTD', 'noVisits': 156, 'withVisits': 89},
       ],
       'currentTimeframeIndex': 1,
     },
@@ -113,140 +115,128 @@ class _ReportsScreenState extends State<ReportsScreen> {
           'total': 23,
           'earnings': 150.00
         },
-        {
-          'name': 'YTD',
-          'completed': 89,
-          'open': 34,
-          'total': 123,
-          'earnings': 890.00
-        },
       ],
       'currentTimeframeIndex': 0,
     },
   };
 
-  final List<Map<String, dynamic>> _staffLogins = [
-    {
-      'name': 'Joel Cedano',
-      'initials': 'JC',
-      'time': 'Today, 2:34 PM',
-      'status': 'Active'
-    },
-    {
-      'name': 'Maria Garcia',
-      'initials': 'MG',
-      'time': 'Today, 1:15 PM',
-      'status': 'Online'
-    },
-    {
-      'name': 'John Smith',
-      'initials': 'JS',
-      'time': 'Today, 9:23 AM',
-      'status': 'Offline'
-    },
-    {
-      'name': 'Michael Brown',
-      'initials': 'MB',
-      'time': 'Yesterday, 4:17 PM',
-      'status': 'Offline'
-    },
-  ];
+  final List<Map<String, dynamic>> _staffLogins = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+  }
+
+  Future<void> _loadData() async {
+    final c = Get.find<PracticeController>();
+
+    await c.getReportKpiGic(_selectedProvider.id);
+    await c.getReportKpiRa(_selectedProvider.id);
+    await c.getReportKpiAppt(_selectedProvider.id);
+
+    if (!mounted) return;
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5),
-        body: Stack(
-          children: [
-            // Main Content
-            Column(
-              children: [
-                AppHeaderWidget(
-                  onMenuPressed: () {
-                    setState(() {
-                      _isDrawerOpen = true;
-                    });
-                  },
-                  onProfileAction: (action) {
-                    _handleProfileAction(action);
-                  },
-                ),
-
-                // Provider Dropdown
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border:
-                        Border(bottom: BorderSide(color: Colors.grey.shade200)),
+    return GetBuilder<PracticeController>(builder: (practiceController) {
+      return SafeArea(
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: Stack(
+            children: [
+              // Main Content
+              Column(
+                children: [
+                  AppHeaderWidget(
+                    onMenuPressed: () {
+                      setState(() {
+                        _isDrawerOpen = true;
+                      });
+                    },
+                    onProfileAction: (action) {
+                      _handleProfileAction(action);
+                    },
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ProviderDropdownWidget(
-                          selectedProvider: _selectedProvider,
-                          providers: [],
-                          onProviderChanged: (provider) {
-                            setState(() {
-                              _selectedProvider = provider;
-                            });
-                            _showSuccessMessage(
-                                'Reports updated for $provider');
-                          },
-                          maxWidth: 300,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics:
-                        const BouncingScrollPhysics(), // Smooth scrolling for mobile
-                    padding: EdgeInsets.all(
-                        MediaQuery.of(context).size.width < 600 ? 12 : 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // Provider Dropdown
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                          bottom: BorderSide(color: Colors.grey.shade200)),
+                    ),
+                    child: Row(
                       children: [
-                        _buildPageHeader(),
-                        SizedBox(
-                            height: MediaQuery.of(context).size.width < 600
-                                ? 20
-                                : 32),
-                        _buildKPIGrid(),
+                        Expanded(
+                          child: ProviderDropdownWidget(
+                            selectedProvider: _selectedProvider,
+                            providers: practiceController.practices,
+                            onProviderChanged: (provider) {
+                              setState(() {
+                                _selectedProvider = provider;
+                              });
+                              _loadData();
+                              _showSuccessMessage(
+                                  'Reports updated for $provider');
+                            },
+                            maxWidth: 300,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
 
-            // Navigation Drawer
-            AppDrawerWidget(
-              isOpen: _isDrawerOpen,
-              onClose: () {
-                setState(() {
-                  _isDrawerOpen = false;
-                });
-              },
-              onNavigation: (route) {
-                setState(() {
-                  _isDrawerOpen = false;
-                });
-                _handleNavigation(route);
-              },
-              activeRoute: 'reports',
-            ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics:
+                          const BouncingScrollPhysics(), // Smooth scrolling for mobile
+                      padding: EdgeInsets.all(
+                          MediaQuery.of(context).size.width < 600 ? 12 : 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildPageHeader(),
+                          SizedBox(
+                              height: MediaQuery.of(context).size.width < 600
+                                  ? 20
+                                  : 32),
+                          _buildKPIGrid(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
 
-            // Logout Dialog
-            if (_showLogoutDialog) _buildLogoutDialog(),
-          ],
+              // Navigation Drawer
+              AppDrawerWidget(
+                isOpen: _isDrawerOpen,
+                onClose: () {
+                  setState(() {
+                    _isDrawerOpen = false;
+                  });
+                },
+                onNavigation: (route) {
+                  setState(() {
+                    _isDrawerOpen = false;
+                  });
+                  _handleNavigation(route);
+                },
+                activeRoute: 'reports',
+              ),
+
+              // Logout Dialog
+              if (_showLogoutDialog) _buildLogoutDialog(),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   void _handleNavigation(String route) {
@@ -286,7 +276,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         // Handle language change
         break;
       case 'invitations':
-        // Handle invitations
+        Get.offAllNamed(RouteHelper.getInvitationsRoute());
         break;
       case 'logout':
         setState(() {
@@ -300,11 +290,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive font sizing
-        double fontSize = 32; // Default desktop
+        double fontSize = 26; // Default desktop
         if (constraints.maxWidth < 600) {
-          fontSize = 24; // Mobile
+          fontSize = 18; // Mobile
         } else if (constraints.maxWidth < 900) {
-          fontSize = 28; // Tablet
+          fontSize = 22; // Tablet
         }
 
         return Column(
@@ -828,7 +818,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             _buildRACard(),
             _buildAPPTCard(),
             _buildMWOVCard(),
-            _buildSIIPCard(),
+            // _buildSIIPCard(),
             _buildStaffLoginCard(),
           ],
         );
@@ -837,16 +827,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildGICCard() {
-    final data = _kpiData['GIC'];
+    final c = Get.find<PracticeController>();
+    final data = c.reportKpiGic;
     if (data == null) return const SizedBox.shrink();
+
+    final String formatted = DateFormat('MM-dd-yyyy').format(data.todayDate);
 
     return _buildKPICard(
       title: 'GIC',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildKPIHeader('GIC', data['timeframe'] as String?,
-              data['date'] as String?, false),
+          _buildKPIHeader(
+              'GIC', 'Today' as String?, formatted as String?, false, null),
           const SizedBox(height: 4),
           Expanded(
             child: SingleChildScrollView(
@@ -856,18 +849,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   _buildKPIMetrics([
                     {
                       'label': 'Missed',
-                      'value': data['missed'] ?? 0,
+                      'value': data.todayMessedWoa,
                       'type': 'missed'
                     },
                     {
                       'label': 'Completed',
-                      'value': data['completed'] ?? 0,
+                      'value': data.todayCompletedWa,
                       'type': 'completed'
                     },
                   ]),
                   const SizedBox(height: 2),
-                  _buildKPIRank(data['rank'] as String? ?? 'RANK 0/0',
-                      data['networkRank'] as String? ?? ''),
+                  _buildKPIRank(
+                      data.todayRank.toString() +
+                              '/' +
+                              data.todayRankOf.toString() as String? ??
+                          'RANK 0/0',
+                      '' as String? ?? ''),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -902,16 +899,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildRACard() {
-    final data = _kpiData['RA'];
+    final c = Get.find<PracticeController>();
+    final data = c.reportKpiRa;
+    final dataTime = _kpiData['RA'];
     if (data == null) return const SizedBox.shrink();
 
+    final String formatted = DateFormat('MM-dd-yyyy').format(data.todayDate);
+    // LAST 30 DAYS
     return _buildKPICard(
       title: 'RA',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildKPIHeader('RA', data['timeframe'] as String?,
-              data['date'] as String?, true),
+          _buildKPIHeader(
+              'RA', dataTime?['timeframe'], formatted as String?, true, data),
           const SizedBox(height: 4),
           Expanded(
             child: SingleChildScrollView(
@@ -921,18 +922,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   _buildKPIMetrics([
                     {
                       'label': 'Missed',
-                      'value': data['missed'] ?? 0,
+                      'value': data.todayMessedWoa,
                       'type': 'missed'
                     },
                     {
                       'label': 'Completed',
-                      'value': data['completed'] ?? 0,
+                      'value': data.todayCompletedWa,
                       'type': 'completed'
                     },
                   ]),
                   const SizedBox(height: 2),
-                  _buildKPIRank(data['rank'] as String? ?? 'RANK 0/0',
-                      data['networkRank'] as String? ?? ''),
+                  _buildKPIRank(
+                      data.todayRank.toString() +
+                              '/' +
+                              data.todayRankOf.toString() as String? ??
+                          'RANK 0/0',
+                      '' as String? ?? ''),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -967,16 +972,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildAPPTCard() {
-    final data = _kpiData['APPT'];
-    if (data == null) return const SizedBox.shrink();
+    final c = Get.find<PracticeController>();
+    final ReportKpiGic? appt = c.reportKpiAPPT;
+
+    if (appt == null) return const SizedBox.shrink();
 
     return _buildKPICard(
       title: 'APPT',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildKPIHeader('APPT', data['timeframe'] as String?,
-              data['date'] as String?, false),
+          // ✅ Header (usa las fechas de lastMonth como timeframe de ejemplo)
+          _buildKPIHeader(
+              'APPT',
+              // timeframe: mes anterior
+              '${DateFormat('MM/dd').format(appt.lmonthBegin)} - '
+                  '${DateFormat('MM/dd').format(appt.lmonthEnd)}',
+              // fecha de hoy
+              DateFormat('MM/dd/yyyy').format(appt.todayDate),
+              true,
+              appt),
           const SizedBox(height: 4),
           Expanded(
             child: SingleChildScrollView(
@@ -986,18 +1001,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   _buildKPIMetrics([
                     {
                       'label': 'Scheduled',
-                      'value': data['scheduled'] ?? 0,
-                      'type': 'scheduled'
+                      // aquí puedes mapear a la métrica que uses
+                      'value': appt.todayStar,
+                      'type': 'scheduled',
                     },
                     {
                       'label': 'Completed',
-                      'value': data['completed'] ?? 0,
-                      'type': 'completed'
+                      'value': appt.todayCompletedWa,
+                      'type': 'completed',
                     },
                     {
                       'label': 'Missed',
-                      'value': data['missed'] ?? 0,
-                      'type': 'missed'
+                      'value': appt.todayMessedWoa,
+                      'type': 'missed',
                     },
                   ]),
                   const SizedBox(height: 8),
@@ -1042,7 +1058,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildKPIHeader('MWOV\'s', data['timeframe'] as String?, null, true),
+          _buildKPIHeader(
+              'MWOV\'s', data['timeframe'] as String?, null, true, null),
           const SizedBox(height: 4),
           Expanded(
             child: SingleChildScrollView(
@@ -1101,7 +1118,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildKPIHeader('SIIP', data['timeframe'] as String?,
-              data['date'] as String?, true),
+              data['date'] as String?, true, null),
           const SizedBox(height: 4),
           Expanded(
             child: SingleChildScrollView(
@@ -1249,8 +1266,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildKPIHeader(
-      String title, String? timeframe, String? date, bool hasNavigation) {
+  Widget _buildKPIHeader(String title, String? timeframe, String? date,
+      bool hasNavigation, ReportKpiGic? data) {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive font sizes based on available width
@@ -1286,7 +1303,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (hasNavigation) _buildTimeframeNavigation(title),
+                if (hasNavigation) _buildTimeframeNavigation(title, data),
               ],
             ),
             if (timeframe != null) ...[
@@ -1318,13 +1335,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildTimeframeNavigation(String kpiType) {
-    final data = _kpiData[kpiType];
+  Widget _buildTimeframeNavigation(String kpiType, ReportKpiGic? data) {
+    print(data);
     if (data == null) return const SizedBox.shrink();
 
-    final currentIndex = data['currentTimeframeIndex'] ?? 0;
-    final timeframes = data['timeframes'] as List<Map<String, dynamic>>? ?? [];
-
+    final currentIndex = 0;
+    final timeframes = [
+          {
+            'name': 'TODAY',
+          },
+          {
+            'name': 'LAST 30 DAYS',
+          },
+        ] as List<Map<String, dynamic>>? ??
+        [];
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive sizing based on available width

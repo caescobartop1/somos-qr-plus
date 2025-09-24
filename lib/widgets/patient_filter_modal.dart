@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:somos_qr_plus/models/mco.dart';
+import 'package:somos_qr_plus/models/provider_schedule.dart';
 
 class PatientFilterModal extends StatefulWidget {
   final String mcoFilter;
   final String providerFilter;
   final String dobFilter;
+  final List<Mco> mco;
+  final List<ProviderSchedule> provider;
   final Function(String, String, String) onApply;
+  bool showProvider = false;
 
-  const PatientFilterModal({
-    super.key,
-    required this.mcoFilter,
-    required this.providerFilter,
-    required this.dobFilter,
-    required this.onApply,
-  });
+  PatientFilterModal(
+      {super.key,
+      required this.mcoFilter,
+      required this.providerFilter,
+      required this.dobFilter,
+      required this.onApply,
+      required this.mco,
+      required this.provider,
+      this.showProvider = false});
 
   @override
   State<PatientFilterModal> createState() => _PatientFilterModalState();
@@ -41,7 +48,7 @@ class _PatientFilterModalState extends State<PatientFilterModal> {
         builder: (context, constraints) {
           final dialogWidth = constraints.maxWidth * 0.9;
           final maxWidth = 500.0;
-          
+
           return Container(
             width: dialogWidth > maxWidth ? maxWidth : dialogWidth,
             constraints: const BoxConstraints(maxWidth: 500, minWidth: 300),
@@ -56,7 +63,8 @@ class _PatientFilterModalState extends State<PatientFilterModal> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                    border:
+                        Border(bottom: BorderSide(color: Colors.grey.shade300)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -80,7 +88,7 @@ class _PatientFilterModalState extends State<PatientFilterModal> {
                     ],
                   ),
                 ),
-                
+
                 // Body
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -96,66 +104,63 @@ class _PatientFilterModalState extends State<PatientFilterModal> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
                           ),
                           items: [
-                            'All',
-                            'HealthFirst',
-                            'MetroPlus',
-                            'Fidelis Care',
-                            'Empire BCBS',
-                            'UHC Community',
-                          ].map((mco) => DropdownMenuItem(
-                            value: mco,
-                            child: Text(
-                              mco,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14),
+                            const DropdownMenuItem(
+                              value: 'all',
+                              child: Text('All MCOs'),
                             ),
-                          )).toList(),
+                            ...widget.mco.map((mco) => DropdownMenuItem(
+                                  value: mco.mcoId.toString(),
+                                  child: Text(mco.mcoName),
+                                )),
+                          ],
                           onChanged: (value) {
                             setState(() => _mcoFilter = value ?? '');
                           },
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Provider Filter
-                      _buildFilterSection(
-                        'Provider',
-                        DropdownButtonFormField<String>(
-                          value: _providerFilter.isEmpty ? null : _providerFilter,
-                          decoration: InputDecoration(
-                            hintText: 'Select Provider',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                          items: [
-                            'All',
-                            'Dr. John Smith',
-                            'Dr. Maria Garcia',
-                            'Dr. James Wilson',
-                            'Dr. Sarah Chen',
-                            'Dr. Michael Brown',
-                          ].map((provider) => DropdownMenuItem(
-                            value: provider,
-                            child: Text(
-                              provider,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          )).toList(),
-                          onChanged: (value) {
-                            setState(() => _providerFilter = value ?? '');
-                          },
-                        ),
-                      ),
-                      
+                      widget.showProvider
+                          ? _buildFilterSection(
+                              'Provider',
+                              DropdownButtonFormField<String>(
+                                value: _providerFilter.isEmpty
+                                    ? null
+                                    : _providerFilter,
+                                decoration: InputDecoration(
+                                  hintText: 'Select Provider',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                ),
+                                items: [
+                                  const DropdownMenuItem(
+                                    value: 'all',
+                                    child: Text('All Providers'),
+                                  ),
+                                  ...widget.provider
+                                      .map((p) => DropdownMenuItem(
+                                            value: p.id.toString(),
+                                            child: Text(p.fullName),
+                                          )),
+                                ],
+                                onChanged: (value) {
+                                  setState(() => _providerFilter = value ?? '');
+                                },
+                              ),
+                            )
+                          : Container(),
+
                       const SizedBox(height: 20),
-                      
+
                       // Date of Birth Filter
                       _buildFilterSection(
                         'Date of Birth',
@@ -166,7 +171,8 @@ class _PatientFilterModalState extends State<PatientFilterModal> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
                           ),
                           inputFormatters: [
                             _DateInputFormatter(),
@@ -179,7 +185,7 @@ class _PatientFilterModalState extends State<PatientFilterModal> {
                     ],
                   ),
                 ),
-                
+
                 // Footer
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -196,7 +202,8 @@ class _PatientFilterModalState extends State<PatientFilterModal> {
                       TextButton(
                         onPressed: _clearFilters,
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
                         ),
                         child: const Text(
                           'Clear',
@@ -211,7 +218,8 @@ class _PatientFilterModalState extends State<PatientFilterModal> {
                         onPressed: _applyFilters,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1976D2),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
                         ),
                         child: const Text(
                           'Apply',
@@ -273,11 +281,11 @@ class _DateInputFormatter extends TextInputFormatter {
   ) {
     // Remove any non-digit characters
     String text = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
-    
+
     if (text.length > 8) {
       text = text.substring(0, 8);
     }
-    
+
     if (text.length >= 4) {
       // Add month/day separator
       text = text.substring(0, 2) + '/' + text.substring(2);
@@ -286,7 +294,7 @@ class _DateInputFormatter extends TextInputFormatter {
       // Add day/year separator
       text = text.substring(0, 5) + '/' + text.substring(5);
     }
-    
+
     return TextEditingValue(
       text: text,
       selection: TextSelection.collapsed(offset: text.length),

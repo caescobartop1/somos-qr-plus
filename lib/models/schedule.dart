@@ -4,7 +4,7 @@ class Schedule {
   final DateTime day;
   final int gic;
   final int ra;
-  final int memberPlanId;
+  final dynamic memberPlanId;
   final DateTime? dob;
   final int provider;
   final int patientId;
@@ -84,7 +84,7 @@ class Schedule {
       day: _toDateRequired(json['day']),
       gic: _toInt(json['gic']),
       ra: _toInt(json['ra']),
-      memberPlanId: _toInt(json['member_plan_id']),
+      memberPlanId: json['member_plan_id'],
       dob: _toDateOptional(json['dob']),
       provider: _toInt(json['provider']),
       patientId: _toInt(json['patient_id']),

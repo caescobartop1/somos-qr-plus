@@ -145,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen>
                 const SizedBox(height: 16),
                 _buildLoginForm(authController),
                 const SizedBox(height: 24),
-                _buildFooter(authController),
+                _buildFooter(),
               ],
             ),
           ),
@@ -215,8 +215,108 @@ class _LoginScreenState extends State<LoginScreen>
           _buildFormOptions(),
           const SizedBox(height: 16),
           _buildLoginButton(authController),
+          const SizedBox(height: 24),
+          _buildOrDivider(),
+          const SizedBox(height: 24),
+          _buildCreateAccountSection(authController),
         ],
       ),
+    );
+  }
+
+  Widget _buildCreateAccountEmailField() {
+    return TextFormField(
+      controller: _createAccountEmailController,
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.done,
+      decoration: InputDecoration(
+        hintText: 'Enter your email',
+        hintStyle: TextStyle(color: Colors.grey[400]),
+        prefixIcon: Icon(
+          Icons.email_outlined,
+          color: Colors.grey[600],
+          size: 20,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey[300]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Email address is required';
+        }
+        if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value)) {
+          return 'Please enter a valid email address';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildCreateAccountSection(AuthController authController) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Create new account',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[800],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildCreateAccountEmailField(),
+        const SizedBox(height: 16),
+        _buildSignUpButton(authController),
+      ],
+    );
+  }
+
+  Widget _buildOrDivider() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            color: Colors.grey[300],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'OR',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: Colors.grey[300],
+          ),
+        ),
+      ],
     );
   }
 
@@ -352,6 +452,59 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  Widget _buildSignUpButton(AuthController authController) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          _handleSignUp(authController);
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.grey[100],
+          foregroundColor: Colors.grey[800],
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          elevation: 0,
+        ),
+        child: Text(
+          'Sign up with email',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleSignUp(AuthController authController) async {
+    if (_createAccountEmailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your email address'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+        .hasMatch(_createAccountEmailController.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid email address'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to create account page with pre-filled email
+    authController.validateEmail(_createAccountEmailController.text);
+  }
+
   Widget _buildFormOptions() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -436,56 +589,9 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildFooter(AuthController authController) {
+  Widget _buildFooter() {
     return Column(
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Enter your email',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[800],
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _createAccountEmailController,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                hintText: 'Enter your email',
-                hintStyle: TextStyle(color: Colors.grey[400]),
-                prefixIcon: Icon(
-                  Icons.email_outlined,
-                  color: Colors.grey[600],
-                  size: 20,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  borderSide: BorderSide(color: Color(0xFF1976D2), width: 2),
-                ),
-                errorBorder: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  borderSide: BorderSide(color: Color(0xFFD32F2F), width: 2),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
         Text.rich(
           TextSpan(
             text: "Don't have an account? ",
@@ -498,18 +604,7 @@ class _LoginScreenState extends State<LoginScreen>
               WidgetSpan(
                 child: GestureDetector(
                   onTap: () {
-                    if (_createAccountEmailController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('Please enter your create account email address first'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                    authController
-                        .validateEmail(_createAccountEmailController.text);
-                    // Get.toNamed(RouteHelper.getCreateAccountRoute());
+                    context.go('/create-account');
                   },
                   child: Text(
                     'Create an account',

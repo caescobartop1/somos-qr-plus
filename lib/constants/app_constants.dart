@@ -24,12 +24,23 @@ class AppConstants {
   static const String forgotPasswordConfirmUrl =
       '/auth/password/reset/confirm/';
 
-   // Practice
+  // Practice
 
-   static const String practiceUrl = '/accounts/practice/';
-   static const String practiceDetailsUrl = '/catalog/kpi/';
-   static const String panelDetailsUrl = '/catalog/practice_mco_product/';
-   static const String mocListDetailsUrl = '/accounts/mco_list/';
-   static const String bonusDetailsUrl = '/accounts/bonus_chart_data/';
-   static const String scheduleUrl = '/accounts/schedule/';
+  static const String practiceUrl = '/accounts/practice/';
+  static const String practiceDetailsUrl = '/catalog/kpi/';
+  static const String panelDetailsUrl = '/catalog/practice_mco_product/';
+  static const String mocListDetailsUrl = '/accounts/mco_list/';
+  static const String bonusDetailsUrl = '/accounts/bonus_chart_data/';
+  static const String scheduleUrl = '/accounts/schedule/';
+  static const String mcoUrl = '/accounts/mco/';
+  static const String providerUrl = '/accounts/provider_practice/';
+  static const String userUrl = '/catalog/patient/';
+  static const String userGapUrl = '/catalog/patient_gap/';
+  static const String userPatologyUrl = '/catalog/patient_pathology/';
+  static const String pocketGapUrl = '/catalog/pocket_gap_category/';
+  static const String pocketRaUrl = '/catalog/pocket_guide_ra_header/';
+
+  static const String notificationsUrl = '/accounts/notification';
+
+  static const String reportKpiUrl = '/catalog/app_report_kpi/';
 }
