@@ -66,6 +66,49 @@ class AuthController extends GetxController {
     update();
   }
 
+  Future<void> changePassword(
+      String password1, String password2, String oldPassword) async {
+    final body = {
+      'new_password1': password1,
+      'new_password2': password2,
+      'old_password': oldPassword
+    };
+    _isLoading = true;
+    update();
+
+    final response = await apiClient
+        .postData(AppConstants.changePasswordUrl, body, queryParams: {
+      "app_key": AppConstants.appKey,
+    });
+
+    if (response.statusCode == 200) {
+      Get.snackbar(
+        'Success',
+        response.body['detail'] ?? 'Password updated',
+        backgroundColor: Colors.green.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to update password',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+    _isLoading = false;
+    update();
+  }
+
   Future<void> reSendCode() async {
     String tokenOtp = sharedPreferences.getString(AppConstants.tokenOtp) ?? '';
     final body = {'otp_delivery_email': true, 'token': tokenOtp};

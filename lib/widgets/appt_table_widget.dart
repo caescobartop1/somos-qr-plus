@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 
 class APPTTableWidget extends StatefulWidget {
-  const APPTTableWidget({super.key});
+  final String practice_id;
+  const APPTTableWidget({super.key, required this.practice_id});
 
   @override
   State<APPTTableWidget> createState() => _APPTTableWidgetState();
@@ -12,219 +15,95 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
   List<APPTPatient> _filteredPatients = [];
   String _sortColumn = 'name';
   bool _sortAscending = true;
-  
+
   // Pagination
   int _currentPage = 1;
   int _rowsPerPage = 10;
-  
+
   // Filter controllers
   final TextEditingController _nameFilterController = TextEditingController();
   final TextEditingController _dobFilterController = TextEditingController();
   final TextEditingController _dosFilterController = TextEditingController();
   final TextEditingController _missedFilterController = TextEditingController();
   final TextEditingController _phoneFilterController = TextEditingController();
-  final TextEditingController _addressFilterController = TextEditingController();
+  final TextEditingController _addressFilterController =
+      TextEditingController();
   String _mcoFilter = '';
 
   @override
   void initState() {
     super.initState();
-    _loadSampleData();
-    _applyFilters();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPatients());
   }
 
-  void _loadSampleData() {
-    _patients = [
-      APPTPatient(
-        name: 'Rosa Martinez',
-        mco: 'Anthem',
-        dob: '03-15-1955',
-        lastDos: '01-15-2024',
-        missedDate: '02-20-2024',
-        phone: '7185551234',
-        address: '123 Main St, Brooklyn, NY',
-      ),
-      APPTPatient(
-        name: 'Jose Rodriguez',
-        mco: 'Emblem',
-        dob: '07-22-1948',
-        lastDos: '12-10-2023',
-        missedDate: '01-15-2024',
-        phone: '9176667777',
-        address: '456 Oak Ave, Queens, NY',
-      ),
-      APPTPatient(
-        name: 'Maria Lopez',
-        mco: 'Molina',
-        dob: '11-08-1960',
-        lastDos: '02-05-2024',
-        missedDate: '03-10-2024',
-        phone: '6464445555',
-        address: '789 Pine St, Bronx, NY',
-      ),
-      APPTPatient(
-        name: 'Carlos Santos',
-        mco: 'Healthfirst',
-        dob: '09-14-1952',
-        lastDos: '01-28-2024',
-        missedDate: '02-15-2024',
-        phone: '2123334444',
-        address: '321 Elm St, Manhattan, NY',
-      ),
-      APPTPatient(
-        name: 'Ana Garcia',
-        mco: 'Anthem',
-        dob: '05-30-1958',
-        lastDos: '12-20-2023',
-        missedDate: '01-25-2024',
-        phone: '7187778888',
-        address: '654 Maple Dr, Staten Island, NY',
-      ),
-      APPTPatient(
-        name: 'Luis Torres',
-        mco: 'Emblem',
-        dob: '02-18-1945',
-        lastDos: '01-10-2024',
-        missedDate: '02-05-2024',
-        phone: '9178889999',
-        address: '987 Cedar Ln, Brooklyn, NY',
-      ),
-      APPTPatient(
-        name: 'Carmen Rivera',
-        mco: 'Healthfirst',
-        dob: '08-12-1950',
-        lastDos: '02-01-2024',
-        missedDate: '03-01-2024',
-        phone: '7189990000',
-        address: '147 Washington Ave, Brooklyn, NY',
-      ),
-      APPTPatient(
-        name: 'Miguel Hernandez',
-        mco: 'Molina',
-        dob: '12-03-1947',
-        lastDos: '01-05-2024',
-        missedDate: '02-10-2024',
-        phone: '9171112222',
-        address: '258 Broadway, Manhattan, NY',
-      ),
-      APPTPatient(
-        name: 'Isabella Fernandez',
-        mco: 'Anthem',
-        dob: '06-20-1955',
-        lastDos: '12-15-2023',
-        missedDate: '01-20-2024',
-        phone: '6463334444',
-        address: '369 5th Ave, Brooklyn, NY',
-      ),
-      APPTPatient(
-        name: 'Roberto Jimenez',
-        mco: 'Emblem',
-        dob: '04-08-1953',
-        lastDos: '01-22-2024',
-        missedDate: '02-28-2024',
-        phone: '2125556666',
-        address: '741 Atlantic Ave, Brooklyn, NY',
-      ),
-      // Additional sample data for pagination testing
-      APPTPatient(
-        name: 'Elena Vasquez',
-        mco: 'Healthfirst',
-        dob: '03-28-1976',
-        lastDos: '02-10-2024',
-        missedDate: '03-15-2024',
-        phone: '6463334444',
-        address: '852 Madison St, Queens, NY',
-      ),
-      APPTPatient(
-        name: 'Carlos Mendez',
-        mco: 'Anthem',
-        dob: '06-15-1983',
-        lastDos: '01-30-2024',
-        missedDate: '03-05-2024',
-        phone: '7189998888',
-        address: '963 Lexington Ave, Manhattan, NY',
-      ),
-      APPTPatient(
-        name: 'Sofia Ramirez',
-        mco: 'Molina',
-        dob: '09-17-1981',
-        lastDos: '02-15-2024',
-        missedDate: '03-20-2024',
-        phone: '6464445555',
-        address: '174 3rd Ave, Brooklyn, NY',
-      ),
-      APPTPatient(
-        name: 'Diego Herrera',
-        mco: 'Emblem',
-        dob: '01-22-1974',
-        lastDos: '01-25-2024',
-        missedDate: '02-28-2024',
-        phone: '6468889999',
-        address: '285 4th St, Bronx, NY',
-      ),
-      APPTPatient(
-        name: 'Valentina Cruz',
-        mco: 'Healthfirst',
-        dob: '07-14-1987',
-        lastDos: '02-20-2024',
-        missedDate: '03-25-2024',
-        phone: '9171112222',
-        address: '396 5th St, Staten Island, NY',
-      ),
-      APPTPatient(
-        name: 'Alejandro Morales',
-        mco: 'Anthem',
-        dob: '04-09-1972',
-        lastDos: '01-18-2024',
-        missedDate: '02-22-2024',
-        phone: '7186667777',
-        address: '407 6th Ave, Queens, NY',
-      ),
-      APPTPatient(
-        name: 'Camila Jimenez',
-        mco: 'Molina',
-        dob: '12-03-1985',
-        lastDos: '02-25-2024',
-        missedDate: '03-30-2024',
-        phone: '6465556666',
-        address: '518 7th St, Brooklyn, NY',
-      ),
-      APPTPatient(
-        name: 'Sebastian Ruiz',
-        mco: 'Emblem',
-        dob: '05-26-1978',
-        lastDos: '01-12-2024',
-        missedDate: '02-18-2024',
-        phone: '9179990000',
-        address: '629 8th Ave, Manhattan, NY',
-      ),
-      APPTPatient(
-        name: 'Gabriela Torres',
-        mco: 'Healthfirst',
-        dob: '08-19-1980',
-        lastDos: '02-08-2024',
-        missedDate: '03-12-2024',
-        phone: '7187778888',
-        address: '730 9th St, Bronx, NY',
-      ),
-    ];
-    _filteredPatients = List.from(_patients);
-  }
+  Future<void> _loadPatients() async {
+    final c = Get.find<PracticeController>();
 
-  void _applyFilters() {
+    // ✅ Cargar lista de MCOs para el dropdown
+    await c.getMco(widget.practice_id);
+
+    // ✅ Llamar al método que llena _apptList en el controlador
+    await c.getReportKpiApptList(
+      widget.practice_id,
+      memberName: _nameFilterController.text,
+      mcoName: _mcoFilter == 'all' ? null : _mcoFilter,
+      dob: _dobFilterController.text,
+      lastVisitDate: _dosFilterController.text,
+      messedDate: _missedFilterController.text,
+      address: _addressFilterController.text,
+      phone: _phoneFilterController.text,
+    );
+
+    if (!mounted) return;
     setState(() {
-      _filteredPatients = _patients.where((patient) {
-        final nameMatch = patient.name.toLowerCase().contains(_nameFilterController.text.toLowerCase());
-        final mcoMatch = _mcoFilter.isEmpty || patient.mco == _mcoFilter;
-        final dobMatch = patient.dob.contains(_dobFilterController.text);
-        final dosMatch = patient.lastDos.contains(_dosFilterController.text);
-        final missedMatch = patient.missedDate.contains(_missedFilterController.text);
-        final phoneMatch = patient.phone.contains(_phoneFilterController.text);
-        final addressMatch = patient.address.toLowerCase().contains(_addressFilterController.text.toLowerCase());
-        
-        return nameMatch && mcoMatch && dobMatch && dosMatch && missedMatch && phoneMatch && addressMatch;
-      }).toList();
-      _currentPage = 1; // Reset to first page when filtering
+      // ✅ Mapear los datos del controlador a nuestro modelo de tabla
+      _patients = c.apptList
+          .map((e) => APPTPatient(
+                name: e.memberName,
+                mco: e.mcoName,
+                dob: e.dob,
+                lastDos: e.dateTime,
+                missedDate: e.messedDate ?? '',
+                phone: e.phoneNumber,
+                address: e.address,
+              ))
+          .toList();
+
+      _filteredPatients = List.from(_patients);
+      _currentPage = 1;
+    });
+  }
+
+  void _applyFilters() async {
+    final c = Get.find<PracticeController>();
+
+    // ✅ Llamar al método que llena _apptList en el controlador
+    await c.getReportKpiApptList(
+      widget.practice_id,
+      memberName: _nameFilterController.text,
+      mcoName: _mcoFilter == 'all' ? null : _mcoFilter,
+      dob: _dobFilterController.text,
+      lastVisitDate: _dosFilterController.text,
+      messedDate: _missedFilterController.text,
+      address: _addressFilterController.text,
+      phone: _phoneFilterController.text,
+    );
+    setState(() {
+      // ✅ Mapear los datos del controlador a nuestro modelo de tabla
+      _patients = c.apptList
+          .map((e) => APPTPatient(
+                name: e.memberName,
+                mco: e.mcoName,
+                dob: e.dob,
+                lastDos: e.dateTime,
+                missedDate: e.messedDate ?? '',
+                phone: e.phoneNumber,
+                address: e.address,
+              ))
+          .toList();
+
+      _filteredPatients = List.from(_patients);
+      _currentPage = 1;
     });
   }
 
@@ -255,11 +134,11 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
         _sortColumn = column;
         _sortAscending = true;
       }
-      
+
       _filteredPatients.sort((a, b) {
         var aValue = _getValueForColumn(a, column);
         var bValue = _getValueForColumn(b, column);
-        
+
         int comparison = aValue.compareTo(bValue);
         return _sortAscending ? comparison : -comparison;
       });
@@ -289,6 +168,7 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final c = Get.find<PracticeController>();
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive sizing
@@ -329,17 +209,17 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      // Export functionality - silent for now
-                    },
-                    icon: const Icon(Icons.file_download, size: 20),
-                    tooltip: 'Export',
-                  ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     // Export functionality - silent for now
+                  //   },
+                  //   icon: const Icon(Icons.file_download, size: 20),
+                  //   tooltip: 'Export',
+                  // ),
                 ],
               ),
             ),
-            
+
             // Filter Row
             Container(
               padding: EdgeInsets.all(padding),
@@ -363,7 +243,10 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
                       Expanded(
                         child: _buildFilterDropdown(
                           value: _mcoFilter,
-                          items: ['', 'Healthfirst', 'Anthem', 'Emblem', 'Molina'],
+                          items: [
+                            'all',
+                            ...c.mcoList.map((mco) => mco.mcoName),
+                          ],
                           hint: 'MCO',
                           onChanged: (value) {
                             _mcoFilter = value ?? '';
@@ -426,7 +309,7 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
                 ],
               ),
             ),
-            
+
             // Table
             Expanded(
               child: Column(
@@ -449,7 +332,8 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
                             _buildDataColumn('MCO', 'mco', fontSize),
                             _buildDataColumn('DOB', 'dob', fontSize),
                             _buildDataColumn('LAST DOS', 'lastDos', fontSize),
-                            _buildDataColumn('MISSED DATE', 'missedDate', fontSize),
+                            _buildDataColumn(
+                                'MISSED DATE', 'missedDate', fontSize),
                             _buildDataColumn('PHONE', 'phone', fontSize),
                             _buildDataColumn('ADDRESS', 'address', fontSize),
                           ],
@@ -513,8 +397,9 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
 
   Widget _buildPaginationControls() {
     final startIndex = (_currentPage - 1) * _rowsPerPage + 1;
-    final endIndex = (_currentPage * _rowsPerPage).clamp(0, _filteredPatients.length);
-    
+    final endIndex =
+        (_currentPage * _rowsPerPage).clamp(0, _filteredPatients.length);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
@@ -541,7 +426,9 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.black)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -564,7 +451,8 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -590,7 +478,8 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(fontSize: 11)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -606,13 +495,14 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
                     ),
                   ],
                 ),
-                
+
                 // Page info and navigation
                 Row(
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -632,13 +522,14 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
       children: [
         // Previous button
         IconButton(
-          onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
+          onPressed:
+              _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
           icon: const Icon(Icons.chevron_left),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
         ),
-        
+
         // Current page number only (to save space)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -655,10 +546,12 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
             ),
           ),
         ),
-        
+
         // Next button
         IconButton(
-          onPressed: _currentPage < _totalPages ? () => _goToPage(_currentPage + 1) : null,
+          onPressed: _currentPage < _totalPages
+              ? () => _goToPage(_currentPage + 1)
+              : null,
           icon: const Icon(Icons.chevron_right),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
@@ -674,7 +567,8 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
     required ValueChanged<String> onChanged,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 80), // Minimum width constraint
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
@@ -684,7 +578,8 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           isDense: true,
         ),
         style: const TextStyle(fontSize: 11),
@@ -700,7 +595,8 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
     required ValueChanged<String?> onChanged,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 80), // Minimum width constraint
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
       child: DropdownButtonFormField<String>(
         value: value!.isEmpty ? null : value,
         decoration: InputDecoration(
@@ -710,7 +606,8 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           isDense: true,
         ),
         items: items.map((item) {

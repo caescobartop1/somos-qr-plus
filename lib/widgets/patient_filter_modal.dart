@@ -144,7 +144,7 @@ class _PatientFilterModalState extends State<PatientFilterModal> {
                                 items: [
                                   const DropdownMenuItem(
                                     value: 'all',
-                                    child: Text('All Providers'),
+                                    child: Text('Select a Provider'),
                                   ),
                                   ...widget.provider
                                       .map((p) => DropdownMenuItem(

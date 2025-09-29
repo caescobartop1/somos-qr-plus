@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
+import 'package:somos_qr_plus/models/staff_login.dart';
+import 'package:somos_qr_plus/widgets/provider_dropdown_widget.dart';
 import '../helpers/route_helper.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
+import 'package:somos_qr_plus/models/provider.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({super.key});
@@ -20,38 +24,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   final int _itemsPerPage = 10;
 
   // Sample user data
-  final List<Map<String, dynamic>> _users = [
-    {
-      'name': 'Mirza Morales-Diaz',
-      'role': 'Admin',
-      'status': true,
-      'lastLogin': '04/29/2025',
-    },
-    {
-      'name': 'Joel Cedano',
-      'role': 'Provider',
-      'status': true,
-      'lastLogin': '04/28/2025',
-    },
-    {
-      'name': 'Sarah Johnson',
-      'role': 'Nurse',
-      'status': false,
-      'lastLogin': '04/27/2025',
-    },
-    {
-      'name': 'Michael Davis',
-      'role': 'Viewer',
-      'status': true,
-      'lastLogin': '04/26/2025',
-    },
-    {
-      'name': 'Lisa Thompson',
-      'role': 'Provider',
-      'status': false,
-      'lastLogin': '04/25/2025',
-    },
-  ];
+  final List<Map<String, dynamic>> _users = [];
 
   List<Map<String, dynamic>> get _filteredUsers {
     if (_searchController.text.isEmpty) {
@@ -76,7 +49,33 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   int get _totalPages => (_filteredUsers.length / _itemsPerPage).ceil();
+  Provider _selectedIncentiveProvider = new Provider(name: 'All', id: '-1');
+
+  @override
+  void initState() {
+    super.initState();
+    final c = Get.find<PracticeController>();
+    _selectedIncentiveProvider = c.defaultProvider;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Reemplaza '522248589' por el practiceId actual
+      await c.getUserManagement(_selectedIncentiveProvider.id);
+      await c.getInvitationRoles();
+      await c.getPractice('');
+    });
+  }
 
   @override
   void dispose() {
@@ -86,177 +85,202 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Main Content
-          Column(
+    return GetBuilder<PracticeController>(builder: (c) {
+      return SafeArea(
+        child: Scaffold(
+          body: Stack(
             children: [
-              // Header
-              AppHeaderWidget(
-                onMenuPressed: () {
-                  setState(() {
-                    _isDrawerOpen = true;
-                  });
-                },
-                onProfileAction: (action) {
-                  _handleProfileAction(action);
-                },
-              ),
+              Column(
+                children: [
+                  // Header
+                  AppHeaderWidget(
+                    onMenuPressed: () {
+                      setState(() => _isDrawerOpen = true);
+                    },
+                    onProfileAction: (action) => _handleProfileAction(action),
+                  ),
 
-              // Main Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Page Title
-                      const Text(
-                        'User Management',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF333333),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Search/Filter Bar
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[300]!),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.search,
-                                color: Color(0xFF666666), size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: _searchController,
-                                decoration: const InputDecoration(
-                                  hintText: 'Filter',
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _currentPage =
-                                        1; // Reset to first page when filtering
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Mobile-optimized user cards
-                      ..._paginatedUsers
-                          .map((user) => _buildMobileUserCard(
-                                user['name'],
-                                user['role'],
-                                user['lastLogin'],
-                                user['status'],
-                              ))
-                          .toList(),
-
-                      const SizedBox(height: 16),
-
-                      // Pagination
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  // Contenido principal
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          IconButton(
-                            onPressed: _currentPage > 1
-                                ? () => setState(() => _currentPage--)
-                                : null,
-                            icon: const Icon(Icons.first_page,
-                                color: Color(0xFF666666)),
-                          ),
-                          IconButton(
-                            onPressed: _currentPage > 1
-                                ? () => setState(() => _currentPage--)
-                                : null,
-                            icon: const Icon(Icons.chevron_left,
-                                color: Color(0xFF666666)),
-                          ),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1976D2),
+                              color: Colors.white,
+                              border: Border(
+                                  bottom:
+                                      BorderSide(color: Colors.grey.shade200)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: ProviderDropdownWidget(
+                                    selectedProvider:
+                                        _selectedIncentiveProvider,
+                                    providers: c.practices,
+                                    onProviderChanged: (provider) {
+                                      setState(() {
+                                        _selectedIncentiveProvider = provider;
+                                      });
+                                      final c = Get.find<PracticeController>();
+                                      c.getUserManagement(
+                                          _selectedIncentiveProvider.id);
+                                      _showSuccessMessage(
+                                          'Showing data for ${provider.name}');
+                                    },
+                                    maxWidth: 300,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Text(
+                            'User Management',
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Search
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Text(
-                              '$_currentPage',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.search,
+                                    color: Color(0xFF666666), size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Filter',
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() => _currentPage = 1);
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          IconButton(
-                            onPressed: _currentPage < _totalPages
-                                ? () => setState(() => _currentPage++)
-                                : null,
-                            icon: const Icon(Icons.chevron_right,
-                                color: Color(0xFF666666)),
-                          ),
-                          IconButton(
-                            onPressed: _currentPage < _totalPages
-                                ? () =>
-                                    setState(() => _currentPage = _totalPages)
-                                : null,
-                            icon: const Icon(Icons.last_page,
-                                color: Color(0xFF666666)),
-                          ),
+                          const SizedBox(height: 16),
+
+                          // Cards de usuarios obtenidos del controlador
+                          ..._buildUserCards(c.usersAccounts),
+
+                          const SizedBox(height: 16),
+
+                          // Paginación (si decides paginar en local)
+                          _buildPagination(c.usersAccounts),
                         ],
                       ),
-                    ],
+                    ),
                   ),
+                ],
+              ),
+              if (_isDrawerOpen)
+                GestureDetector(
+                  onTap: () => setState(() => _isDrawerOpen = false),
+                  child: Container(color: Colors.transparent),
                 ),
+              AppDrawerWidget(
+                isOpen: _isDrawerOpen,
+                onClose: () => setState(() => _isDrawerOpen = false),
+                onNavigation: (route) {
+                  setState(() => _isDrawerOpen = false);
+                  _handleNavigation(route);
+                },
+                activeRoute: 'user-management',
               ),
             ],
           ),
+        ),
+      );
+    });
+  }
 
-          // Drawer Overlay (transparent)
-          if (_isDrawerOpen)
-            GestureDetector(
-              onTap: () => setState(() => _isDrawerOpen = false),
-              child: Container(
-                color: Colors.transparent,
-              ),
-            ),
+  List<StaffLogin> getFilteredUsers(List<StaffLogin> users) {
+    if (_searchController.text.isEmpty) return users;
+    return users
+        .where((u) =>
+            u.fullName
+                .toLowerCase()
+                .contains(_searchController.text.toLowerCase()) ||
+            u.roleName
+                .toLowerCase()
+                .contains(_searchController.text.toLowerCase()))
+        .toList();
+  }
 
-          // Navigation Drawer
-          AppDrawerWidget(
-            isOpen: _isDrawerOpen,
-            onClose: () {
-              setState(() {
-                _isDrawerOpen = false;
-              });
-            },
-            onNavigation: (route) {
-              setState(() {
-                _isDrawerOpen = false;
-              });
-              _handleNavigation(route);
-            },
-            activeRoute: 'user-management',
+  List<Widget> _buildUserCards(List<StaffLogin> users) {
+    final filtered = getFilteredUsers(users);
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = startIndex + _itemsPerPage;
+    final paginated = filtered.sublist(
+      startIndex,
+      endIndex > filtered.length ? filtered.length : endIndex,
+    );
+
+    return paginated
+        .map((u) => _buildMobileUserCard(u.fullName, u.roleName,
+            u.userLastLogin?.toString() ?? 'Never', u.isVerified, u.id))
+        .toList();
+  }
+
+  Widget _buildPagination(List<StaffLogin> users) {
+    final filtered = getFilteredUsers(users);
+    final totalPages = (filtered.length / _itemsPerPage).ceil();
+    if (totalPages <= 1) return const SizedBox.shrink();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          onPressed:
+              _currentPage > 1 ? () => setState(() => _currentPage--) : null,
+          icon: const Icon(Icons.chevron_left, color: Color(0xFF666666)),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1976D2),
+            borderRadius: BorderRadius.circular(8),
           ),
-        ],
-      ),
+          child: Text(
+            '$_currentPage',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: _currentPage < totalPages
+              ? () => setState(() => _currentPage++)
+              : null,
+          icon: const Icon(Icons.chevron_right, color: Color(0xFF666666)),
+        ),
+      ],
     );
   }
 
   Widget _buildMobileUserCard(
-      String name, String role, String lastLogin, bool isActive) {
+      String name, String role, String lastLogin, bool isActive, int id) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -291,15 +315,19 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               ),
               Switch(
                 value: isActive,
-                onChanged: (value) {
-                  setState(() {
-                    // Update user status
-                    final userIndex =
-                        _users.indexWhere((user) => user['name'] == name);
-                    if (userIndex != -1) {
-                      _users[userIndex]['status'] = value;
-                    }
-                  });
+                onChanged: (value) async {
+                  final c = Get.find<PracticeController>();
+                  if (value) {
+                    await c.enableUserAccount(
+                      userId: id,
+                      practiceId: _selectedIncentiveProvider.id,
+                    );
+                  } else {
+                    await c.disableUserAccount(
+                      userId: id,
+                      practiceId: _selectedIncentiveProvider.id,
+                    );
+                  }
                 },
                 activeColor: Colors.white,
                 activeTrackColor: const Color(0xFF6F42C1),
@@ -369,7 +397,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => _showRoleSelectionDialog(name, role),
+              onPressed: () => _showRoleSelectionDialog(name, role, id),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF28A745),
                 foregroundColor: Colors.white,
@@ -393,59 +421,36 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  void _showRoleSelectionDialog(String userName, String currentRole) {
+  void _showRoleSelectionDialog(
+      String userName, String currentRole, int userId) {
+    final c = Get.find<PracticeController>();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Select Role for $userName'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('Admin'),
+          children: c.invitationRoles.map((role) {
+            return ListTile(
+              title: Text(role.name),
+              subtitle: role.description.isNotEmpty
+                  ? Text(
+                      role.description,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    )
+                  : null,
               leading: Radio<String>(
-                value: 'Admin',
+                value: role.name,
                 groupValue: currentRole,
                 onChanged: (value) {
                   Navigator.of(context).pop();
-                  _updateUserRole(userName, value!);
+                  // Aquí actualizas el rol en tu lógica local
+                  _updateUserRole(userName, value!, userId, role.id);
                 },
               ),
-            ),
-            ListTile(
-              title: const Text('Provider'),
-              leading: Radio<String>(
-                value: 'Provider',
-                groupValue: currentRole,
-                onChanged: (value) {
-                  Navigator.of(context).pop();
-                  _updateUserRole(userName, value!);
-                },
-              ),
-            ),
-            ListTile(
-              title: const Text('Nurse'),
-              leading: Radio<String>(
-                value: 'Nurse',
-                groupValue: currentRole,
-                onChanged: (value) {
-                  Navigator.of(context).pop();
-                  _updateUserRole(userName, value!);
-                },
-              ),
-            ),
-            ListTile(
-              title: const Text('Viewer'),
-              leading: Radio<String>(
-                value: 'Viewer',
-                groupValue: currentRole,
-                onChanged: (value) {
-                  Navigator.of(context).pop();
-                  _updateUserRole(userName, value!);
-                },
-              ),
-            ),
-          ],
+            );
+          }).toList(),
         ),
         actions: [
           TextButton(
@@ -457,14 +462,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  void _updateUserRole(String userName, String newRole) {
-    setState(() {
-      final userIndex = _users.indexWhere((user) => user['name'] == userName);
-      if (userIndex != -1) {
-        _users[userIndex]['role'] = newRole;
-      }
-    });
-
+  Future<void> _updateUserRole(
+      String userName, String newRole, int userId, int roleId) async {
+    final c = Get.find<PracticeController>();
+    await c.changeUserRole(
+        userId: userId,
+        practiceId: _selectedIncentiveProvider.id,
+        newRoleId: roleId,
+        newRoleName: newRole);
+    setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Role updated to $newRole for $userName'),

@@ -5,11 +5,17 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/models/appt_list.dart';
 import 'package:somos_qr_plus/models/bonus_detail.dart';
+import 'package:somos_qr_plus/models/gic_list.dart';
 import 'package:somos_qr_plus/models/invitation.dart';
+import 'package:somos_qr_plus/models/invitation_role.dart';
+import 'package:somos_qr_plus/models/invite.dart';
 import 'package:somos_qr_plus/models/login_response.dart';
 import 'package:somos_qr_plus/models/mco.dart';
+import 'package:somos_qr_plus/models/mwov_list.dart';
 import 'package:somos_qr_plus/models/notifications.dart';
+import 'package:somos_qr_plus/models/npi_response.dart';
 import 'package:somos_qr_plus/models/panel_detail.dart';
 import 'package:somos_qr_plus/models/patient.dart';
 import 'package:somos_qr_plus/models/patient_gap.dart';
@@ -20,8 +26,10 @@ import 'package:somos_qr_plus/models/practice.dart';
 import 'package:somos_qr_plus/models/practice_details.dart';
 import 'package:somos_qr_plus/models/provider.dart';
 import 'package:somos_qr_plus/models/provider_schedule.dart';
+import 'package:somos_qr_plus/models/ra_list.dart';
 import 'package:somos_qr_plus/models/report_kpi_gic.dart';
 import 'package:somos_qr_plus/models/schedule.dart';
+import 'package:somos_qr_plus/models/staff_login.dart';
 import 'package:somos_qr_plus/models/user.dart';
 import '../api/api_client.dart';
 import '../constants/app_constants.dart';
@@ -35,6 +43,9 @@ class PracticeController extends GetxController {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+
+  Provider _defaultProvider = Provider(name: 'All', id: '-1');
+  Provider get defaultProvider => _defaultProvider;
   List<Provider> _practices = [];
   List<Provider> get practices => _practices;
   List<PanelDetail> _panelDetails = [];
@@ -66,6 +77,8 @@ class PracticeController extends GetxController {
   ReportKpiGic? get reportKpiRa => _reportKpiRA;
   ReportKpiGic? _reportKpiAPPT;
   ReportKpiGic? get reportKpiAPPT => _reportKpiAPPT;
+  ReportKpiGic? _reportKpiMWOV;
+  ReportKpiGic? get reportKpiMWOV => _reportKpiMWOV;
 
   PatientResponse? _patient;
   PatientResponse? get patient => _patient;
@@ -73,6 +86,24 @@ class PracticeController extends GetxController {
   List<PatientGap> get patientGaps => _patientGaps;
   List<PatientPatology> _patientPatologies = [];
   List<PatientPatology> get patientPatologies => _patientPatologies;
+  List<StaffLogin> _staffLogins = [];
+  List<StaffLogin> get staffLogins => _staffLogins;
+  List<StaffLogin> _usersAccounts = [];
+  List<StaffLogin> get usersAccounts => _usersAccounts;
+  List<GicList> _gicList = [];
+  List<GicList> get gicList => _gicList;
+  List<RaList> _raList = [];
+  List<RaList> get raList => _raList;
+  List<ApptList> _apptList = [];
+  List<ApptList> get apptList => _apptList;
+  List<MWOVList> _mwovList = [];
+  List<MWOVList> get mwovList => _mwovList;
+  List<Invite> _invites = [];
+  List<Invite> get invites => _invites;
+  List<NpiResponse> _npiList = [];
+  List<NpiResponse> get npiList => _npiList;
+  List<InvitationRole> _invitationRoles = [];
+  List<InvitationRole> get invitationRoles => _invitationRoles;
 
   Future<void> getPractice(String search) async {
     _isLoading = true;
@@ -862,6 +893,347 @@ class PracticeController extends GetxController {
     update();
   }
 
+  Future<void> getReportKpiGicList(String? practice_id,
+      {String? member_name,
+      String? mco_name,
+      String? dob,
+      String? date_time,
+      String? measure_code,
+      String? status,
+      String? phone}) async {
+    _isLoading = true;
+    update();
+
+    final query = <String, String>{
+      "app_key": AppConstants.appKey,
+      "offset": "0",
+      "limit": "20",
+      "practice_id": practice_id ?? '-1'
+    };
+    if (member_name != null && member_name.isNotEmpty) {
+      query['member_name__icontains'] = member_name;
+    }
+    if (mco_name != null && mco_name.isNotEmpty) {
+      query['mco_name__icontains'] = mco_name;
+    }
+    if (dob != null && dob.isNotEmpty) {
+      query['dob'] = dob;
+    }
+    if (date_time != null && date_time.isNotEmpty) {
+      query['date_time'] = date_time;
+    }
+    if (measure_code != null && measure_code.isNotEmpty) {
+      query['measure_code__icontains'] = measure_code;
+    }
+    if (status != null && status.isNotEmpty) {
+      query['status__icontains'] = status;
+    }
+    if (phone != null && phone.isNotEmpty) {
+      query['phone_number__icontains'] = phone;
+    }
+    print(query);
+
+    final response = await apiClient.getData(
+      AppConstants.reportGicList,
+      useApi: true,
+      query: query,
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+        final List<GicList> results = GicList.listFromJson(data);
+        _gicList = results;
+      } catch (e) {
+        print('Error parseando datos: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to get gic list',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+
+    _isLoading = false;
+    update();
+  }
+
+  Future<void> getReportKpiRaList(String? practiceId,
+      {String? memberName,
+      String? mcoName,
+      String? dob,
+      String? ic10,
+      String? status,
+      String? dateTime,
+      String? phone}) async {
+    _isLoading = true;
+    update();
+
+    final query = <String, String>{
+      "app_key": AppConstants.appKey,
+      "offset": "0",
+      "limit": "20",
+      "practice_id": practiceId ?? '-1'
+    };
+
+    if (memberName != null && memberName.isNotEmpty) {
+      query['member_name__icontains'] = memberName;
+    }
+    if (mcoName != null && mcoName.isNotEmpty) {
+      query['mco_name__icontains'] = mcoName;
+    }
+    if (dob != null && dob.isNotEmpty) {
+      query['dob'] = dob;
+    }
+    if (ic10 != null && ic10.isNotEmpty) {
+      query['icd10_code__icontains'] = ic10;
+    }
+    if (dateTime != null && dateTime.isNotEmpty) {
+      query['date_time'] = dateTime;
+    }
+    if (status != null && status.isNotEmpty) {
+      query['hcc_status__icontains'] = status;
+    }
+    if (phone != null && phone.isNotEmpty) {
+      query['phone_number__icontains'] = phone;
+    }
+
+    final response = await apiClient.getData(
+      AppConstants.reportRaList, // ✅ Usa el endpoint correcto para RA
+      useApi: true,
+      query: query,
+    );
+    print(query);
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+        _raList = RaList.listFromJson(data);
+        update();
+      } catch (e) {
+        print('Error parseando datos RA: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to get RA list',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+
+    _isLoading = false;
+    update();
+  }
+
+  Future<void> getReportKpiApptList(String? practiceId,
+      {String? memberName,
+      String? mcoName,
+      String? dob,
+      String? lastVisitDate,
+      String? messedDate,
+      String? address,
+      String? phone}) async {
+    _isLoading = true;
+    update();
+
+    final query = <String, String>{
+      "app_key": AppConstants.appKey,
+      "offset": "0",
+      "limit": "20",
+      "practice_id": practiceId ?? '-1'
+    };
+
+    if (memberName != null && memberName.isNotEmpty) {
+      query['member_name__icontains'] = memberName;
+    }
+    if (mcoName != null && mcoName.isNotEmpty) {
+      query['mco_name__icontains'] = mcoName;
+    }
+    if (dob != null && dob.isNotEmpty) {
+      query['dob'] = dob;
+    }
+    if (lastVisitDate != null && lastVisitDate.isNotEmpty) {
+      query['last_visit_date'] = lastVisitDate;
+    }
+    if (messedDate != null && messedDate.isNotEmpty) {
+      query['messed_date'] = messedDate;
+    }
+    if (address != null && address.isNotEmpty) {
+      query['address__icontains'] = address;
+    }
+    if (phone != null && phone.isNotEmpty) {
+      query['phone_number__icontains'] = phone;
+    }
+
+    final response = await apiClient.getData(
+      AppConstants.reportApptList, // ✅ Usa el endpoint correcto para RA
+      useApi: true,
+      query: query,
+    );
+    print(query);
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+        print(data);
+        print('hola aca!!');
+        final List<ApptList> apptList = ApptList.listFromJson(data);
+        _apptList = apptList;
+        print(_apptList.length);
+        update();
+      } catch (e) {
+        print('Error parseando datos RA: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to get RA list',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+
+    _isLoading = false;
+    update();
+  }
+
+  Future<void> getReportKpiMwovList(String? practiceId,
+      {String? memberName,
+      String? mcoName,
+      String? dob,
+      String? phone,
+      String? lastVisitDate,
+      String? address}) async {
+    _isLoading = true;
+    update();
+
+    final query = <String, String>{
+      "app_key": AppConstants.appKey,
+      "offset": "0",
+      "limit": "20",
+      "practice_id": practiceId ?? '-1',
+    };
+
+    if (memberName != null && memberName.isNotEmpty) {
+      query['member_name__icontains'] = memberName;
+    }
+    if (mcoName != null && mcoName.isNotEmpty) {
+      query['mco_name__icontains'] = mcoName;
+    }
+    if (dob != null && dob.isNotEmpty) {
+      query['dob'] = dob;
+    }
+    if (phone != null && phone.isNotEmpty) {
+      query['phone_number__icontains'] = phone;
+    }
+    if (lastVisitDate != null && lastVisitDate.isNotEmpty) {
+      query['last_visit_date'] = lastVisitDate;
+    }
+    if (address != null && address.isNotEmpty) {
+      query['address__icontains'] = address;
+    }
+
+    final response = await apiClient.getData(
+      AppConstants.reportMwovList,
+      useApi: true,
+      query: query,
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+        _mwovList = MWOVList.listFromJson(data);
+        update();
+      } catch (e) {
+        print('Error parseando datos MWOV: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to get MWOV list',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+
+    _isLoading = false;
+    update();
+  }
+
+  Future<void> getReportKpiLastLogin(String? practice_id) async {
+    _isLoading = true;
+    update();
+
+    final query = <String, String>{
+      "app_key": AppConstants.appKey,
+      "offset": "0",
+      "limit": "100",
+      "practice_id": practice_id ?? '-1',
+      "fields":
+          "is_verified,practice.name,role.name,id,full_name,user.last_login",
+      "expand": "practice,role,user"
+    };
+
+    final response = await apiClient.getData(
+      AppConstants.reportStaffLogin,
+      useApi: true,
+      query: query,
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+
+        final List<dynamic> results =
+            data is List ? data : (data['results'] ?? []);
+        _staffLogins = results
+            .map((e) => StaffLogin.fromJson(e as Map<String, dynamic>))
+            .toList();
+        update();
+      } catch (e) {
+        print('Error parseando datos: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to get Kpi report',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+
+    _isLoading = false;
+    update();
+  }
+
   Future<void> getReportKpiRa(String? practice_id) async {
     _isLoading = true;
     update();
@@ -946,6 +1318,60 @@ class PracticeController extends GetxController {
           _reportKpiAPPT = ReportKpiGic.fromJson(results.first);
         } else {
           _reportKpiAPPT = null;
+        }
+
+        update();
+      } catch (e) {
+        print('Error parseando datos: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to get Kpi report',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+
+    _isLoading = false;
+    update();
+  }
+
+  Future<void> getReportKpiMWOV(String? practice_id) async {
+    _isLoading = true;
+    update();
+
+    final query = <String, String>{
+      "app_key": AppConstants.appKey,
+      "offset": "0",
+      "limit": "5",
+      "practice_id": practice_id ?? '-1',
+      "kpi_type": 'MWOV',
+      "ordering": "-today_date"
+    };
+
+    final response = await apiClient.getData(
+      AppConstants.reportKpiUrl,
+      useApi: true,
+      query: query,
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+
+        final List<dynamic> results =
+            data is List ? data : (data['results'] ?? []);
+
+        if (results.isNotEmpty) {
+          _reportKpiMWOV = ReportKpiGic.fromJson(results.first);
+        } else {
+          _reportKpiMWOV = null;
         }
 
         update();
@@ -1080,6 +1506,50 @@ class PracticeController extends GetxController {
         _patientPatologies = results
             .map((e) => PatientPatology.fromJson(e as Map<String, dynamic>))
             .toList();
+        update();
+      } catch (e) {
+        print('Error parseando datos: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to get patient gap',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+
+    _isLoading = false;
+    update();
+  }
+
+  Future<void> getInvites(String practiceId, String? search) async {
+    _isLoading = true;
+    update();
+
+    final query = <String, String>{
+      "app_key": AppConstants.appKey,
+      "practice_id": practiceId,
+      "search": search ?? ''
+    };
+
+    final response = await apiClient.getData(
+      '${AppConstants.userInvites}',
+      useApi: true,
+      query: query,
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+        final List<dynamic> results = data['results'] ?? [];
+        _invites = Invite.listFromJson(results);
+
         update();
       } catch (e) {
         print('Error parseando datos: $e');
@@ -1262,6 +1732,433 @@ class PracticeController extends GetxController {
       Get.snackbar(
         'Error',
         message ?? 'Failed to update patient patology',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+  void setProvider(Provider provider) {
+    _defaultProvider = provider;
+    print('hola aca hubo un update!');
+    update();
+  }
+
+  Future<void> sendUserInvitation({
+    required String email,
+    required String firstName,
+    required String lastName,
+    required String npi,
+    required String phoneNumber,
+    required String practiceId,
+    required dynamic roleId,
+  }) async {
+    // ✅ Validación de practiceId
+    if (practiceId == '-1') {
+      print('⚠️ practiceId es -1, manejar caso especial aquí');
+      return;
+    }
+
+    final body = {
+      "email": email,
+      "first_name": firstName,
+      "last_name": lastName,
+      "npi": npi,
+      "phone_number": phoneNumber,
+      "practice_id": practiceId,
+      "role_id": roleId,
+    };
+    final query = <String, String>{"app_key": AppConstants.appKey};
+
+    final response = await apiClient.postData(
+      AppConstants.generateRequestInvitationUrl,
+      queryParams: query,
+      body,
+      useApi: true,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+    } else {
+      final message = response.body['detail'] ?? response.body['error'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to create invitation',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+    update();
+  }
+
+  Future<void> updateUserInvitation(
+      {required String email,
+      required String firstName,
+      required String lastName,
+      required String npi,
+      required String phoneNumber,
+      required String practiceId,
+      required dynamic roleId,
+      required dynamic invitationId}) async {
+    // ✅ Validación de practiceId
+    if (practiceId == '-1') {
+      print('⚠️ practiceId es -1, manejar caso especial aquí');
+      return;
+    }
+
+    final body = {
+      "email": email,
+      "first_name": firstName,
+      "last_name": lastName,
+      "npi": npi,
+      "phone_number": phoneNumber,
+      "practice_id": practiceId,
+      "role_id": roleId,
+    };
+    final query = <String, String>{"app_key": AppConstants.appKey};
+
+    final response = await apiClient.patchData(
+      AppConstants.updateRequestInvitationUrl + '$invitationId/',
+      queryParams: query,
+      body,
+      useApi: true,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+    } else {
+      final message = response.body['detail'] ?? response.body['error'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to create invitation',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+    update();
+  }
+
+  Future<void> resendInvitation(int invitationId) async {
+    _isLoading = true;
+    update();
+
+    final url = AppConstants.userInvites + '$invitationId/resend_invitation/';
+
+    try {
+      final query = <String, String>{"app_key": AppConstants.appKey};
+      final response =
+          await apiClient.postData(url, {}, useApi: true, queryParams: query);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+      } else {
+        final message = response.body['detail'];
+        Get.snackbar(
+          'Error',
+          message ?? 'Failed to resend invitation',
+          backgroundColor: Colors.red.shade600,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Exception: $e',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoading = false;
+      update();
+    }
+  }
+
+  Future<void> getInvitationRoles() async {
+    _isLoading = true;
+    update();
+
+    final response = await apiClient.getData(
+      AppConstants.securityRolesUrl,
+      useApi: false, // ❗️ no requiere token de práctica
+      query: {
+        "practice_required": "true",
+        "is_invitation": "true",
+        "app_key": AppConstants.appKey
+      },
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+        final List<dynamic> results = data['results'] ?? [];
+        _invitationRoles = InvitationRole.listFromJson(results);
+        print(_invitationRoles.length);
+        update();
+      } catch (e) {
+        print('Error parseando roles de invitación: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to get invitation roles',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+
+    _isLoading = false;
+    update();
+  }
+
+  Future<void> getProviderInvitations(String practiceId) async {
+    final query = <String, String>{
+      "practice_id": practiceId,
+      "app_key": AppConstants.appKey
+    };
+
+    final response = await apiClient.getData(
+      AppConstants.providerInvitationUrl,
+      useApi: true,
+      query: query,
+    );
+    print(query);
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+        final List<dynamic> results = data['results'] ?? [];
+        print('hola aqui aja!');
+        print(results.length);
+        _npiList = NpiResponse.listFromJson(results);
+        update();
+      } catch (e) {
+        print('❌ Error parseando provider invitations: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to fetch provider invitations',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+  Future<void> getUserManagement(String practiceId) async {
+    final query = <String, String>{
+      "practice_id": practiceId,
+      "app_key": AppConstants.appKey,
+      "fields":
+          "is_verified,practice.name,role.name,id,full_name,user.last_login",
+      "expand": "practice,role,user"
+    };
+
+    final response = await apiClient.getData(
+      AppConstants.reportStaffLogin,
+      useApi: true,
+      query: query,
+    );
+    print(query);
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+
+        final List<dynamic> results =
+            data is List ? data : (data['results'] ?? []);
+        _usersAccounts = results
+            .map((e) => StaffLogin.fromJson(e as Map<String, dynamic>))
+            .toList();
+        update();
+      } catch (e) {
+        print('Error parseando datos: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to fetch provider invitations',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+  // 🔹 Desactivar una cuenta de usuario
+  Future<void> disableUserAccount({
+    required int userId,
+    required String practiceId,
+  }) async {
+    final url = '${AppConstants.reportStaffLogin}$userId/disable/';
+
+    final response = await apiClient.postData(
+      url,
+      {}, // No body necesario
+      useApi: true,
+      queryParams: {
+        'practice_id': practiceId,
+        'app_key': AppConstants.appKey,
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      Get.snackbar(
+        'Success',
+        'User account disabled successfully.',
+        backgroundColor: Colors.green.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
+      await getUserManagement(practiceId); // 🔄 Refresca la lista
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to disable user account.',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+// 🔹 Activar una cuenta de usuario
+  Future<void> enableUserAccount({
+    required int userId,
+    required String practiceId,
+  }) async {
+    final url = '${AppConstants.reportStaffLogin}$userId/enable/';
+
+    final response = await apiClient.postData(
+      url,
+      {}, // No body necesario
+      useApi: true,
+      queryParams: {
+        'practice_id': practiceId,
+        'app_key': AppConstants.appKey,
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      Get.snackbar(
+        'Success',
+        'User account enabled successfully.',
+        backgroundColor: Colors.green.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
+      await getUserManagement(practiceId); // 🔄 Refresca la lista
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to enable user account.',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+  Future<void> changeUserRole({
+    required int userId,
+    required String practiceId,
+    required int newRoleId,
+    required String newRoleName,
+  }) async {
+    // Si no hay práctica válida, haz un print para debug
+    if (practiceId == '-1') {
+      print('⚠️ No practice selected, cannot change role');
+      return;
+    }
+
+    final url = '${AppConstants.reportStaffLogin}$userId/change_role/';
+
+    final headers = {'practice_id': practiceId, 'app_key': AppConstants.appKey};
+
+    final body = {
+      'role_id': newRoleId,
+    };
+
+    final response = await apiClient.postData(
+      url,
+      body,
+      queryParams: headers,
+      useApi: true,
+    );
+
+    if (response.statusCode == 200) {
+      print('✅ Role changed successfully for user $userId to role $newRoleId');
+      _usersAccounts = _usersAccounts.map((u) {
+        if (u.id == userId) {
+          print(userId);
+          print(u.userId);
+          return StaffLogin(
+            id: u.id,
+            fullName: u.fullName,
+            practiceName: u.practiceName,
+            userId: u.userId,
+            userUsername: u.userUsername,
+            userFirstName: u.userFirstName,
+            userLastName: u.userLastName,
+            userEmail: u.userEmail,
+            userIsActive: u.userIsActive,
+            userIsStaff: u.userIsStaff,
+            userLastLogin: u.userLastLogin,
+            userDateJoined: u.userDateJoined,
+            userIsSuperuser: u.userIsSuperuser,
+            userIsVerified: u.userIsVerified,
+            // 👇 Actualizamos solo el nombre del rol
+            roleName: newRoleName,
+            isVerified: u.isVerified,
+          );
+        }
+        return u;
+      }).toList();
+
+      update();
+    } else {
+      final message = response.body['detail'];
+      print('❌ Error changing role: $message');
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to change role',
         backgroundColor: Colors.red.shade600,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,

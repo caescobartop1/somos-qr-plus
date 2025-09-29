@@ -58,6 +58,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    final c = Get.find<PracticeController>();
+    _selectedIncentiveProvider = c.defaultProvider;
     // Lánzalo después del frame para asegurar que el árbol está listo
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _loadData(_selectedIncentiveProvider));
@@ -118,6 +120,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               setState(() {
                                 _selectedIncentiveProvider = provider;
                               });
+                              final c = Get.find<PracticeController>();
+                              c.setProvider(provider);
                               _loadData(provider);
                               _showSuccessMessage(
                                   'Showing data for ${provider.name}');
@@ -513,7 +517,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       getTitlesWidget: (value, meta) {
                         if (value >= 0 && value < mcoNames.length) {
                           return Text(
-                            _abbr(mcoNames[value.toInt()]),
+                            mcoNames[value.toInt()],
                             style: const TextStyle(
                                 color: Color(0xFF666666), fontSize: 12),
                           );
@@ -727,7 +731,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          _abbr(pageItems[value.toInt()].labelCode),
+                          pageItems[value.toInt()].labelCode,
                           style: const TextStyle(
                               color: Color(0xFF666666), fontSize: 12),
                         ),

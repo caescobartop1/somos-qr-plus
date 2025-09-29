@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:go_router/go_router.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/models/provider.dart';
+import 'package:somos_qr_plus/widgets/provider_dropdown_widget.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
+import 'package:somos_qr_plus/models/invite.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
+import 'dart:async';
 
 class InvitationScreen extends StatefulWidget {
   const InvitationScreen({super.key});
@@ -13,71 +19,28 @@ class InvitationScreen extends StatefulWidget {
   State<InvitationScreen> createState() => _InvitationScreenState();
 }
 
-class _InvitationScreenState extends State<InvitationScreen> with TickerProviderStateMixin {
+class _InvitationScreenState extends State<InvitationScreen>
+    with TickerProviderStateMixin {
   bool _isDrawerOpen = false;
   bool _isLoading = false;
   late TabController _tabController;
-  
+
   final _formKey = GlobalKey<FormState>();
   final _providerUsersController = TextEditingController();
   final _npiController = TextEditingController();
+  final _searchController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
-
-  String _selectedProvider = '';
+  // En tu State
+  Timer? _searchDebounce;
+  String _selectedStatus = 'all';
+  bool setEdit = false;
+  Provider _selectedIncentiveProvider = new Provider(name: 'All', id: '-1');
   String _selectedNPI = '';
-
-  final List<String> _providers = [
-    'Provider 1',
-    'Provider 2', 
-    'Provider 3',
-  ];
-
-  final List<String> _npiOptions = [
-    'NPI-001',
-    'NPI-002',
-    'NPI-003',
-    'NPI-004',
-  ];
-
-  // Sample invitation data
-  List<Map<String, dynamic>> _invitations = [
-    {
-      'id': '1',
-      'provider': 'Provider 1',
-      'npi': 'NPI-001',
-      'firstName': 'John',
-      'lastName': 'Doe',
-      'phone': '+1-555-0123',
-      'email': 'john.doe@example.com',
-      'status': 'pending',
-      'createdDate': '2024-01-15',
-    },
-    {
-      'id': '2',
-      'provider': 'Provider 2',
-      'npi': 'NPI-002',
-      'firstName': 'Jane',
-      'lastName': 'Smith',
-      'phone': '+1-555-0456',
-      'email': 'jane.smith@example.com',
-      'status': 'accepted',
-      'createdDate': '2024-01-10',
-    },
-    {
-      'id': '3',
-      'provider': 'Provider 3',
-      'npi': 'NPI-003',
-      'firstName': 'Mike',
-      'lastName': 'Johnson',
-      'phone': '+1-555-0789',
-      'email': 'mike.johnson@example.com',
-      'status': 'pending',
-      'createdDate': '2024-01-20',
-    },
-  ];
+  String _selectedRoleId = '';
+  Invite? _selectedInvite;
 
   @override
   void initState() {
@@ -86,6 +49,32 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
     _tabController.addListener(() {
       setState(() {}); // Rebuild when tab changes
     });
+    final c = Get.find<PracticeController>();
+    _selectedIncentiveProvider = c.defaultProvider;
+    // Lánzalo después del frame para asegurar que el árbol está listo
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _loadData(_selectedIncentiveProvider));
+  }
+
+  Future<void> _loadData(provider) async {
+    final c = Get.find<PracticeController>();
+    await c.getPractice('');
+    await c.getInvitationRoles();
+    await c.getInvites(provider.id.toString(), _searchController.text);
+    await c.getProviderInvitations(provider.id.toString());
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   @override
@@ -97,212 +86,309 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
     _lastNameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5),
-        body: Stack(
-          children: [
-            // Main Content
-            Column(
-              children: [
-                // Header
-                AppHeaderWidget(
-                  onMenuPressed: () {
-                    setState(() {
-                      _isDrawerOpen = true;
-                    });
-                  },
-                  onProfileAction: (action) {
-                    _handleProfileAction(action);
-                  },
-                ),
-                
-                // Main Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Page Title
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Expanded(
-                                  child: Text(
-                                    'Invitations',
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xFF333333),
+    return GetBuilder<PracticeController>(builder: (practiceController) {
+      return SafeArea(
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: Stack(
+            children: [
+              // Main Content
+              Column(
+                children: [
+                  // Header
+                  AppHeaderWidget(
+                    onMenuPressed: () {
+                      setState(() {
+                        _isDrawerOpen = true;
+                      });
+                    },
+                    onProfileAction: (action) {
+                      _handleProfileAction(action);
+                    },
+                  ),
+
+                  // Main Content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border(
+                                bottom:
+                                    BorderSide(color: Colors.grey.shade200)),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: ProviderDropdownWidget(
+                                  selectedProvider: _selectedIncentiveProvider,
+                                  providers: practiceController.practices,
+                                  onProviderChanged: (provider) {
+                                    setState(() {
+                                      _selectedIncentiveProvider = provider;
+                                    });
+                                    final c = Get.find<PracticeController>();
+                                    c.setProvider(provider);
+                                    c.getInvites(provider.id.toString(),
+                                        _searchController.text);
+                                    c.getProviderInvitations(
+                                        provider.id.toString());
+                                    _showSuccessMessage(
+                                        'Showing data for ${provider.name}');
+                                  },
+                                  maxWidth: 300,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Page Title
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'Invitations',
+                                      style: TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF333333),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                GestureDetector(
-                                  onTap: _navigateToMyInvitations,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1976D2),
-                                      borderRadius: BorderRadius.circular(100),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.15),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Stack(
-                                      children: [
-                                        const Icon(
-                                          Icons.mail_outline,
-                                          color: Colors.white,
-                                          size: 28,
-                                        ),
-                                        Positioned(
-                                          right: 0,
-                                          top: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
-                                              color: Colors.red,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            constraints: const BoxConstraints(
-                                              minWidth: 20,
-                                              minHeight: 20,
-                                            ),
-                                            child: Text(
-                                              '$_pendingInvitationsCount',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
+                                  GestureDetector(
+                                    onTap: _navigateToMyInvitations,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1976D2),
+                                        borderRadius:
+                                            BorderRadius.circular(100),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color:
+                                                Colors.black.withOpacity(0.15),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Stack(
+                                        children: [
+                                          const Icon(
+                                            Icons.mail_outline,
+                                            color: Colors.white,
+                                            size: 28,
+                                          ),
+                                          Positioned(
+                                            right: 0,
+                                            top: 0,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(
+                                                color: Colors.red,
+                                                shape: BoxShape.circle,
                                               ),
-                                              textAlign: TextAlign.center,
+                                              constraints: const BoxConstraints(
+                                                minWidth: 20,
+                                                minHeight: 20,
+                                              ),
+                                              child: Text(
+                                                '$_pendingInvitationsCount',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Manage user invitations',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF666666),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Manage user invitations',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF666666),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      
-                      // Tab Bar
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                        ),
+
+                        // Tab Bar
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border(
+                                bottom:
+                                    BorderSide(color: Colors.grey.shade200)),
+                          ),
                           child: Container(
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(25),
                             ),
-                          child: Row(
-                            children: ['Add New', 'View List'].asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final tabName = entry.value;
-                              final isSelected = _tabController.index == index;
-                              
-                              return Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    _tabController.animateTo(index);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? const Color(0xFF1976D2) : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      tabName,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: isSelected ? Colors.white : Colors.grey.shade700,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 14,
+                            child: Row(
+                              children: ['Add New', 'View List']
+                                  .asMap()
+                                  .entries
+                                  .map((entry) {
+                                final index = entry.key;
+                                final tabName = entry.value;
+                                final isSelected =
+                                    _tabController.index == index;
+
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      _tabController.animateTo(index);
+                                      final c = Get.find<PracticeController>();
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? const Color(0xFF1976D2)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        tabName,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Colors.grey.shade700,
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              );
-                            }).toList(),
+                                );
+                              }).toList(),
+                            ),
                           ),
                         ),
-                      ),
-                      
-                      // Tab Content
-                      Expanded(
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            _buildAddNewTab(),
-                            _buildViewListTab(),
-                          ],
+
+                        // Tab Content
+                        Expanded(
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _buildAddNewTab(),
+                              _buildViewListTab(),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              // Drawer Overlay (transparent)
+              if (_isDrawerOpen)
+                GestureDetector(
+                  onTap: () => setState(() => _isDrawerOpen = false),
+                  child: Container(
+                    color: Colors.transparent,
                   ),
                 ),
-              ],
-            ),
-            
-            // Drawer Overlay (transparent)
-            if (_isDrawerOpen)
-              GestureDetector(
-                onTap: () => setState(() => _isDrawerOpen = false),
-                child: Container(
-                  color: Colors.transparent,
+
+              // Navigation Drawer
+              AppDrawerWidget(
+                isOpen: _isDrawerOpen,
+                onClose: () {
+                  setState(() {
+                    _isDrawerOpen = false;
+                  });
+                },
+                onNavigation: (route) {
+                  setState(() {
+                    _isDrawerOpen = false;
+                  });
+                  _handleNavigation(route);
+                },
+                activeRoute: 'invitation',
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  void _showPracticeRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text(
+            'Practice Required',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'You must select a practice before continuing.',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Please select a practice from the dropdown above and try again.',
+                style: TextStyle(
+                  color: Color(0xFF666666),
+                  fontSize: 14,
                 ),
               ),
-            
-            // Navigation Drawer
-            AppDrawerWidget(
-              isOpen: _isDrawerOpen,
-              onClose: () {
-                setState(() {
-                  _isDrawerOpen = false;
-                });
-              },
-              onNavigation: (route) {
-                setState(() {
-                  _isDrawerOpen = false;
-                });
-                _handleNavigation(route);
-              },
-              activeRoute: 'invitation',
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: Color(0xFF1976D2),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
   Widget _buildAddNewTab() {
+    final c = Get.find<PracticeController>();
+    print(c.invitationRoles.length);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
@@ -323,11 +409,11 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
           child: Column(
             children: [
               _buildFormField(
-                label: 'Provider Users',
+                label: 'Role',
                 child: DropdownButtonFormField<String>(
-                  value: _selectedProvider.isEmpty ? null : _selectedProvider,
+                  value: _selectedRoleId.isEmpty ? null : _selectedRoleId,
                   decoration: InputDecoration(
-                    hintText: 'Select provider users',
+                    hintText: 'Select a Role',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -340,27 +426,33 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFF1976D2)),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 16),
                   ),
-                  items: _providers.map((provider) => DropdownMenuItem(
-                    value: provider,
-                    child: Text(provider),
-                  )).toList(),
+                  items: c.invitationRoles
+                      .map((role) => DropdownMenuItem<String>(
+                            value: role.id.toString(), // ✅ valor que se enviará
+                            child: Text(
+                              '${role.name} (${role.roleType})',
+                              overflow: TextOverflow.ellipsis,
+                            ), // ✅ texto visible
+                          ))
+                      .toList(),
                   onChanged: (value) {
                     setState(() {
-                      _selectedProvider = value ?? '';
+                      _selectedRoleId = value ?? '';
                     });
                   },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please select a provider user';
+                      return 'Please select a Role';
                     }
                     return null;
                   },
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               _buildFormField(
                 label: 'NPI',
                 child: DropdownButtonFormField<String>(
@@ -379,12 +471,16 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFF1976D2)),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 16),
                   ),
-                  items: _npiOptions.map((npi) => DropdownMenuItem(
-                    value: npi,
-                    child: Text(npi),
-                  )).toList(),
+                  items: c.npiList
+                      .map((npi) => DropdownMenuItem<String>(
+                            value: npi.npi, // valor que se enviará
+                            child: Text(
+                                '${npi.npi} - ${npi.name}'), // texto visible
+                          ))
+                      .toList(),
                   onChanged: (value) {
                     setState(() {
                       _selectedNPI = value ?? '';
@@ -399,7 +495,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               _buildFormField(
                 label: 'First Name',
                 child: TextFormField(
@@ -418,7 +514,8 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFF1976D2)),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -432,7 +529,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               _buildFormField(
                 label: 'Last Name',
                 child: TextFormField(
@@ -451,7 +548,8 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFF1976D2)),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -465,7 +563,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               _buildFormField(
                 label: 'Phone Number',
                 child: TextFormField(
@@ -485,13 +583,15 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFF1976D2)),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Phone number is required';
                     }
-                    if (!RegExp(r'^[\+]?[1-9][\d]{0,15}$').hasMatch(value.replaceAll(RegExp(r'[\s\-\(\)]'), ''))) {
+                    if (!RegExp(r'^[\+]?[1-9][\d]{0,15}$').hasMatch(
+                        value.replaceAll(RegExp(r'[\s\-\(\)]'), ''))) {
                       return 'Please enter a valid phone number';
                     }
                     return null;
@@ -499,7 +599,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               _buildFormField(
                 label: 'Email Address',
                 child: TextFormField(
@@ -519,13 +619,15 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFF1976D2)),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 16),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Email address is required';
                     }
-                    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value)) {
+                    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                        .hasMatch(value)) {
                       return 'Please enter a valid email address';
                     }
                     return null;
@@ -533,7 +635,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                 ),
               ),
               const SizedBox(height: 32),
-              
+
               // Send Invite Button
               SizedBox(
                 width: double.infinity,
@@ -554,11 +656,12 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text(
-                          'Send Invite',
+                      : Text(
+                          setEdit == true ? 'Edit Invite' : 'Send Invite',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -574,6 +677,14 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
   }
 
   Widget _buildViewListTab() {
+    final c = Get.find<PracticeController>();
+    final filteredInvites = _selectedStatus == 'all'
+        ? c.invites
+        : c.invites
+            .where((inv) =>
+                (inv.status ?? '').toLowerCase() ==
+                _selectedStatus.toLowerCase())
+            .toList();
     return Column(
       children: [
         // Filter and Search Bar
@@ -587,9 +698,11 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
             children: [
               Expanded(
                 child: TextField(
+                  controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Search invitations...',
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFF666666)),
+                    prefixIcon:
+                        const Icon(Icons.search, color: Color(0xFF666666)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -602,8 +715,23 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                       borderRadius: BorderRadius.circular(8),
                       borderSide: const BorderSide(color: Color(0xFF1976D2)),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
                   ),
+                  onChanged: (value) {
+                    // Cancela cualquier búsqueda pendiente
+                    if (_searchDebounce?.isActive ?? false)
+                      _searchDebounce!.cancel();
+
+                    // Espera 500ms antes de disparar la búsqueda
+                    _searchDebounce =
+                        Timer(const Duration(milliseconds: 500), () {
+                      final c = Get.find<PracticeController>();
+                      // Llamada para buscar invitaciones con el texto actual
+                      c.getInvites(_selectedIncentiveProvider.id.toString(),
+                          value.trim());
+                    });
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -614,28 +742,34 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: DropdownButton<String>(
-                  value: 'all',
+                  value: _selectedStatus,
                   underline: const SizedBox(),
                   items: const [
                     DropdownMenuItem(value: 'all', child: Text('All Status')),
                     DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                    DropdownMenuItem(value: 'accepted', child: Text('Accepted')),
-                    DropdownMenuItem(value: 'declined', child: Text('Declined')),
+                    DropdownMenuItem(
+                        value: 'accepted', child: Text('Accepted')),
+                    DropdownMenuItem(
+                        value: 'declined', child: Text('Declined')),
                   ],
-                  onChanged: (value) {},
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedStatus = value ?? 'all';
+                    });
+                  },
                 ),
               ),
             ],
           ),
         ),
-        
+
         // Invitations List
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: _invitations.length,
+            itemCount: filteredInvites.length,
             itemBuilder: (context, index) {
-              final invitation = _invitations[index];
+              final invitation = filteredInvites[index];
               return _buildInvitationCard(invitation);
             },
           ),
@@ -644,7 +778,37 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
     );
   }
 
-  Widget _buildInvitationCard(Map<String, dynamic> invitation) {
+  Future<void> _resendInvitation(int id) async {
+    final c = Get.find<PracticeController>();
+
+    try {
+      await c.resendInvitation(id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Invitation resent successfully!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Failed to resend invitation: ${e.toString()}'),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
+  Widget _buildInvitationCard(Invite invitation) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
@@ -670,7 +834,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${invitation['firstName']} ${invitation['lastName']}',
+                      '${invitation.firstName} ${invitation.lastName}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -679,7 +843,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      invitation['email'],
+                      invitation.email,
                       style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF666666),
@@ -688,11 +852,11 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                   ],
                 ),
               ),
-              _buildStatusChip(invitation['status']),
+              _buildStatusChip(invitation.status ?? 'pending'),
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Details Row
           Row(
             children: [
@@ -701,15 +865,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Provider: ${invitation['provider']}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF666666),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'NPI: ${invitation['npi']}',
+                      'NPI: ${invitation.npi ?? '-'}',
                       style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFF666666),
@@ -722,7 +878,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    invitation['phone'],
+                    invitation.phoneNumber ?? '-',
                     style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF666666),
@@ -730,7 +886,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    invitation['createdDate'],
+                    invitation.created.split('T').first,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[500],
@@ -741,7 +897,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -749,7 +905,10 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                 child: OutlinedButton.icon(
                   onPressed: () => _editInvitation(invitation),
                   icon: const Icon(Icons.edit, size: 16),
-                  label: const Text('Edit'),
+                  label: const Text(
+                    'Edit',
+                    style: TextStyle(fontSize: 12),
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF1976D2),
                     side: const BorderSide(color: Color(0xFF1976D2)),
@@ -763,9 +922,31 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
+                  onPressed: () => _resendInvitation(invitation.id),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text(
+                    'Resend',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange.shade700,
+                    side: BorderSide(color: Colors.orange.shade700),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
                   onPressed: () => _viewInvitation(invitation),
                   icon: const Icon(Icons.visibility, size: 16),
-                  label: const Text('View'),
+                  label: const Text(
+                    'View',
+                    style: TextStyle(fontSize: 12),
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.green,
                     side: const BorderSide(color: Colors.green),
@@ -781,7 +962,10 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
                 child: OutlinedButton.icon(
                   onPressed: () => _deleteInvitation(invitation),
                   icon: const Icon(Icons.delete, size: 16),
-                  label: const Text('Delete'),
+                  label: const Text(
+                    'Delete',
+                    style: TextStyle(fontSize: 12),
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),
@@ -803,7 +987,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
     Color backgroundColor;
     Color textColor;
     String displayText;
-    
+
     switch (status) {
       case 'pending':
         backgroundColor = Colors.orange[100]!;
@@ -825,7 +1009,7 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
         textColor = Colors.grey[800]!;
         displayText = 'Unknown';
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -862,84 +1046,103 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
   }
 
   Future<void> _handleFormSubmission() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) return;
+
+    final practiceId = _selectedIncentiveProvider.id;
+
+    // ✅ Valida que el Practice no sea -1
+    if (practiceId == '-1') {
+      _showPracticeRequiredDialog();
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
-      
-      // Add new invitation to the list
-      final newInvitation = {
-        'id': DateTime.now().millisecondsSinceEpoch.toString(),
-        'provider': _selectedProvider,
-        'npi': _selectedNPI,
-        'firstName': _firstNameController.text,
-        'lastName': _lastNameController.text,
-        'phone': _phoneController.text,
-        'email': _emailController.text,
-        'status': 'pending',
-        'createdDate': DateTime.now().toString().split(' ')[0],
-      };
-      
-      setState(() {
-        _invitations.insert(0, newInvitation);
-      });
-      
-      // Show success message
+      final c = Get.find<PracticeController>();
+
+      // ✅ Llama al método POST que creamos
+      if (setEdit) {
+        await c.updateUserInvitation(
+            email: _emailController.text.trim(),
+            firstName: _firstNameController.text.trim(),
+            lastName: _lastNameController.text.trim(),
+            npi: _selectedNPI.trim(),
+            phoneNumber: _phoneController.text.trim(),
+            practiceId: practiceId,
+            roleId: _selectedRoleId,
+            invitationId: _selectedInvite?.id);
+      } else {
+        await c.sendUserInvitation(
+          email: _emailController.text.trim(),
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          npi: _selectedNPI.trim(),
+          phoneNumber: _phoneController.text.trim(),
+          practiceId: practiceId,
+          roleId: _selectedRoleId,
+        );
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invitation sent successfully!'),
+          SnackBar(
+            content: Text(setEdit
+                ? 'Invitation edited successfully!'
+                : 'Invitation sent successfully!'),
             backgroundColor: Colors.green,
           ),
         );
-        
-        // Reset form
+
+        // ✅ Limpia el formulario
         _formKey.currentState!.reset();
         setState(() {
-          _selectedProvider = '';
+          setEdit = false;
+          _emailController.text = '';
+          _firstNameController.text = '';
+          _lastNameController.text = '';
           _selectedNPI = '';
+          _phoneController.text = '';
+
+          _selectedRoleId = '';
         });
-        
-        // Switch to View List tab
+
+        // ✅ Cambia a la pestaña de lista
         _tabController.animateTo(1);
+        await c.getInvites(
+            _selectedIncentiveProvider.id.toString(), _searchController.text);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to send invitation: ${e.toString()}'),
+            content: Text(setEdit
+                ? 'Failed to edit invitation: $e'
+                : 'Failed to send invitation: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _editInvitation(Map<String, dynamic> invitation) {
+  void _editInvitation(Invite invitation) {
+    setState(() {
+      setEdit = true;
+      _selectedInvite = invitation;
+    });
     // Pre-fill form with invitation data
-    _selectedProvider = invitation['provider'];
-    _selectedNPI = invitation['npi'];
-    _firstNameController.text = invitation['firstName'];
-    _lastNameController.text = invitation['lastName'];
-    _phoneController.text = invitation['phone'];
-    _emailController.text = invitation['email'];
-    
+    _selectedNPI = invitation.npi ?? '';
+    _firstNameController.text = invitation.firstName;
+    _lastNameController.text = invitation.lastName;
+    _phoneController.text = invitation.phoneNumber ?? '';
+    _emailController.text = invitation.email;
+
     // Switch to Add New tab
     _tabController.animateTo(0);
-    
+
     // Show message
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -949,21 +1152,20 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
     );
   }
 
-  void _viewInvitation(Map<String, dynamic> invitation) {
+  void _viewInvitation(Invite invitation) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${invitation['firstName']} ${invitation['lastName']}'),
+        title: Text('${invitation.firstName} ${invitation.lastName}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailRow('Email', invitation['email']),
-            _buildDetailRow('Phone', invitation['phone']),
-            _buildDetailRow('Provider', invitation['provider']),
-            _buildDetailRow('NPI', invitation['npi']),
-            _buildDetailRow('Status', invitation['status'].toUpperCase()),
-            _buildDetailRow('Created', invitation['createdDate']),
+            _buildDetailRow('Email', invitation.email),
+            _buildDetailRow('Phone', invitation.phoneNumber ?? '-'),
+            _buildDetailRow('NPI', invitation.npi ?? '-'),
+            _buildDetailRow('Status', (invitation.status ?? '').toUpperCase()),
+            _buildDetailRow('Created', ''),
           ],
         ),
         actions: [
@@ -1005,13 +1207,13 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
     );
   }
 
-  void _deleteInvitation(Map<String, dynamic> invitation) {
+  void _deleteInvitation(Invite invitation) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Invitation'),
         content: Text(
-          'Are you sure you want to delete the invitation for ${invitation['firstName']} ${invitation['lastName']}?',
+          'Are you sure you want to delete the invitation for ${invitation.firstName} ${invitation.lastName}?',
         ),
         actions: [
           TextButton(
@@ -1021,7 +1223,8 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
           ElevatedButton(
             onPressed: () {
               setState(() {
-                _invitations.removeWhere((item) => item['id'] == invitation['id']);
+                // _invitations
+                //     .removeWhere((item) => item['id'] == invitation['id']);
               });
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
@@ -1073,9 +1276,6 @@ class _InvitationScreenState extends State<InvitationScreen> with TickerProvider
   }
 
   int get _pendingInvitationsCount {
-    // This matches the pending invitations count from the My Invitations screen
-    // Based on the dummy data: Dr. Sarah Wilson and Dr. Lisa Rodriguez are pending
-    // Dr. Michael Chen is accepted, so we have 2 pending invitations
     return 2;
   }
 

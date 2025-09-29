@@ -269,13 +269,13 @@ class _SIIPTableWidgetState extends State<SIIPTableWidget> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      // Export functionality - silent for now
-                    },
-                    icon: const Icon(Icons.file_download, size: 20),
-                    tooltip: 'Export',
-                  ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     // Export functionality - silent for now
+                  //   },
+                  //   icon: const Icon(Icons.file_download, size: 20),
+                  //   tooltip: 'Export',
+                  // ),
                 ],
               ),
             ),

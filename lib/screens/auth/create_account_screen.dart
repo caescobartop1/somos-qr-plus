@@ -18,6 +18,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
+  final _npiController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _practiceSelectedController = TextEditingController();
@@ -38,6 +39,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     super.initState();
     final authController = Get.find<AuthController>();
     _emailController.text = authController.invitation?.email ?? '';
+    _firstNameController.text = authController.invitation?.firstName ?? '';
+    _lastNameController.text = authController.invitation?.lastName ?? '';
+    _npiController.text = authController.invitation?.npi ?? '';
     _practiceSelectedController.text =
         authController.invitation?.practiceNames[0] ?? '';
     _animationController = AnimationController(
@@ -68,6 +72,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
   void dispose() {
     _animationController.dispose();
     _firstNameController.dispose();
+    _npiController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
     _practiceSelectedController.dispose();
@@ -205,6 +210,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
       key: _formKey,
       child: Column(
         children: [
+          _buildNpiField(),
+          const SizedBox(height: 16),
           _buildFirstNameField(),
           const SizedBox(height: 16),
           _buildLastNameField(),
@@ -225,6 +232,63 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
     );
   }
 
+  Widget _buildNpiField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'NPI',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[800],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _npiController,
+          readOnly: true,
+          textInputAction: TextInputAction.next,
+          decoration: InputDecoration(
+            hintText: 'NPI',
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            prefixIcon: Icon(
+              Icons.person_outline,
+              color: Colors.grey[600],
+              size: 20,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'NPI is required';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildFirstNameField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,6 +304,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
         const SizedBox(height: 8),
         TextFormField(
           controller: _firstNameController,
+          readOnly: true,
           textInputAction: TextInputAction.next,
           decoration: InputDecoration(
             hintText: 'Enter your first name',
@@ -296,6 +361,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
         const SizedBox(height: 8),
         TextFormField(
           controller: _lastNameController,
+          readOnly: true,
           textInputAction: TextInputAction.next,
           decoration: InputDecoration(
             hintText: 'Enter your last name',

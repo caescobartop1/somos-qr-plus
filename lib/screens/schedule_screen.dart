@@ -24,7 +24,7 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen> {
   bool _isDrawerOpen = false;
   Provider _selectedProvider = new Provider(name: 'All', id: '-1');
-  String _selectedView = 'Day'; // Day, Week, Month
+  String _selectedView = 'Week'; // Day, Week, Month
   DateTime _selectedDate = DateTime.now();
   bool _showNewAppointmentModal = false;
 
@@ -46,10 +46,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   List<Patient> _allPatients = [];
   List<Patient> _filteredPatients = [];
   Patient? _selectedPatient;
+  List<int> _workWeekDays = [1, 2, 3, 4, 5];
 
   @override
   void initState() {
     super.initState();
+    final c = Get.find<PracticeController>();
+    _selectedProvider = c.defaultProvider;
     _initializePatients();
     _patientSearchController.addListener(_onPatientSearchChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
@@ -59,8 +62,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final c = Get.find<PracticeController>();
 
     await c.getPractice('');
-    await c.getScheduleForScreen(_selectedProvider.id,
-        startDate: _selectedDate, endDate: _selectedDate);
+    dynamic start =
+        _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+    dynamic end = start.add(const Duration(days: 6));
+    await c.getScheduleForScreen(
+      _selectedProvider.id,
+      startDate: start,
+      endDate: end,
+    );
     await c.getMco(_selectedProvider.id);
     await c.getProvider(_selectedProvider.id);
 
@@ -96,8 +105,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _selectPatient(Patient patient) {
-    print(patient);
-    print(patient.id);
     setState(() {
       _selectedPatient = patient;
       _patientSearchController.text = patient.fullName;
@@ -118,7 +125,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       MaterialPageRoute(
         builder: (context) => PatientProfileModal(
             patient: patientToShow,
+            onCloseDialog: () {
+              getSchedule();
+            },
             providers: c.providerList,
+            shouldUpdate: patient?.status == 'Pending',
             practice_id: _selectedProvider.id,
             member_plan_id: patient?.memberPlanId ?? 0,
             schedule_id: patient?.id),
@@ -185,6 +196,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final c = Get.find<PracticeController>();
     DateTime start;
     DateTime end;
+    print('hola aca entramos aja!');
+    print(_selectedView);
 
     if (_selectedView == 'Day') {
       // Un solo día
@@ -194,10 +207,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         _selectedDate.day,
       );
       end = start;
+    } else if (_selectedView == 'Work Week') {
+      // rango base de la semana
+      start = _selectedDate.subtract(Duration(days: _selectedDate.weekday % 7));
+      end = start.add(const Duration(days: 6));
     } else if (_selectedView == 'Week') {
       // Semana completa (lunes a domingo)
       start = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
       end = start.add(const Duration(days: 6));
+      print(start);
+      print(end);
+      print('hola aca por supuesto aqui aja!');
     } else {
       // Mes completo
       start = DateTime(_selectedDate.year, _selectedDate.month, 1);
@@ -260,6 +280,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 _selectedProvider = provider;
                               });
                               final c = Get.find<PracticeController>();
+                              c.setProvider(provider);
                               await c.getMco(_selectedProvider.id);
                               await c.getProvider(_selectedProvider.id);
                               getSchedule();
@@ -360,7 +381,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: ['Day', 'Week', 'Month'].map((view) {
+                      children:
+                          ['Day', 'Week', 'Work Week', 'Month'].map((view) {
                         final isSelected = _selectedView == view;
                         return GestureDetector(
                           onTap: () {
@@ -371,7 +393,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           },
                           child: Container(
                             padding: EdgeInsets.symmetric(
-                                horizontal: isMobile ? 12 : 16, vertical: 8),
+                                horizontal: isMobile ? 10 : 14, vertical: 8),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? const Color(0xFF1976D2)
@@ -385,7 +407,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                     ? Colors.white
                                     : Colors.grey.shade700,
                                 fontWeight: FontWeight.w500,
-                                fontSize: isMobile ? 12 : 14,
+                                fontSize: isMobile ? 10 : 12,
                               ),
                             ),
                           ),
@@ -394,7 +416,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                   ),
 
-                  const Spacer(),
+                  // const Spacer(),
 
                   // Date Navigation
                   Expanded(
@@ -427,7 +449,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             onTap: _showDatePicker,
                             child: Container(
                               padding: EdgeInsets.symmetric(
-                                  horizontal: isMobile ? 20 : 32, vertical: 12),
+                                  horizontal: isMobile ? 18 : 30, vertical: 12),
                               decoration: BoxDecoration(
                                 border: Border.all(color: Colors.grey.shade300),
                                 borderRadius: BorderRadius.circular(8),
@@ -437,7 +459,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w500,
                                   color: const Color(0xFF333333),
-                                  fontSize: isMobile ? 14 : 16,
+                                  fontSize: isMobile ? 12 : 14,
                                 ),
                                 textAlign: TextAlign.center,
                                 overflow: TextOverflow.visible,
@@ -474,6 +496,37 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
 
           const SizedBox(height: 16),
+          if (_selectedView == 'Work Week')
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: List.generate(7, (index) {
+                final labels = [
+                  'Sun',
+                  'Mon',
+                  'Tue',
+                  'Wed',
+                  'Thu',
+                  'Fri',
+                  'Sat'
+                ];
+                final isSelected = _workWeekDays.contains(index);
+                return FilterChip(
+                  label: Text(labels[index]),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _workWeekDays.add(index);
+                      } else {
+                        _workWeekDays.remove(index);
+                      }
+                      getSchedule(); // recargar
+                    });
+                  },
+                );
+              }),
+            ),
 
           // Action Buttons
           LayoutBuilder(
@@ -575,7 +628,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     'Pending',
                     'Confirmed',
                     'completed',
-                    'No-Show',
+                    'No Show',
                     'Cancelled',
                   ].map((status) {
                     String displayName = status == 'all'
@@ -586,7 +639,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 ? 'Confirmed'
                                 : status == 'completed'
                                     ? 'Completed'
-                                    : status == 'No-Show'
+                                    : status == 'No Show'
                                         ? 'No Show'
                                         : status == 'Cancelled'
                                             ? 'Cancelled'
@@ -642,7 +695,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     items: [
                       const DropdownMenuItem(
                         value: 'all',
-                        child: Text('All Providers'),
+                        child: Text('Select a Provider'),
                       ),
                       ...c.providerList.map((p) => DropdownMenuItem(
                             value: p.id.toString(),
@@ -801,9 +854,108 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       return _buildDayView();
     } else if (_selectedView == 'Week') {
       return _buildWeekView();
+    } else if (_selectedView == 'Work Week') {
+      return _buildWorkWeekView();
     } else {
       return _buildMonthView();
     }
+  }
+
+  Widget _buildWorkWeekView() {
+    final c = Get.find<PracticeController>();
+    final schedules = c.scheduleDetailsForPage;
+
+    // Días de la semana (domingo a sábado)
+    final weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    final startOfWeek =
+        _selectedDate.subtract(Duration(days: _selectedDate.weekday % 7));
+
+    // Filtramos solo los días seleccionados
+    final selectedIndexes = _workWeekDays..sort();
+
+    return Container(
+      decoration: _boxDecoration(),
+      child: Column(
+        children: [
+          // Encabezado
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 60),
+                ...selectedIndexes.map((i) => Expanded(
+                      child: Text(
+                        weekDays[i],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    )),
+              ],
+            ),
+          ),
+
+          // Filas de horas
+          ...List.generate(12, (index) {
+            final hour = 8 + index;
+            final timeSlot = '${hour.toString().padLeft(2, '0')}:00';
+            return Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 60,
+                    child: Text(timeSlot,
+                        style: TextStyle(
+                            color: Colors.grey.shade600, fontSize: 12)),
+                  ),
+                  ...selectedIndexes.map((dayIndex) {
+                    final dayDate = startOfWeek.add(Duration(days: dayIndex));
+                    final appointmentsInSlot = schedules.where((s) {
+                      return s.day.year == dayDate.year &&
+                          s.day.month == dayDate.month &&
+                          s.day.day == dayDate.day &&
+                          s.day.hour == hour;
+                    }).toList();
+
+                    return Expanded(
+                      child: Container(
+                        height: 80,
+                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: appointmentsInSlot.isEmpty
+                            ? const SizedBox.shrink()
+                            : _buildAppointmentCard(
+                                appointmentsInSlot.first,
+                                isCompact: true,
+                              ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
   }
 
   Widget _buildDayView() {
@@ -916,9 +1068,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final c = Get.find<PracticeController>();
     final schedules = c.scheduleDetailsForPage;
 
-    final weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     final startOfWeek =
-        _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+        _selectedDate.subtract(Duration(days: _selectedDate.weekday % 7));
 
     return Container(
       decoration: _boxDecoration(),
@@ -1173,13 +1325,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildAppointmentCard(Schedule s, {bool isCompact = false}) {
     Color statusColor;
     switch (s.status.toLowerCase()) {
-      case 'confirmed':
+      case 'completed':
         statusColor = const Color(0xFF4CAF50);
         break;
       case 'pending':
         statusColor = const Color(0xFFFF9800);
         break;
-      case 'cancelled':
+      case 'no show':
         statusColor = const Color(0xFFF44336);
         break;
       default:
@@ -1389,7 +1541,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             items: [
                               const DropdownMenuItem(
                                 value: 'all',
-                                child: Text('All Providers'),
+                                child: Text('Select a Provider'),
                               ),
                               ...practiceController.providerList
                                   .map((p) => DropdownMenuItem(

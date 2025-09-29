@@ -15,6 +15,8 @@ class PatientProfileModal extends StatefulWidget {
   final dynamic member_plan_id;
   final dynamic schedule_id;
   bool shouldUpdate = true;
+  VoidCallback onCloseDialog;
+  static void _defaultOnCloseDialog() {}
 
   PatientProfileModal(
       {super.key,
@@ -23,7 +25,8 @@ class PatientProfileModal extends StatefulWidget {
       required this.practice_id,
       required this.member_plan_id,
       required this.schedule_id,
-      this.shouldUpdate = true});
+      this.shouldUpdate = true,
+      this.onCloseDialog = _defaultOnCloseDialog});
 
   @override
   State<PatientProfileModal> createState() => _PatientProfileModalState();
@@ -107,7 +110,7 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
                     items: [
                       const DropdownMenuItem(
                         value: 'all',
-                        child: Text('All Providers'),
+                        child: Text('Select a Provider'),
                       ),
                       ...widget.providers
                           .map((provider) => DropdownMenuItem(
@@ -178,7 +181,7 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
     final bool isDisabled = !widget.shouldUpdate; // ✅ Nuevo flag
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (isDisabled) return; // ✅ Bloquear tap si está deshabilitado
 
         // ✅ Validar provider antes de permitir el cambio
@@ -188,13 +191,15 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
         }
 
         final c = Get.find<PracticeController>();
-        c.updateStatusVisit(
+        await c.updateStatusVisit(
           practiceId: widget.practice_id,
           selectedProvider: _selectedProvider,
           patientId: widget.patient.id,
           field: text,
           schedule_id: widget.schedule_id,
         );
+        widget.onCloseDialog();
+        Navigator.of(context).pop();
         setState(() => _selectedTab = text);
       },
       child: Container(

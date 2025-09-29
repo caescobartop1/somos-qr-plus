@@ -50,16 +50,16 @@ class ApiClient extends GetxService {
     if (res.statusCode == 401 && !_didRetry401 && onTokenRefresh != null) {
       _didRetry401 = true;
       try {
-        final authController = Get.find<AuthController>();
-        authController.logout();
-        // final newToken = await onTokenRefresh!();
-        // print(newToken);
-        // if (newToken != null && newToken.isNotEmpty) {
-        //   token = newToken;
-        //   sharedPreferences.setString(AppConstants.token, newToken);
-        //   updateHeader(newToken);
-        //   res = await send();
-        // }
+        // final authController = Get.find<AuthController>();
+        // authController.logout();
+        final newToken = await onTokenRefresh!();
+        print(newToken);
+        if (newToken != null && newToken.isNotEmpty) {
+          token = newToken;
+          sharedPreferences.setString(AppConstants.token, newToken);
+          updateHeader(newToken);
+          res = await send();
+        }
       } catch (_) {
         // si falla el refresh, seguimos con el 401 original
       } finally {
@@ -228,6 +228,33 @@ class ApiClient extends GetxService {
       return _sendWith401Retry(
         send: () => http
             .put(url, body: jsonEncode(body), headers: headers ?? _mainHeaders)
+            .timeout(Duration(seconds: timeoutInSeconds)),
+        uri: uri,
+        handleError: handleError,
+      );
+    } catch (e) {
+      return Response(statusCode: 1, statusText: noInternetMessage);
+    }
+  }
+
+  Future<Response> patchData(String uri, dynamic body,
+      {Map<String, String>? headers,
+      bool handleError = true,
+      Map<String, String>? queryParams,
+      bool useApi = false}) async {
+    try {
+      if (kDebugMode) {
+        print('====> API Call: $uri\nHeader: ${headers ?? _mainHeaders}');
+        print('====> API Body: $body');
+      }
+      final url = Uri.parse((useApi ? appBaseUrl : appBaseAuthUrl)).replace(
+        path: uri,
+        queryParameters: queryParams,
+      );
+      return _sendWith401Retry(
+        send: () => http
+            .patch(url,
+                body: jsonEncode(body), headers: headers ?? _mainHeaders)
             .timeout(Duration(seconds: timeoutInSeconds)),
         uri: uri,
         handleError: handleError,

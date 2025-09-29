@@ -34,14 +34,26 @@ class _PatientsScreenState extends State<PatientsScreen> {
   int _rowsPerPage = 20;
   bool _showLogoutDialog = false;
   Timer? _debounce;
+  String _currentOrdering = ''; // ← lo que se envía a getPatients
+  String _currentSortColumn =
+      ''; // ← columna actual (full_name, birthdate, etc.)
+  bool _isAscending = true; // ← dirección actual
 
   @override
   void initState() {
     super.initState();
+    final c = Get.find<PracticeController>();
+    _selectedProvider = c.defaultProvider;
     _initializePatients();
     // Lánzalo después del frame para asegurar que el árbol está listo
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _loadData(_selectedProvider));
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 
   void _initializePatients() {}
@@ -62,6 +74,71 @@ class _PatientsScreenState extends State<PatientsScreen> {
           : _providerFilter,
       mco: _mcoFilter.isEmpty || _mcoFilter == 'All' ? null : _mcoFilter,
       search: _searchController.text.isEmpty ? null : _searchController.text,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _currentPage = 1;
+    });
+  }
+
+  Widget _sortableHeader(String title, String column) {
+    final isActive = _currentSortColumn == column;
+    IconData? icon;
+    if (isActive) {
+      icon = _isAscending ? Icons.arrow_drop_up : Icons.arrow_drop_down;
+    }
+
+    return GestureDetector(
+      onTap: () => _onSortColumn(column),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          if (icon != null)
+            Icon(
+              icon,
+              size: 16,
+              color: Colors.grey.shade700,
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _onSortColumn(String column) async {
+    setState(() {
+      if (_currentSortColumn == column) {
+        // si es la misma columna, alternar asc/desc
+        _isAscending = !_isAscending;
+      } else {
+        // nueva columna → asc por defecto
+        _currentSortColumn = column;
+        _isAscending = true;
+      }
+      // prefijo "-" si es descendente
+      _currentOrdering = _isAscending ? column : '-$column';
+    });
+
+    final c = Get.find<PracticeController>();
+    String dobParsed = '';
+    try {
+      final parsed = DateFormat('dd/MM/yyyy').parse(_dobFilter);
+      dobParsed = DateFormat('yyyy-MM-dd').format(parsed);
+    } catch (_) {}
+
+    await c.getPatients(
+      _selectedProvider.id,
+      dob: dobParsed.isEmpty ? null : dobParsed,
+      provider: _providerFilter.isEmpty || _providerFilter == 'All'
+          ? null
+          : _providerFilter,
+      mco: _mcoFilter.isEmpty || _mcoFilter == 'All' ? null : _mcoFilter,
+      search: _searchController.text.isEmpty ? null : _searchController.text,
+      ordering: _currentOrdering,
     );
 
     if (!mounted) return;
@@ -192,6 +269,8 @@ class _PatientsScreenState extends State<PatientsScreen> {
                             providers: practiceController.practices,
                             onProviderChanged: (provider) {
                               setState(() => _selectedProvider = provider);
+                              final c = Get.find<PracticeController>();
+                              c.setProvider(provider);
                               _loadData(provider);
                               _showSuccessMessage(
                                   'Showing data for ${provider.name}');
@@ -334,33 +413,26 @@ class _PatientsScreenState extends State<PatientsScreen> {
                                       bottom: BorderSide(
                                           color: Colors.grey.shade300)),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   children: [
                                     Expanded(
                                         flex: 3,
-                                        child: Text('Full Name',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w600))),
+                                        child: _sortableHeader(
+                                            'Full Name', 'full_name')),
                                     Expanded(
                                         flex: 2,
-                                        child: Text('DOB',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w600))),
+                                        child: _sortableHeader(
+                                            'DOB', 'birthdate')),
                                     Expanded(
                                         flex: 3,
-                                        child: Text('MCO',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w600))),
+                                        child:
+                                            _sortableHeader('MCO', 'mco_name')),
                                     Expanded(
                                         flex: 1,
-                                        child: Text('GIC',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w600))),
+                                        child: _sortableHeader('GIC', 'gic')),
                                     Expanded(
                                         flex: 1,
-                                        child: Text('RA',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w600))),
+                                        child: _sortableHeader('RA', 'ra')),
                                   ],
                                 ),
                               ),

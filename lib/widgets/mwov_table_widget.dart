@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 
 class MWOVTableWidget extends StatefulWidget {
-  const MWOVTableWidget({super.key});
+  final String practice_id;
+  const MWOVTableWidget({super.key, required this.practice_id});
 
   @override
   State<MWOVTableWidget> createState() => _MWOVTableWidgetState();
@@ -12,142 +15,62 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
   List<MWOVPatient> _filteredPatients = [];
   String _sortColumn = 'name';
   bool _sortAscending = true;
-  
+
   // Pagination
   int _currentPage = 1;
   int _rowsPerPage = 10;
-  
+
   // Filter controllers
   final TextEditingController _nameFilterController = TextEditingController();
   final TextEditingController _dobFilterController = TextEditingController();
   final TextEditingController _dosFilterController = TextEditingController();
   final TextEditingController _phoneFilterController = TextEditingController();
-  final TextEditingController _addressFilterController = TextEditingController();
+  final TextEditingController _addressFilterController =
+      TextEditingController();
   String _mcoFilter = '';
 
   @override
   void initState() {
     super.initState();
-    _loadSampleData();
-    _applyFilters();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPatients());
   }
 
-  void _loadSampleData() {
-    _patients = [
-      MWOVPatient(
-        name: 'Navidad Santana',
-        mco: 'Anthem',
-        dob: '12-24-1973',
-        lastDos: '',
-        phone: '3477794449',
-        address: '87 Melrose St Apt 4d, Brooklyn, NY, 11206',
-      ),
-      MWOVPatient(
-        name: 'Teresa Garcia',
-        mco: 'Anthem',
-        dob: '07-05-1962',
-        lastDos: '',
-        phone: '6463997597',
-        address: '1654 Monroe Ave Apt 4f, Bronx, NY, 10457',
-      ),
-      MWOVPatient(
-        name: 'Jean Robert Augustin',
-        mco: 'Anthem',
-        dob: '01-13-1969',
-        lastDos: '',
-        phone: '3479981694',
-        address: 'Undomiciled, Apt 1d, New York, NY, 10031',
-      ),
-      MWOVPatient(
-        name: 'Argelia Jaquez De Heredia',
-        mco: 'Anthem',
-        dob: '03-18-1958',
-        lastDos: '',
-        phone: '7185559876',
-        address: '2345 Grand Concourse Apt 2b, Bronx, NY, 10458',
-      ),
-      MWOVPatient(
-        name: 'Gerardino Cruz',
-        mco: 'Anthem',
-        dob: '09-22-1971',
-        lastDos: '',
-        phone: '9174443333',
-        address: '4567 Jerome Ave Apt 5c, Bronx, NY, 10468',
-      ),
-      MWOVPatient(
-        name: 'Yahaira Perez De Castillo',
-        mco: 'Anthem',
-        dob: '11-14-1965',
-        lastDos: '',
-        phone: '6467778888',
-        address: '7890 Sedgwick Ave Apt 3a, Bronx, NY, 10453',
-      ),
-      MWOVPatient(
-        name: 'Glenis Ariasfernandez',
-        mco: 'Anthem',
-        dob: '05-30-1974',
-        lastDos: '',
-        phone: '3476665555',
-        address: '1234 Webster Ave Apt 6d, Bronx, NY, 10456',
-      ),
-      MWOVPatient(
-        name: 'Viaines Brito Mendoza',
-        mco: 'Emblem',
-        dob: '08-07-1968',
-        lastDos: '',
-        phone: '7189990000',
-        address: '5678 East Tremont Ave Apt 4e, Bronx, NY, 10460',
-      ),
-      MWOVPatient(
-        name: 'Luz Urena',
-        mco: 'Anthem',
-        dob: '02-11-1959',
-        lastDos: '',
-        phone: '9173332222',
-        address: '9012 Westchester Ave Apt 1f, Bronx, NY, 10461',
-      ),
-      MWOVPatient(
-        name: 'Yenesi Ortizdehidalgo',
-        mco: 'Emblem',
-        dob: '06-25-1972',
-        lastDos: '',
-        phone: '6461112222',
-        address: '3456 Southern Blvd Apt 7g, Bronx, NY, 10459',
-      ),
-      MWOVPatient(
-        name: 'Maria Rodriguez',
-        mco: 'Healthfirst',
-        dob: '04-15-1960',
-        lastDos: '',
-        phone: '2128889999',
-        address: '789 Park Ave Apt 2a, Manhattan, NY, 10021',
-      ),
-      MWOVPatient(
-        name: 'Carlos Mendez',
-        mco: 'Molina',
-        dob: '10-08-1955',
-        lastDos: '',
-        phone: '7187776666',
-        address: '4321 Ocean Pkwy Apt 5b, Brooklyn, NY, 11218',
-      ),
-    ];
-    _filteredPatients = List.from(_patients);
+  Future<void> _loadPatients() async {
+    final c = Get.find<PracticeController>();
+
+    // 🔹 Primero cargar MCOs disponibles
+    await c.getMco(widget.practice_id);
+
+    // 🔹 Llamar al endpoint MWOV con los filtros actuales
+    await c.getReportKpiMwovList(widget.practice_id,
+        memberName: _nameFilterController.text,
+        mcoName: _mcoFilter == 'all' ? null : _mcoFilter,
+        dob: _dobFilterController.text,
+        lastVisitDate: _dosFilterController.text,
+        phone: _phoneFilterController.text,
+        address: _addressFilterController.text);
+
+    if (!mounted) return;
+    setState(() {
+      // Mapear datos a MWOVPatient para la tabla
+      _patients = c.mwovList
+          .map((e) => MWOVPatient(
+                name: e.memberName,
+                mco: e.mcoName,
+                dob: e.dob,
+                lastDos: e.lastVisitDate ?? '',
+                phone: e.phoneNumber,
+                address: e.address,
+              ))
+          .toList();
+
+      _filteredPatients = List.from(_patients);
+      _currentPage = 1;
+    });
   }
 
   void _applyFilters() {
-    setState(() {
-      _filteredPatients = _patients.where((patient) {
-        final nameMatch = patient.name.toLowerCase().contains(_nameFilterController.text.toLowerCase());
-        final mcoMatch = _mcoFilter.isEmpty || patient.mco == _mcoFilter;
-        final dobMatch = patient.dob.contains(_dobFilterController.text);
-        final dosMatch = patient.lastDos.contains(_dosFilterController.text);
-        final phoneMatch = patient.phone.contains(_phoneFilterController.text);
-        final addressMatch = patient.address.toLowerCase().contains(_addressFilterController.text.toLowerCase());
-        
-        return nameMatch && mcoMatch && dobMatch && dosMatch && phoneMatch && addressMatch;
-      }).toList();
-      _currentPage = 1; // Reset to first page when filtering
-    });
+    _loadPatients();
   }
 
   List<MWOVPatient> get _paginatedPatients {
@@ -177,11 +100,11 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
         _sortColumn = column;
         _sortAscending = true;
       }
-      
+
       _filteredPatients.sort((a, b) {
         var aValue = _getValueForColumn(a, column);
         var bValue = _getValueForColumn(b, column);
-        
+
         int comparison = aValue.compareTo(bValue);
         return _sortAscending ? comparison : -comparison;
       });
@@ -209,6 +132,7 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final c = Get.find<PracticeController>();
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive sizing
@@ -249,17 +173,17 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      // Export functionality - silent for now
-                    },
-                    icon: const Icon(Icons.file_download, size: 20),
-                    tooltip: 'Export',
-                  ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     // Export functionality - silent for now
+                  //   },
+                  //   icon: const Icon(Icons.file_download, size: 20),
+                  //   tooltip: 'Export',
+                  // ),
                 ],
               ),
             ),
-            
+
             // Filter Row
             Container(
               padding: EdgeInsets.all(padding),
@@ -283,7 +207,10 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
                       Expanded(
                         child: _buildFilterDropdown(
                           value: _mcoFilter,
-                          items: ['', 'Healthfirst', 'Anthem', 'Emblem', 'Molina'],
+                          items: [
+                            'all',
+                            ...c.mcoList.map((mco) => mco.mcoName),
+                          ],
                           hint: 'MCO',
                           onChanged: (value) {
                             _mcoFilter = value ?? '';
@@ -333,7 +260,7 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
                 ],
               ),
             ),
-            
+
             // Table
             Expanded(
               child: Column(
@@ -365,7 +292,9 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
                                 DataCell(Text(patient.name)),
                                 DataCell(Text(patient.mco)),
                                 DataCell(Text(patient.dob)),
-                                DataCell(Text(patient.lastDos.isEmpty ? '-' : patient.lastDos)),
+                                DataCell(Text(patient.lastDos.isEmpty
+                                    ? '-'
+                                    : patient.lastDos)),
                                 DataCell(Text(patient.phone)),
                                 DataCell(
                                   ConstrainedBox(
@@ -418,8 +347,9 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
 
   Widget _buildPaginationControls() {
     final startIndex = (_currentPage - 1) * _rowsPerPage + 1;
-    final endIndex = (_currentPage * _rowsPerPage).clamp(0, _filteredPatients.length);
-    
+    final endIndex =
+        (_currentPage * _rowsPerPage).clamp(0, _filteredPatients.length);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
@@ -446,7 +376,8 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(fontSize: 11)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -469,7 +400,8 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -495,7 +427,8 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(fontSize: 11)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -511,13 +444,14 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
                     ),
                   ],
                 ),
-                
+
                 // Page info and navigation
                 Row(
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -537,13 +471,14 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
       children: [
         // Previous button
         IconButton(
-          onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
+          onPressed:
+              _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
           icon: const Icon(Icons.chevron_left),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
         ),
-        
+
         // Current page number only (to save space)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -560,10 +495,12 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
             ),
           ),
         ),
-        
+
         // Next button
         IconButton(
-          onPressed: _currentPage < _totalPages ? () => _goToPage(_currentPage + 1) : null,
+          onPressed: _currentPage < _totalPages
+              ? () => _goToPage(_currentPage + 1)
+              : null,
           icon: const Icon(Icons.chevron_right),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
@@ -579,7 +516,8 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
     required ValueChanged<String> onChanged,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 80), // Minimum width constraint
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
@@ -589,7 +527,8 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           isDense: true,
         ),
         style: const TextStyle(fontSize: 11),
@@ -605,7 +544,8 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
     required ValueChanged<String?> onChanged,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 80), // Minimum width constraint
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
       child: DropdownButtonFormField<String>(
         value: value!.isEmpty ? null : value,
         decoration: InputDecoration(
@@ -615,7 +555,8 @@ class _MWOVTableWidgetState extends State<MWOVTableWidget> {
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           isDense: true,
         ),
         items: items.map((item) {

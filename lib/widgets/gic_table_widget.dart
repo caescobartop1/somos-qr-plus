@@ -1,31 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
+import 'package:somos_qr_plus/models/gic_list.dart';
 
 class GICTableWidget extends StatefulWidget {
-  const GICTableWidget({super.key});
+  final String practice_id;
+  const GICTableWidget({super.key, required this.practice_id});
 
   @override
   State<GICTableWidget> createState() => _GICTableWidgetState();
 }
 
 class _GICTableWidgetState extends State<GICTableWidget> {
-  List<GICPatient> _patients = [];
-  List<GICPatient> _filteredPatients = [];
+  List<GicList> _patients = [];
+  List<GicList> _filteredPatients = [];
+
   String _sortColumn = 'name';
   bool _sortAscending = true;
-  
+
   // Pagination
   int _currentPage = 1;
   int _rowsPerPage = 10;
-  
+
   // Filter controllers
   final TextEditingController _nameFilterController = TextEditingController();
   final TextEditingController _dobFilterController = TextEditingController();
+  final TextEditingController _apptFilterController = TextEditingController();
   final TextEditingController _phoneFilterController = TextEditingController();
   String _mcoFilter = '';
-  String _apptFilter = '';
   String _measureFilter = '';
   String _statusFilter = '';
-  
+
   // Export fields
   final Map<String, bool> _exportFields = {
     'Name': true,
@@ -47,206 +52,37 @@ class _GICTableWidgetState extends State<GICTableWidget> {
   @override
   void initState() {
     super.initState();
-    _loadSampleData();
-    _applyFilters();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPatients());
   }
 
-  void _loadSampleData() {
-    _patients = [
-      GICPatient(
-        name: 'Argentina D Baez Melo',
-        mco: 'Healthfirst',
-        dob: '01-31-1959',
-        appointment: 'KED',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '17189601223',
-      ),
-      GICPatient(
-        name: 'Eliezer Feliz',
-        mco: 'Anthem',
-        dob: '05-15-1972',
-        appointment: 'CBP',
-        measure: 'Open',
-        status: 'Open',
-        phone: '6466448650',
-      ),
-      GICPatient(
-        name: 'Camilo Rosario',
-        mco: 'Emblem',
-        dob: '03-22-1985',
-        appointment: 'AWV',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '7185551234',
-      ),
-      GICPatient(
-        name: 'Maria Rodriguez',
-        mco: 'Molina',
-        dob: '07-08-1968',
-        appointment: 'COL',
-        measure: 'Open',
-        status: 'Open',
-        phone: '9178889999',
-      ),
-      GICPatient(
-        name: 'Juan Carlos Lopez',
-        mco: 'Healthfirst',
-        dob: '11-14-1975',
-        appointment: 'CCS',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '6467778888',
-      ),
-      GICPatient(
-        name: 'Ana Martinez',
-        mco: 'Anthem',
-        dob: '09-03-1982',
-        appointment: 'PPC',
-        measure: 'Open',
-        status: 'Open',
-        phone: '7186667777',
-      ),
-      GICPatient(
-        name: 'Roberto Sanchez',
-        mco: 'Emblem',
-        dob: '02-18-1965',
-        appointment: 'AWV',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '9175556666',
-      ),
-      GICPatient(
-        name: 'Carmen Torres',
-        mco: 'Molina',
-        dob: '12-25-1978',
-        appointment: 'KED',
-        measure: 'Open',
-        status: 'Open',
-        phone: '6464445555',
-      ),
-      GICPatient(
-        name: 'Luis Gonzalez',
-        mco: 'Healthfirst',
-        dob: '04-07-1980',
-        appointment: 'CBP',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '7183334444',
-      ),
-      GICPatient(
-        name: 'Isabella Silva',
-        mco: 'Anthem',
-        dob: '08-12-1970',
-        appointment: 'COL',
-        measure: 'Open',
-        status: 'Open',
-        phone: '9172223333',
-      ),
-      // Additional sample data for pagination testing
-      GICPatient(
-        name: 'Carlos Mendez',
-        mco: 'Healthfirst',
-        dob: '06-15-1983',
-        appointment: 'AWV',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '7189998888',
-      ),
-      GICPatient(
-        name: 'Elena Vasquez',
-        mco: 'Emblem',
-        dob: '03-28-1976',
-        appointment: 'KED',
-        measure: 'Open',
-        status: 'Open',
-        phone: '6463334444',
-      ),
-      GICPatient(
-        name: 'Miguel Torres',
-        mco: 'Molina',
-        dob: '11-05-1969',
-        appointment: 'CBP',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '9177776666',
-      ),
-      GICPatient(
-        name: 'Sofia Ramirez',
-        mco: 'Anthem',
-        dob: '09-17-1981',
-        appointment: 'PPC',
-        measure: 'Open',
-        status: 'Open',
-        phone: '7184445555',
-      ),
-      GICPatient(
-        name: 'Diego Herrera',
-        mco: 'Healthfirst',
-        dob: '01-22-1974',
-        appointment: 'COL',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '6468889999',
-      ),
-      GICPatient(
-        name: 'Valentina Cruz',
-        mco: 'Emblem',
-        dob: '07-14-1987',
-        appointment: 'AWV',
-        measure: 'Open',
-        status: 'Open',
-        phone: '9171112222',
-      ),
-      GICPatient(
-        name: 'Alejandro Morales',
-        mco: 'Molina',
-        dob: '04-09-1972',
-        appointment: 'KED',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '7186667777',
-      ),
-      GICPatient(
-        name: 'Camila Jimenez',
-        mco: 'Anthem',
-        dob: '12-03-1985',
-        appointment: 'CBP',
-        measure: 'Open',
-        status: 'Open',
-        phone: '6465556666',
-      ),
-      GICPatient(
-        name: 'Sebastian Ruiz',
-        mco: 'Healthfirst',
-        dob: '05-26-1978',
-        appointment: 'PPC',
-        measure: 'Completed',
-        status: 'Completed',
-        phone: '9179990000',
-      ),
-    ];
-    _filteredPatients = List.from(_patients);
-  }
+  Future<void> _loadPatients() async {
+    final c = Get.find<PracticeController>();
+    await c.getMco(widget.practice_id);
 
-  void _applyFilters() {
+    await c.getReportKpiGicList(
+      widget.practice_id,
+      member_name: _nameFilterController.text,
+      mco_name: _mcoFilter,
+      dob: _dobFilterController.text,
+      date_time: _apptFilterController.text,
+      measure_code: _measureFilter,
+      status: _statusFilter,
+      phone: _phoneFilterController.text,
+    );
+
+    if (!mounted) return;
     setState(() {
-      _filteredPatients = _patients.where((patient) {
-        final nameMatch = patient.name.toLowerCase().contains(_nameFilterController.text.toLowerCase());
-        final mcoMatch = _mcoFilter.isEmpty || patient.mco == _mcoFilter;
-        final dobMatch = patient.dob.contains(_dobFilterController.text);
-        final apptMatch = _apptFilter.isEmpty || patient.appointment == _apptFilter;
-        final measureMatch = _measureFilter.isEmpty || patient.measure == _measureFilter;
-        final statusMatch = _statusFilter.isEmpty || patient.status == _statusFilter;
-        final phoneMatch = patient.phone.contains(_phoneFilterController.text);
-        
-        return nameMatch && mcoMatch && dobMatch && apptMatch && measureMatch && statusMatch && phoneMatch;
-      }).toList();
-      _currentPage = 1; // Reset to first page when filtering
+      _patients = c.gicList;
+      _filteredPatients = List.from(_patients);
+      _currentPage = 1;
     });
   }
 
-  List<GICPatient> get _paginatedPatients {
+  void _applyFilters() async {
+    await _loadPatients(); // 🔑 Re-dispara la consulta con los filtros actuales
+  }
+
+  List<GicList> get _paginatedPatients {
     final startIndex = (_currentPage - 1) * _rowsPerPage;
     final endIndex = startIndex + _rowsPerPage;
     return _filteredPatients.sublist(
@@ -273,40 +109,41 @@ class _GICTableWidgetState extends State<GICTableWidget> {
         _sortColumn = column;
         _sortAscending = true;
       }
-      
+
       _filteredPatients.sort((a, b) {
         var aValue = _getValueForColumn(a, column);
         var bValue = _getValueForColumn(b, column);
-        
+
         int comparison = aValue.compareTo(bValue);
         return _sortAscending ? comparison : -comparison;
       });
     });
   }
 
-  dynamic _getValueForColumn(GICPatient patient, String column) {
+  dynamic _getValueForColumn(GicList patient, String column) {
     switch (column) {
       case 'name':
-        return patient.name;
+        return patient.memberName;
       case 'mco':
-        return patient.mco;
+        return patient.mcoName;
       case 'dob':
         return patient.dob;
       case 'appointment':
-        return patient.appointment;
+        return patient.dateTime;
       case 'measure':
-        return patient.measure;
+        return patient.measureCode;
       case 'status':
         return patient.status;
       case 'phone':
-        return patient.phone;
+        return patient.phoneNumber;
       default:
-        return patient.name;
+        return patient.memberName;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = Get.find<PracticeController>();
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive sizing
@@ -347,17 +184,17 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      _showExportDialog();
-                    },
-                    icon: const Icon(Icons.file_download, size: 20),
-                    tooltip: 'Export',
-                  ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     _showExportDialog();
+                  //   },
+                  //   icon: const Icon(Icons.file_download, size: 20),
+                  //   tooltip: 'Export',
+                  // ),
                 ],
               ),
             ),
-            
+
             // Filter Row
             Container(
               padding: EdgeInsets.all(padding),
@@ -381,7 +218,10 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                       Expanded(
                         child: _buildFilterDropdown(
                           value: _mcoFilter,
-                          items: ['', 'Healthfirst', 'Anthem', 'Emblem', 'Molina'],
+                          items: [
+                            'all',
+                            ...c.mcoList.map((mco) => mco.mcoName),
+                          ],
                           hint: 'MCO',
                           onChanged: (value) {
                             _mcoFilter = value ?? '';
@@ -404,21 +244,26 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                       ),
                       SizedBox(width: padding),
                       Expanded(
-                        child: _buildFilterDropdown(
-                          value: _apptFilter,
-                          items: ['', 'KED', 'CBP', 'AWV', 'COL', 'CCS', 'PPC'],
-                          hint: 'Type',
-                          onChanged: (value) {
-                            _apptFilter = value ?? '';
-                            _applyFilters();
-                          },
+                        child: _buildFilterField(
+                          controller: _apptFilterController,
+                          hint: 'APPT...',
+                          onChanged: (_) => _applyFilters(),
                         ),
                       ),
                       SizedBox(width: padding),
                       Expanded(
                         child: _buildFilterDropdown(
                           value: _measureFilter,
-                          items: ['', 'Completed', 'Open'],
+                          items: [
+                            '',
+                            'AWV',
+                            'HBD',
+                            'KED',
+                            'CBP',
+                            'COL',
+                            'CCS',
+                            'PPC'
+                          ],
                           hint: 'Measure',
                           onChanged: (value) {
                             _measureFilter = value ?? '';
@@ -456,7 +301,7 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                 ],
               ),
             ),
-            
+
             // Table
             Expanded(
               child: Column(
@@ -466,18 +311,15 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: SingleChildScrollView(
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: constraints.maxWidth - 32, // Account for padding
+                        child: DataTable(
+                          columnSpacing: padding *
+                              1.5, // Reduced spacing to prevent overflow
+                          dataTextStyle: TextStyle(fontSize: fontSize),
+                          headingTextStyle: TextStyle(
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF333333),
                           ),
-                          child: DataTable(
-                            columnSpacing: padding * 1.5, // Reduced spacing to prevent overflow
-                            dataTextStyle: TextStyle(fontSize: fontSize),
-                            headingTextStyle: TextStyle(
-                              fontSize: fontSize,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF333333),
-                            ),
                           columns: [
                             _buildDataColumn('NAME', 'name', fontSize),
                             _buildDataColumn('MCO', 'mco', fontSize),
@@ -490,17 +332,16 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                           rows: _paginatedPatients.map((patient) {
                             return DataRow(
                               cells: [
-                                DataCell(Text(patient.name)),
-                                DataCell(Text(patient.mco)),
+                                DataCell(Text(patient.memberName)),
+                                DataCell(Text(patient.mcoName)),
                                 DataCell(Text(patient.dob)),
-                                DataCell(Text(patient.appointment)),
-                                DataCell(Text(patient.measure)),
+                                DataCell(Text(patient.dateTime.toString())),
+                                DataCell(Text(patient.measureCode)),
                                 DataCell(Text(patient.status)),
-                                DataCell(Text(patient.phone)),
+                                DataCell(Text(patient.phoneNumber)),
                               ],
                             );
                           }).toList(),
-                          ),
                         ),
                       ),
                     ),
@@ -543,7 +384,8 @@ class _GICTableWidgetState extends State<GICTableWidget> {
     required ValueChanged<String> onChanged,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 80), // Minimum width constraint
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
@@ -553,7 +395,8 @@ class _GICTableWidgetState extends State<GICTableWidget> {
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           isDense: true,
         ),
         style: const TextStyle(fontSize: 11),
@@ -564,8 +407,9 @@ class _GICTableWidgetState extends State<GICTableWidget> {
 
   Widget _buildPaginationControls() {
     final startIndex = (_currentPage - 1) * _rowsPerPage + 1;
-    final endIndex = (_currentPage * _rowsPerPage).clamp(0, _filteredPatients.length);
-    
+    final endIndex =
+        (_currentPage * _rowsPerPage).clamp(0, _filteredPatients.length);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
@@ -592,7 +436,9 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.black)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -615,7 +461,8 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -641,7 +488,8 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(fontSize: 11)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -657,13 +505,14 @@ class _GICTableWidgetState extends State<GICTableWidget> {
                     ),
                   ],
                 ),
-                
+
                 // Page info and navigation
                 Row(
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -683,13 +532,14 @@ class _GICTableWidgetState extends State<GICTableWidget> {
       children: [
         // Previous button
         IconButton(
-          onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
+          onPressed:
+              _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
           icon: const Icon(Icons.chevron_left),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
         ),
-        
+
         // Current page number only (to save space)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -706,10 +556,12 @@ class _GICTableWidgetState extends State<GICTableWidget> {
             ),
           ),
         ),
-        
+
         // Next button
         IconButton(
-          onPressed: _currentPage < _totalPages ? () => _goToPage(_currentPage + 1) : null,
+          onPressed: _currentPage < _totalPages
+              ? () => _goToPage(_currentPage + 1)
+              : null,
           icon: const Icon(Icons.chevron_right),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
@@ -719,7 +571,6 @@ class _GICTableWidgetState extends State<GICTableWidget> {
     );
   }
 
-
   Widget _buildFilterDropdown({
     required String? value,
     required List<String> items,
@@ -727,7 +578,8 @@ class _GICTableWidgetState extends State<GICTableWidget> {
     required ValueChanged<String?> onChanged,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 80), // Minimum width constraint
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
       child: DropdownButtonFormField<String>(
         value: value!.isEmpty ? null : value,
         decoration: InputDecoration(
@@ -737,7 +589,8 @@ class _GICTableWidgetState extends State<GICTableWidget> {
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           isDense: true,
         ),
         items: items.map((item) {
@@ -781,17 +634,18 @@ class _GICTableWidgetState extends State<GICTableWidget> {
         .where((entry) => entry.value)
         .map((entry) => entry.key)
         .toList();
-    
+
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Exporting report with fields: ${selectedFields.join(', ')}'),
+        content:
+            Text('Exporting report with fields: ${selectedFields.join(', ')}'),
         backgroundColor: const Color(0xFF4CAF50),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
       ),
     );
-    
+
     // TODO: Implement actual export functionality (CSV, PDF, etc.)
   }
 
@@ -802,26 +656,6 @@ class _GICTableWidgetState extends State<GICTableWidget> {
     _phoneFilterController.dispose();
     super.dispose();
   }
-}
-
-class GICPatient {
-  final String name;
-  final String mco;
-  final String dob;
-  final String appointment;
-  final String measure;
-  final String status;
-  final String phone;
-
-  GICPatient({
-    required this.name,
-    required this.mco,
-    required this.dob,
-    required this.appointment,
-    required this.measure,
-    required this.status,
-    required this.phone,
-  });
 }
 
 class SelectFieldsDialog extends StatefulWidget {
@@ -893,7 +727,7 @@ class _SelectFieldsDialogState extends State<SelectFieldsDialog> {
                 ],
               ),
             ),
-            
+
             // Fields List
             Flexible(
               child: SingleChildScrollView(
@@ -923,7 +757,7 @@ class _SelectFieldsDialogState extends State<SelectFieldsDialog> {
                 ),
               ),
             ),
-            
+
             // Footer Buttons
             Container(
               padding: const EdgeInsets.all(20),

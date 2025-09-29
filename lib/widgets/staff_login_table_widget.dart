@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 
 class StaffLoginTableWidget extends StatefulWidget {
   const StaffLoginTableWidget({super.key});
@@ -12,11 +14,11 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
   List<StaffMember> _filteredStaff = [];
   String _sortColumn = 'name';
   bool _sortAscending = true;
-  
+
   // Pagination
   int _currentPage = 1;
   int _rowsPerPage = 10;
-  
+
   // Filter controllers
   final TextEditingController _nameFilterController = TextEditingController();
   final TextEditingController _userFilterController = TextEditingController();
@@ -25,101 +27,48 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
   @override
   void initState() {
     super.initState();
-    _loadSampleData();
-    _applyFilters();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadStaff());
+  }
+
+  void _loadStaff() {
+    final c = Get.find<PracticeController>();
+
+    setState(() {
+      // Mapear StaffLogin -> StaffMember
+      _staff = c.staffLogins.map((e) {
+        return StaffMember(
+          name: e.fullName ?? '-',
+          username: e.userUsername ?? '-',
+          lastLogin: e.userLastLogin.toString(),
+        );
+      }).toList();
+
+      _filteredStaff = List.from(_staff);
+      _currentPage = 1;
+    });
   }
 
   void _loadSampleData() {
-    _staff = [
-      StaffMember(
-        name: 'Mirza Morales-Diaz',
-        username: 'broadwayinternalmed@gmail.com',
-        lastLogin: '04-29-2025',
-      ),
-      StaffMember(
-        name: 'Joel Cedano',
-        username: 'joel.cedano@somos.com',
-        lastLogin: '07-29-2025',
-      ),
-      StaffMember(
-        name: 'Maria Garcia',
-        username: 'maria.garcia@somos.com',
-        lastLogin: '07-28-2025',
-      ),
-      StaffMember(
-        name: 'John Smith',
-        username: 'john.smith@somos.com',
-        lastLogin: '07-27-2025',
-      ),
-      StaffMember(
-        name: 'Michael Brown',
-        username: 'michael.brown@somos.com',
-        lastLogin: '07-26-2025',
-      ),
-      StaffMember(
-        name: 'Sarah Chen',
-        username: 'sarah.chen@somos.com',
-        lastLogin: '07-25-2025',
-      ),
-      StaffMember(
-        name: 'David Wilson',
-        username: 'david.wilson@somos.com',
-        lastLogin: '07-24-2025',
-      ),
-      StaffMember(
-        name: 'Lisa Rodriguez',
-        username: 'lisa.rodriguez@somos.com',
-        lastLogin: '07-23-2025',
-      ),
-      StaffMember(
-        name: 'Robert Johnson',
-        username: 'robert.johnson@somos.com',
-        lastLogin: '07-22-2025',
-      ),
-      StaffMember(
-        name: 'Jennifer Davis',
-        username: 'jennifer.davis@somos.com',
-        lastLogin: '07-21-2025',
-      ),
-      StaffMember(
-        name: 'Amanda Thompson',
-        username: 'amanda.thompson@somos.com',
-        lastLogin: '07-20-2025',
-      ),
-      StaffMember(
-        name: 'Christopher Lee',
-        username: 'chris.lee@somos.com',
-        lastLogin: '07-19-2025',
-      ),
-      StaffMember(
-        name: 'Jessica Martinez',
-        username: 'jessica.martinez@somos.com',
-        lastLogin: '07-18-2025',
-      ),
-      StaffMember(
-        name: 'Daniel Anderson',
-        username: 'daniel.anderson@somos.com',
-        lastLogin: '07-17-2025',
-      ),
-      StaffMember(
-        name: 'Emily Taylor',
-        username: 'emily.taylor@somos.com',
-        lastLogin: '07-16-2025',
-      ),
-    ];
+    _staff = [];
     _filteredStaff = List.from(_staff);
   }
 
   void _applyFilters() {
     setState(() {
       _filteredStaff = _staff.where((member) {
-        final nameMatch = member.name.toLowerCase().contains(_nameFilterController.text.toLowerCase());
-        final userMatch = member.username.toLowerCase().contains(_userFilterController.text.toLowerCase());
-        final loginMatch = member.lastLogin.contains(_loginFilterController.text);
-        
+        final nameMatch = member.name
+            .toLowerCase()
+            .contains(_nameFilterController.text.toLowerCase());
+        final userMatch = member.username
+            .toLowerCase()
+            .contains(_userFilterController.text.toLowerCase());
+        final loginMatch = member.lastLogin
+            .toLowerCase()
+            .contains(_loginFilterController.text.toLowerCase());
+
         return nameMatch && userMatch && loginMatch;
       }).toList();
-      _currentPage = 1; // Reset to first page when filtering
+      _currentPage = 1;
     });
   }
 
@@ -150,11 +99,11 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
         _sortColumn = column;
         _sortAscending = true;
       }
-      
+
       _filteredStaff.sort((a, b) {
         var aValue = _getValueForColumn(a, column);
         var bValue = _getValueForColumn(b, column);
-        
+
         int comparison = aValue.compareTo(bValue);
         return _sortAscending ? comparison : -comparison;
       });
@@ -226,17 +175,17 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      // Export functionality - silent for now
-                    },
-                    icon: const Icon(Icons.file_download, size: 20),
-                    tooltip: 'Export',
-                  ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     // Export functionality - silent for now
+                  //   },
+                  //   icon: const Icon(Icons.file_download, size: 20),
+                  //   tooltip: 'Export',
+                  // ),
                 ],
               ),
             ),
-            
+
             // Filter Row
             Container(
               padding: EdgeInsets.all(padding),
@@ -272,7 +221,7 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
                 ],
               ),
             ),
-            
+
             // Table
             Expanded(
               child: Column(
@@ -293,7 +242,8 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
                           columns: [
                             _buildDataColumn('NAME', 'name', fontSize),
                             _buildDataColumn('USERNAME', 'username', fontSize),
-                            _buildDataColumn('LAST LOGIN', 'lastLogin', fontSize),
+                            _buildDataColumn(
+                                'LAST LOGIN', 'lastLogin', fontSize),
                           ],
                           rows: _paginatedStaff.map((member) {
                             return DataRow(
@@ -306,7 +256,8 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
                                         height: 32,
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF9C27B0),
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                         ),
                                         child: Center(
                                           child: Text(
@@ -390,8 +341,9 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
 
   Widget _buildPaginationControls() {
     final startIndex = (_currentPage - 1) * _rowsPerPage + 1;
-    final endIndex = (_currentPage * _rowsPerPage).clamp(0, _filteredStaff.length);
-    
+    final endIndex =
+        (_currentPage * _rowsPerPage).clamp(0, _filteredStaff.length);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
@@ -418,7 +370,8 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(fontSize: 11)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -441,7 +394,8 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredStaff.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -467,7 +421,8 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(fontSize: 11)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -483,13 +438,14 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
                     ),
                   ],
                 ),
-                
+
                 // Page info and navigation
                 Row(
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredStaff.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -509,13 +465,14 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
       children: [
         // Previous button
         IconButton(
-          onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
+          onPressed:
+              _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
           icon: const Icon(Icons.chevron_left),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
         ),
-        
+
         // Current page number only (to save space)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -532,10 +489,12 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
             ),
           ),
         ),
-        
+
         // Next button
         IconButton(
-          onPressed: _currentPage < _totalPages ? () => _goToPage(_currentPage + 1) : null,
+          onPressed: _currentPage < _totalPages
+              ? () => _goToPage(_currentPage + 1)
+              : null,
           icon: const Icon(Icons.chevron_right),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
@@ -551,7 +510,8 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
     required ValueChanged<String> onChanged,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 80), // Minimum width constraint
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
@@ -561,7 +521,8 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           isDense: true,
         ),
         style: const TextStyle(fontSize: 11),

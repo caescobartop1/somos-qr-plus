@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
 import '../widgets/two_factor_auth_dialog.dart';
@@ -18,6 +19,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _twoFactorEnabled = false;
   bool _darkModeEnabled = false;
   bool _isDrawerOpen = false;
+  final _password = TextEditingController();
+  final _passwordConfirm = TextEditingController();
+  final _oldPassword = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -46,14 +50,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Get.offAllNamed(RouteHelper.getInvitationsRoute());
                         break;
                       case 'logout':
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Logout clicked')),
-                        );
+                        final authController = Get.find<AuthController>();
+                        authController.logout();
                         break;
                     }
                   },
                 ),
-      
+
                 // Main Content
                 Expanded(
                   child: SingleChildScrollView(
@@ -81,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-      
+
           // Navigation Drawer
           AppDrawerWidget(
             isOpen: _isDrawerOpen,
@@ -133,6 +136,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _openBugReportForm() async {
+    final Uri url = Uri.parse(
+        'https://forms.monday.com/forms/1bedf197ce04c17470e11bab777f0ce8?r=use1');
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw 'No se pudo abrir el navegador';
+    }
+  }
+
   Widget _buildSettingsCards() {
     return Column(
       children: [
@@ -140,7 +152,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: Icons.bug_report,
           title: 'Report a Bug',
           description: 'Help us improve by reporting issues',
-          action: _buildActionButton('Report', () => _showReportBugModal()),
+          action: _buildActionButton('Report', () => _openBugReportForm()),
         ),
         const SizedBox(height: 16),
         _buildTappableSettingCard(
@@ -586,6 +598,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label: 'Current Password',
               child: TextField(
                 obscureText: true,
+                controller: _oldPassword,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
@@ -601,6 +614,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label: 'New Password',
               child: TextField(
                 obscureText: true,
+                controller: _password,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
@@ -616,6 +630,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               label: 'Confirm New Password',
               child: TextField(
                 obscureText: true,
+                controller: _passwordConfirm,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
@@ -648,14 +663,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final authController = Get.find<AuthController>();
+                    await authController.changePassword(_password.text,
+                        _passwordConfirm.text, _oldPassword.text);
+                    _password.clear();
+                    _passwordConfirm.clear();
+                    _oldPassword.clear();
                     Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Password changed successfully!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
+                    // ScaffoldMessenger.of(context).showSnackBar(
+                    //   const SnackBar(
+                    //     content: Text('Password changed successfully!'),
+                    //     backgroundColor: Colors.green,
+                    //   ),
+                    // );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1976D2),

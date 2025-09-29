@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 
 class RATableWidget extends StatefulWidget {
-  const RATableWidget({super.key});
+  final String practice_id;
+  const RATableWidget({super.key, required this.practice_id});
 
   @override
   State<RATableWidget> createState() => _RATableWidgetState();
@@ -12,11 +15,11 @@ class _RATableWidgetState extends State<RATableWidget> {
   List<RAPatient> _filteredPatients = [];
   String _sortColumn = 'name';
   bool _sortAscending = true;
-  
+
   // Pagination
   int _currentPage = 1;
   int _rowsPerPage = 10;
-  
+
   // Filter controllers
   final TextEditingController _nameFilterController = TextEditingController();
   final TextEditingController _dobFilterController = TextEditingController();
@@ -29,130 +32,49 @@ class _RATableWidgetState extends State<RATableWidget> {
   @override
   void initState() {
     super.initState();
-    _loadSampleData();
-    _applyFilters();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPatients());
   }
 
-  void _loadSampleData() {
-    _patients = [
-      RAPatient(
-        name: 'Miriam Bernal',
-        mco: 'Healthfirst',
-        dob: '05-05-1940',
-        hccIcd10: 'F333',
-        status: 'Completed',
-        lastDos: '',
-        phone: '2129239344',
-      ),
-      RAPatient(
-        name: 'Andres Estevez',
-        mco: 'Healthfirst',
-        dob: '10-17-1949',
-        hccIcd10: 'G40A09',
-        status: 'Completed',
-        lastDos: '',
-        phone: '2125684972',
-      ),
-      RAPatient(
-        name: 'Carlos Gonzalez',
-        mco: 'Healthfirst',
-        dob: '08-14-1956',
-        hccIcd10: 'C180, C182, C189',
-        status: 'Completed',
-        lastDos: '',
-        phone: '3475892631',
-      ),
-      RAPatient(
-        name: 'Carlos Yciano Jimenez',
-        mco: 'Healthfirst',
-        dob: '08-12-1953',
-        hccIcd10: 'E119',
-        status: 'Completed',
-        lastDos: '',
-        phone: '9174032576',
-      ),
-      RAPatient(
-        name: 'Fiordaliza Jorge',
-        mco: 'Healthfirst',
-        dob: '05-19-1962',
-        hccIcd10: '',
-        status: 'Completed',
-        lastDos: '',
-        phone: '3474655701',
-      ),
-      RAPatient(
-        name: 'Elizabeth Hernandez',
-        mco: 'Healthfirst',
-        dob: '05-12-1953',
-        hccIcd10: '',
-        status: 'Completed',
-        lastDos: '',
-        phone: '16465252673',
-      ),
-      RAPatient(
-        name: 'Juan M Santos Tavarez',
-        mco: 'Healthfirst',
-        dob: '01-23-1958',
-        hccIcd10: '',
-        status: 'Completed',
-        lastDos: '',
-        phone: '13479805448',
-      ),
-      RAPatient(
-        name: 'Juana Serrano',
-        mco: 'Healthfirst',
-        dob: '12-21-1953',
-        hccIcd10: '',
-        status: 'Completed',
-        lastDos: '',
-        phone: '6463162672',
-      ),
-      RAPatient(
-        name: 'Francisco Monsanto',
-        mco: 'Healthfirst',
-        dob: '11-06-1939',
-        hccIcd10: '',
-        status: 'Open',
-        lastDos: '',
-        phone: '7185378048',
-      ),
-      RAPatient(
-        name: 'Nury Caraballo',
-        mco: 'Healthfirst',
-        dob: '05-09-1952',
-        hccIcd10: '',
-        status: 'Completed',
-        lastDos: '',
-        phone: '3473260066',
-      ),
-      RAPatient(
-        name: 'Elias Sepulveda Quinones',
-        mco: 'Healthfirst',
-        dob: '04-02-1947',
-        hccIcd10: '',
-        status: 'Completed',
-        lastDos: '',
-        phone: '6464846810',
-      ),
-    ];
-    _filteredPatients = List.from(_patients);
+  Future<void> _loadPatients() async {
+    final c = Get.find<PracticeController>();
+
+    // Llamar endpoint con filtros actuales
+    await c.getReportKpiRaList(
+      widget.practice_id,
+      memberName: _nameFilterController.text,
+      mcoName: _mcoFilter,
+      dob: _dobFilterController.text,
+      dateTime: _dosFilterController.text,
+      ic10: _hccFilterController.text,
+      status: _statusFilter,
+      phone: _phoneFilterController.text,
+    );
+
+    if (!mounted) return;
+
+    // Mapear RaList -> RAPatient para la tabla
+    setState(() {
+      _patients = c.raList.map((ra) {
+        return RAPatient(
+          name: ra.memberName,
+          mco: ra.mcoName,
+          dob: ra.dob,
+          hccIcd10: ra.icd10Code ?? '',
+          status: ra.hccStatus,
+          lastDos: ra.dateTime != null
+              ? ra.dateTime!.toIso8601String().split('T').first
+              : '',
+          phone: ra.phoneNumber,
+        );
+      }).toList();
+
+      _filteredPatients = List.from(_patients);
+      _currentPage = 1;
+    });
   }
 
   void _applyFilters() {
-    setState(() {
-      _filteredPatients = _patients.where((patient) {
-        final nameMatch = patient.name.toLowerCase().contains(_nameFilterController.text.toLowerCase());
-        final mcoMatch = _mcoFilter.isEmpty || patient.mco == _mcoFilter;
-        final dobMatch = patient.dob.contains(_dobFilterController.text);
-        final hccMatch = patient.hccIcd10.contains(_hccFilterController.text);
-        final statusMatch = _statusFilter.isEmpty || patient.status == _statusFilter;
-        final dosMatch = patient.lastDos.contains(_dosFilterController.text);
-        final phoneMatch = patient.phone.contains(_phoneFilterController.text);
-        
-        return nameMatch && mcoMatch && dobMatch && hccMatch && statusMatch && dosMatch && phoneMatch;
-      }).toList();
-      _currentPage = 1; // Reset to first page when filtering
-    });
+    _loadPatients();
   }
 
   List<RAPatient> get _paginatedPatients {
@@ -182,11 +104,11 @@ class _RATableWidgetState extends State<RATableWidget> {
         _sortColumn = column;
         _sortAscending = true;
       }
-      
+
       _filteredPatients.sort((a, b) {
         var aValue = _getValueForColumn(a, column);
         var bValue = _getValueForColumn(b, column);
-        
+
         int comparison = aValue.compareTo(bValue);
         return _sortAscending ? comparison : -comparison;
       });
@@ -216,6 +138,7 @@ class _RATableWidgetState extends State<RATableWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final c = Get.find<PracticeController>();
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive sizing
@@ -256,17 +179,17 @@ class _RATableWidgetState extends State<RATableWidget> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      // Export functionality - silent for now
-                    },
-                    icon: const Icon(Icons.file_download, size: 20),
-                    tooltip: 'Export',
-                  ),
+                  // IconButton(
+                  //   onPressed: () {
+                  //     // Export functionality - silent for now
+                  //   },
+                  //   icon: const Icon(Icons.file_download, size: 20),
+                  //   tooltip: 'Export',
+                  // ),
                 ],
               ),
             ),
-            
+
             // Filter Row
             Container(
               padding: EdgeInsets.all(padding),
@@ -290,7 +213,10 @@ class _RATableWidgetState extends State<RATableWidget> {
                       Expanded(
                         child: _buildFilterDropdown(
                           value: _mcoFilter,
-                          items: ['', 'Healthfirst', 'Anthem', 'Emblem', 'Molina'],
+                          items: [
+                            'all',
+                            ...c.mcoList.map((mco) => mco.mcoName),
+                          ],
                           hint: 'MCO',
                           onChanged: (value) {
                             _mcoFilter = value ?? '';
@@ -357,7 +283,7 @@ class _RATableWidgetState extends State<RATableWidget> {
                 ],
               ),
             ),
-            
+
             // Table
             Expanded(
               child: Column(
@@ -390,9 +316,13 @@ class _RATableWidgetState extends State<RATableWidget> {
                                 DataCell(Text(patient.name)),
                                 DataCell(Text(patient.mco)),
                                 DataCell(Text(patient.dob)),
-                                DataCell(Text(patient.hccIcd10.isEmpty ? '-' : patient.hccIcd10)),
+                                DataCell(Text(patient.hccIcd10.isEmpty
+                                    ? '-'
+                                    : patient.hccIcd10)),
                                 DataCell(Text(patient.status)),
-                                DataCell(Text(patient.lastDos.isEmpty ? '-' : patient.lastDos)),
+                                DataCell(Text(patient.lastDos.isEmpty
+                                    ? '-'
+                                    : patient.lastDos)),
                                 DataCell(Text(patient.phone)),
                               ],
                             );
@@ -435,8 +365,9 @@ class _RATableWidgetState extends State<RATableWidget> {
 
   Widget _buildPaginationControls() {
     final startIndex = (_currentPage - 1) * _rowsPerPage + 1;
-    final endIndex = (_currentPage * _rowsPerPage).clamp(0, _filteredPatients.length);
-    
+    final endIndex =
+        (_currentPage * _rowsPerPage).clamp(0, _filteredPatients.length);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
@@ -463,7 +394,9 @@ class _RATableWidgetState extends State<RATableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.black)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -486,7 +419,8 @@ class _RATableWidgetState extends State<RATableWidget> {
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -512,7 +446,8 @@ class _RATableWidgetState extends State<RATableWidget> {
                       items: [10, 20, 50, 100].map((value) {
                         return DropdownMenuItem<int>(
                           value: value,
-                          child: Text('$value', style: const TextStyle(fontSize: 11)),
+                          child: Text('$value',
+                              style: const TextStyle(fontSize: 11)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -528,13 +463,14 @@ class _RATableWidgetState extends State<RATableWidget> {
                     ),
                   ],
                 ),
-                
+
                 // Page info and navigation
                 Row(
                   children: [
                     Text(
                       'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
                     ),
                     const SizedBox(width: 12),
                     _buildCompactNavigation(),
@@ -554,13 +490,14 @@ class _RATableWidgetState extends State<RATableWidget> {
       children: [
         // Previous button
         IconButton(
-          onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
+          onPressed:
+              _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
           icon: const Icon(Icons.chevron_left),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
         ),
-        
+
         // Current page number only (to save space)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -577,10 +514,12 @@ class _RATableWidgetState extends State<RATableWidget> {
             ),
           ),
         ),
-        
+
         // Next button
         IconButton(
-          onPressed: _currentPage < _totalPages ? () => _goToPage(_currentPage + 1) : null,
+          onPressed: _currentPage < _totalPages
+              ? () => _goToPage(_currentPage + 1)
+              : null,
           icon: const Icon(Icons.chevron_right),
           iconSize: 18,
           padding: const EdgeInsets.all(2),
@@ -596,7 +535,8 @@ class _RATableWidgetState extends State<RATableWidget> {
     required ValueChanged<String> onChanged,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 80), // Minimum width constraint
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
@@ -606,7 +546,8 @@ class _RATableWidgetState extends State<RATableWidget> {
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           isDense: true,
         ),
         style: const TextStyle(fontSize: 11),
@@ -622,7 +563,8 @@ class _RATableWidgetState extends State<RATableWidget> {
     required ValueChanged<String?> onChanged,
   }) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 80), // Minimum width constraint
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
       child: DropdownButtonFormField<String>(
         value: value!.isEmpty ? null : value,
         decoration: InputDecoration(
@@ -632,7 +574,8 @@ class _RATableWidgetState extends State<RATableWidget> {
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           isDense: true,
         ),
         items: items.map((item) {

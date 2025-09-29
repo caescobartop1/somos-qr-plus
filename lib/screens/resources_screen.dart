@@ -167,6 +167,25 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                                 //     });
                                 //   },
                                 // ),
+                                const SizedBox(height: 32),
+
+                                // 🔹 Nueva Sección Training & Knowledge Base
+                                const Text(
+                                  'Training & Knowledge Base',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF333333),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 20),
+
+                                _buildComingSoonResourceCard('Videos'),
+                                const SizedBox(height: 20),
+                                _buildComingSoonResourceCard('PDF Guides'),
+                                const SizedBox(height: 20),
+                                _buildComingSoonResourceCard('Contacts'),
                               ],
                             ),
                           ),
@@ -201,6 +220,86 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
         ),
       );
     });
+  }
+
+  Widget _buildComingSoonResourceCard(String title) {
+    bool isExpanded = false; // estado local del widget
+
+    return StatefulBuilder(
+      builder: (context, setInnerState) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE0E0E0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Header similar a Quality/Risk
+              InkWell(
+                onTap: () => setInnerState(() => isExpanded = !isExpanded),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F9FA),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isExpanded
+                            ? const Color(0xFFE0E0E0)
+                            : Colors.transparent,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      Icon(
+                        isExpanded
+                            ? Icons.keyboard_arrow_down
+                            : Icons.keyboard_arrow_right,
+                        color: const Color(0xFF666666),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Contenido expandido con Coming Soon
+              if (isExpanded)
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  child: const Text(
+                    'Coming soon',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF666666),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _handleNavigation(String route) {
@@ -848,6 +947,7 @@ class _ParentExpandableItemState extends State<_ParentExpandableItem> {
       margin: const EdgeInsets.only(bottom: 8),
       child: Column(
         children: [
+          // Header del ítem
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
             child: Container(
@@ -880,6 +980,8 @@ class _ParentExpandableItemState extends State<_ParentExpandableItem> {
               ),
             ),
           ),
+
+          // Contenido expandido estilo PocketGuide
           if (_expanded)
             Container(
               margin: const EdgeInsets.only(top: 8),
@@ -890,31 +992,64 @@ class _ParentExpandableItemState extends State<_ParentExpandableItem> {
               child: Column(
                 children: widget.parent.childs.map((child) {
                   return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Color(0xFFE0E0E0)),
-                      ),
+                    margin: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border:
+                          Border.all(color: const Color(0xFF1976D2), width: 2),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${child.diagnosisCode} – ${child.diagnosisCodeDescription}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF333333),
+                        // Encabezado de la sección (azul)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF1976D2),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${child.diagnosisCode} – ${child.diagnosisCodeDescription}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'HCC: ${child.hccCode} | Model: ${child.model}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF666666),
+
+                        // Contenido de la sección
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          constraints: const BoxConstraints(maxHeight: 300),
+                          width: double.infinity,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'HCC: ${child.hccCode}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF333333),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Model: ${child.model}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF666666),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],

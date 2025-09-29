@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/provider.dart';
@@ -125,6 +127,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   void initState() {
     super.initState();
+    final c = Get.find<PracticeController>();
+    _selectedProvider = c.defaultProvider;
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
   }
 
@@ -134,6 +138,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     await c.getReportKpiGic(_selectedProvider.id);
     await c.getReportKpiRa(_selectedProvider.id);
     await c.getReportKpiAppt(_selectedProvider.id);
+    await c.getReportKpiLastLogin(_selectedProvider.id);
+    await c.getReportKpiMWOV(_selectedProvider.id);
 
     if (!mounted) return;
     setState(() {});
@@ -180,6 +186,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               setState(() {
                                 _selectedProvider = provider;
                               });
+                              final c = Get.find<PracticeController>();
+                              c.setProvider(provider);
                               _loadData();
                               _showSuccessMessage(
                                   'Reports updated for $provider');
@@ -266,6 +274,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         setState(() {
           _showLogoutDialog = true;
         });
+        final authController = Get.find<AuthController>();
+        authController.logout();
         break;
     }
   }
@@ -378,7 +388,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(16), // Reduced padding
-                        child: const GICTableWidget(),
+                        child:
+                            GICTableWidget(practice_id: _selectedProvider.id),
                       ),
                     ),
                   ],
@@ -456,7 +467,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(16), // Reduced padding
-                        child: const RATableWidget(),
+                        child: RATableWidget(practice_id: _selectedProvider.id),
                       ),
                     ),
                   ],
@@ -534,7 +545,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(16), // Reduced padding
-                        child: const APPTTableWidget(),
+                        child:
+                            APPTTableWidget(practice_id: _selectedProvider.id),
                       ),
                     ),
                   ],
@@ -612,7 +624,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(16), // Reduced padding
-                        child: const MWOVTableWidget(),
+                        child:
+                            MWOVTableWidget(practice_id: _selectedProvider.id),
                       ),
                     ),
                   ],
@@ -829,9 +842,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _buildGICCard() {
     final c = Get.find<PracticeController>();
     final data = c.reportKpiGic;
+    final dataTime = _kpiData['GIC'];
     if (data == null) return const SizedBox.shrink();
-
-    final String formatted = DateFormat('MM-dd-yyyy').format(data.todayDate);
+    final String formatted = dataTime?['timeframe'] == 'TODAY'
+        ? DateFormat('MM-dd-yyyy').format(data.todayDate)
+        : '${DateFormat('MM/dd').format(data.lmonthBegin)} - '
+            '${DateFormat('MM/dd').format(data.lmonthEnd)}';
 
     return _buildKPICard(
       title: 'GIC',
@@ -839,7 +855,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildKPIHeader(
-              'GIC', 'Today' as String?, formatted as String?, false, null),
+              'GIC', dataTime?['timeframe'], formatted as String?, true, data),
           const SizedBox(height: 4),
           Expanded(
             child: SingleChildScrollView(
@@ -849,12 +865,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   _buildKPIMetrics([
                     {
                       'label': 'Missed',
-                      'value': data.todayMessedWoa,
+                      'value': dataTime?['timeframe'] == 'TODAY'
+                          ? data.todayMessedWoa
+                          : data.lmonthMessedWoa,
                       'type': 'missed'
                     },
                     {
                       'label': 'Completed',
-                      'value': data.todayCompletedWa,
+                      'value': dataTime?['timeframe'] == 'TODAY'
+                          ? data.todayCompletedWa
+                          : data.lmonthCompletedWa,
                       'type': 'completed'
                     },
                   ]),
@@ -864,7 +884,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               '/' +
                               data.todayRankOf.toString() as String? ??
                           'RANK 0/0',
-                      '' as String? ?? ''),
+                      '' as String? ?? '',
+                      double.tryParse(data.todayStar.toString()) ?? 0),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -904,7 +925,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final dataTime = _kpiData['RA'];
     if (data == null) return const SizedBox.shrink();
 
-    final String formatted = DateFormat('MM-dd-yyyy').format(data.todayDate);
+    final String formatted = dataTime?['timeframe'] == 'TODAY'
+        ? DateFormat('MM-dd-yyyy').format(data.todayDate)
+        : '${DateFormat('MM/dd').format(data.lmonthBegin)} - '
+            '${DateFormat('MM/dd').format(data.lmonthEnd)}';
     // LAST 30 DAYS
     return _buildKPICard(
       title: 'RA',
@@ -922,22 +946,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   _buildKPIMetrics([
                     {
                       'label': 'Missed',
-                      'value': data.todayMessedWoa,
+                      'value': dataTime?['timeframe'] == 'TODAY'
+                          ? data.todayMessedWoa
+                          : data.lmonthMessedWoa,
                       'type': 'missed'
                     },
                     {
                       'label': 'Completed',
-                      'value': data.todayCompletedWa,
+                      'value': dataTime?['timeframe'] == 'TODAY'
+                          ? data.todayCompletedWa
+                          : data.lmonthCompletedWa,
                       'type': 'completed'
                     },
                   ]),
                   const SizedBox(height: 2),
                   _buildKPIRank(
-                      data.todayRank.toString() +
-                              '/' +
-                              data.todayRankOf.toString() as String? ??
-                          'RANK 0/0',
-                      '' as String? ?? ''),
+                      (dataTime?['timeframe'] == 'TODAY'
+                              ? data.todayRank.toString()
+                              : data.lmonthRank.toString()) +
+                          '/' +
+                          (dataTime?['timeframe'] == 'TODAY'
+                              ? (data.todayRankOf.toString() as String? ??
+                                  'RANK 0/0')
+                              : (data.lmonthRankOf.toString() as String? ??
+                                  'RANK 0/0')),
+                      '' as String? ?? '',
+                      double.tryParse(dataTime?['timeframe'] == 'TODAY'
+                              ? data.todayStar.toString()
+                              : data.lmonthStar.toString()) ??
+                          0),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -976,6 +1013,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final ReportKpiGic? appt = c.reportKpiAPPT;
 
     if (appt == null) return const SizedBox.shrink();
+    final dataTime = _kpiData['APPT'];
+    final String formatted = dataTime?['timeframe'] == 'TODAY'
+        ? DateFormat('MM-dd-yyyy').format(appt.todayDate)
+        : '${DateFormat('MM/dd').format(appt.lmonthBegin)} - '
+            '${DateFormat('MM/dd').format(appt.lmonthEnd)}';
 
     return _buildKPICard(
       title: 'APPT',
@@ -986,10 +1028,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
           _buildKPIHeader(
               'APPT',
               // timeframe: mes anterior
-              '${DateFormat('MM/dd').format(appt.lmonthBegin)} - '
-                  '${DateFormat('MM/dd').format(appt.lmonthEnd)}',
+              dataTime?['timeframe'],
+              formatted,
               // fecha de hoy
-              DateFormat('MM/dd/yyyy').format(appt.todayDate),
               true,
               appt),
           const SizedBox(height: 4),
@@ -1002,17 +1043,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     {
                       'label': 'Scheduled',
                       // aquí puedes mapear a la métrica que uses
-                      'value': appt.todayStar,
+                      'value': dataTime?['timeframe'] == 'TODAY'
+                          ? appt.todayStar
+                          : appt.lmonthStar,
                       'type': 'scheduled',
                     },
                     {
                       'label': 'Completed',
-                      'value': appt.todayCompletedWa,
+                      'value': dataTime?['timeframe'] == 'TODAY'
+                          ? appt.todayCompletedWa
+                          : appt.lmonthCompletedWa,
                       'type': 'completed',
                     },
                     {
                       'label': 'Missed',
-                      'value': appt.todayMessedWoa,
+                      'value': dataTime?['timeframe'] == 'TODAY'
+                          ? appt.todayMessedWoa
+                          : appt.lmonthMessedWoa,
                       'type': 'missed',
                     },
                   ]),
@@ -1050,8 +1097,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildMWOVCard() {
+    final c = Get.find<PracticeController>();
+    final ReportKpiGic? mwov = c.reportKpiMWOV;
+    if (mwov == null) return const SizedBox.shrink();
     final data = _kpiData['MWOV'];
-    if (data == null) return const SizedBox.shrink();
 
     return _buildKPICard(
       title: 'MWOV\'s',
@@ -1059,7 +1108,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildKPIHeader(
-              'MWOV\'s', data['timeframe'] as String?, null, true, null),
+              'MWOV\'s', data?['timeframe'] as String?, null, true, mwov),
           const SizedBox(height: 4),
           Expanded(
             child: SingleChildScrollView(
@@ -1069,11 +1118,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   const SizedBox(height: 32),
                   Center(
                     child: _buildPieChart(
-                        data['noVisits'] ?? 0, data['withVisits'] ?? 0),
+                        (data?['timeframe'] == 'TODAY'
+                            ? mwov.todayMessedWoa
+                            : mwov.lmonthMessedWoa),
+                        (data?['timeframe'] == 'TODAY'
+                            ? mwov.todayCompletedWa
+                            : mwov.lmonthCompletedWa)),
                   ),
                   const SizedBox(height: 16),
                   _buildMWOVLegend(
-                      data['noVisits'] ?? 0, data['withVisits'] ?? 0),
+                      (data?['timeframe'] == 'TODAY'
+                          ? mwov.todayMessedWoa
+                          : mwov.lmonthMessedWoa),
+                      (data?['timeframe'] == 'TODAY'
+                          ? mwov.todayCompletedWa
+                          : mwov.lmonthCompletedWa)),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
@@ -1336,19 +1395,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildTimeframeNavigation(String kpiType, ReportKpiGic? data) {
-    print(data);
     if (data == null) return const SizedBox.shrink();
 
-    final currentIndex = 0;
+    final currentName = _kpiData[kpiType == 'MWOV\'s' ? 'MWOV' : kpiType]
+            ?['timeframe'] as String? ??
+        'TODAY';
     final timeframes = [
-          {
-            'name': 'TODAY',
-          },
-          {
-            'name': 'LAST 30 DAYS',
-          },
-        ] as List<Map<String, dynamic>>? ??
-        [];
+      {'name': 'TODAY'},
+      {'name': 'LAST 30 DAYS'},
+    ];
+    final currentIndex = timeframes
+        .indexWhere((t) => t['name'] == currentName)
+        .clamp(0, timeframes.length - 1);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive sizing based on available width
@@ -1368,12 +1427,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              onPressed: currentIndex > 0
+              onPressed: currentName == 'LAST 30 DAYS'
                   ? () => _updateTimeframe(kpiType, currentIndex - 1)
                   : null,
               icon: Icon(
                 Icons.chevron_left,
-                color: currentIndex > 0
+                color: currentName == 'LAST 30 DAYS'
                     ? Colors.grey.shade600
                     : Colors.grey.shade300,
               ),
@@ -1386,7 +1445,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
             Flexible(
               child: Text(
-                timeframes.isNotEmpty ? timeframes[currentIndex]['name'] : '',
+                timeframes[currentIndex]['name'] ?? '',
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: FontWeight.w500,
@@ -1397,12 +1456,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ),
             IconButton(
-              onPressed: currentIndex < timeframes.length - 1
+              onPressed: currentName == 'TODAY'
                   ? () => _updateTimeframe(kpiType, currentIndex + 1)
                   : null,
               icon: Icon(
                 Icons.chevron_right,
-                color: currentIndex < timeframes.length - 1
+                color: currentName == 'TODAY'
                     ? Colors.grey.shade600
                     : Colors.grey.shade300,
               ),
@@ -1421,28 +1480,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   void _updateTimeframe(String kpiType, int newIndex) {
     setState(() {
-      final kpiData = _kpiData[kpiType];
-      if (kpiData == null) return;
-
-      kpiData['currentTimeframeIndex'] = newIndex;
-      final timeframes = kpiData['timeframes'] as List<Map<String, dynamic>>?;
-      if (timeframes == null || newIndex >= timeframes.length) return;
-
-      final timeframe = timeframes[newIndex];
-
       // Update the displayed data
       if (kpiType == 'RA') {
-        kpiData['missed'] = timeframe['missed'] ?? 0;
-        kpiData['completed'] = timeframe['completed'] ?? 0;
-        kpiData['rank'] = timeframe['rank'] ?? 'RANK 0/0';
-      } else if (kpiType == 'MWOV') {
-        kpiData['noVisits'] = timeframe['noVisits'] ?? 0;
-        kpiData['withVisits'] = timeframe['withVisits'] ?? 0;
+        _kpiData['RA']?['timeframe'] =
+            _kpiData['RA']?['timeframe'] == 'TODAY' ? 'LAST 30 DAYS' : 'TODAY';
+      } else if (kpiType == 'MWOV\'s') {
+        _kpiData['MWOV']?['timeframe'] =
+            _kpiData['MWOV']?['timeframe'] == 'TODAY'
+                ? 'LAST 30 DAYS'
+                : 'TODAY';
       } else if (kpiType == 'SIIP') {
-        kpiData['completed'] = timeframe['completed'] ?? 0;
-        kpiData['open'] = timeframe['open'] ?? 0;
-        kpiData['total'] = timeframe['total'] ?? 0;
-        kpiData['earnings'] = timeframe['earnings'] ?? 0.0;
+        _kpiData['SIIP']?['timeframe'] =
+            _kpiData['SIIP']?['timeframe'] == 'TODAY'
+                ? 'LAST 30 DAYS'
+                : 'TODAY';
+      } else if (kpiType == 'APPT') {
+        _kpiData['APPT']?['timeframe'] =
+            _kpiData['APPT']?['timeframe'] == 'TODAY'
+                ? 'LAST 30 DAYS'
+                : 'TODAY';
+      } else if (kpiType == 'GIC') {
+        _kpiData['GIC']?['timeframe'] =
+            _kpiData['GIC']?['timeframe'] == 'TODAY' ? 'LAST 30 DAYS' : 'TODAY';
       }
     });
   }
@@ -1541,7 +1600,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildKPIRank(String rank, String networkRank) {
+  Widget _buildKPIRank(String rank, String networkRank, double startValue) {
     return LayoutBuilder(
       builder: (context, constraints) {
         double rankSize, starSize, networkSize, spacing;
@@ -1575,16 +1634,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: spacing),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                  5,
-                  (index) => Icon(
-                        Icons.star,
-                        color: const Color(0xFFFFD700),
-                        size: starSize,
-                      )),
+            Align(
+              child: RatingBarIndicator(
+                rating: startValue,
+                itemBuilder: (context, index) => const Icon(
+                  Icons.star,
+                  color: Color(0xFFFFC107),
+                ),
+                itemCount: 5,
+                itemSize: starSize,
+                direction: Axis.horizontal,
+              ),
             ),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.center,
+            //   children: List.generate(
+            //       5,
+            //       (index) => Icon(
+            //             Icons.star,
+            //             color: const Color(0xFFFFD700),
+            //             size: starSize,
+            //           )),
+            // ),
             SizedBox(height: spacing),
             Text(
               networkRank,
@@ -1885,6 +1956,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildLoginActivityList() {
+    final c = Get.find<PracticeController>();
+    // ✅ Tomar solo los primeros 4 registros
+    final logins = c.staffLogins.take(4).toList();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         // Responsive sizing based on available width
@@ -1913,19 +1988,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
         }
 
         return Column(
-          children: _staffLogins.map((login) {
-            final status = login['status'] as String;
-            Color statusColor;
+          children: logins.map((login) {
+            // ✅ Calculamos las iniciales a partir del nombre
+            final initials = _getInitials(login.fullName);
 
+            // ✅ Status en base al último login
+            String status;
+            if (login.userLastLogin == null) {
+              status = 'Offline';
+            } else {
+              final diff = DateTime.now().difference(login.userLastLogin!);
+              if (diff.inMinutes < 10) {
+                status = 'Online';
+              } else {
+                status = 'Active';
+              }
+            }
+
+            // ✅ Color según status
+            Color statusColor;
             switch (status) {
               case 'Active':
                 statusColor = const Color(0xFF4CAF50);
                 break;
               case 'Online':
                 statusColor = const Color(0xFF2196F3);
-                break;
-              case 'Offline':
-                statusColor = const Color(0xFF9E9E9E);
                 break;
               default:
                 statusColor = const Color(0xFF9E9E9E);
@@ -1935,6 +2022,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               margin: EdgeInsets.only(bottom: margin),
               child: Row(
                 children: [
+                  // Avatar
                   Container(
                     width: avatarSize,
                     height: avatarSize,
@@ -1948,7 +2036,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        login['initials'],
+                        initials,
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -1958,12 +2046,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                   ),
                   SizedBox(width: spacing),
+                  // Datos
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          login['name'],
+                          login.fullName,
                           style: TextStyle(
                             fontSize: nameSize,
                             fontWeight: FontWeight.w500,
@@ -1972,7 +2061,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          login['time'],
+                          login.userLastLogin != null
+                              ? DateFormat('yyyy-MM-dd HH:mm')
+                                  .format(login.userLastLogin!.toLocal())
+                              : 'Never logged in',
                           style: TextStyle(
                             fontSize: fontSize,
                             color: const Color(0xFF666666),
@@ -1982,6 +2074,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       ],
                     ),
                   ),
+                  // Status chip
                   Container(
                     padding: EdgeInsets.symmetric(
                       horizontal: spacing / 2,
@@ -2008,6 +2101,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
         );
       },
     );
+  }
+
+  /// 🔹 Helper para iniciales
+  String _getInitials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.length == 1) return parts.first.isNotEmpty ? parts.first[0] : '?';
+    return (parts.first.isNotEmpty ? parts.first[0] : '') +
+        (parts.last.isNotEmpty ? parts.last[0] : '');
   }
 
   Widget _buildLogoutDialog() {
@@ -2111,6 +2212,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         onPressed: () {
                           // Handle logout
                           setState(() => _showLogoutDialog = false);
+                          final authController = Get.find<AuthController>();
+                          authController.logout();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE74C3C),
