@@ -1,18 +1,24 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/invitation.dart';
 import 'package:somos_qr_plus/models/login_response.dart';
 import 'package:somos_qr_plus/models/user.dart';
 import '../api/api_client.dart';
 import '../constants/app_constants.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:http/http.dart' as http;
 
 class AuthController extends GetxController {
   final ApiClient apiClient;
   final SharedPreferences sharedPreferences;
+  final LocalAuthentication _localAuth = LocalAuthentication();
 
   AuthController({required this.apiClient, required this.sharedPreferences});
 
@@ -151,6 +157,12 @@ class AuthController extends GetxController {
   Future<void> validateCode(String code) async {
     String loginMethod =
         sharedPreferences.getString(AppConstants.loginMethod) ?? '';
+
+    /// 🔒 Forzar solo dos valores válidos
+    if (loginMethod.toUpperCase() != 'OTP' &&
+        loginMethod.toUpperCase() != 'AUTHENTICATOR') {
+      loginMethod = 'OTP';
+    }
     String tokenOtp = sharedPreferences.getString(AppConstants.tokenOtp) ?? '';
     final body = {'otp': code, 'login_method': loginMethod, 'token': tokenOtp};
     _isLoading = true;
@@ -167,6 +179,7 @@ class AuthController extends GetxController {
       _user = User.fromJson(response.body['user']);
       await sharedPreferences.setString(
           AppConstants.token, response.body['access']);
+      await sharedPreferences.setInt(AppConstants.userId, _user?.id ?? 0);
       await sharedPreferences.setString(
           AppConstants.refreshToken, response.body['refresh']);
       apiClient.refreshToken = response.body['refresh'];
@@ -371,6 +384,7 @@ class AuthController extends GetxController {
     // final response = await apiClient.postData(AppConstants.logoutUrl, {});
     await sharedPreferences.setString(AppConstants.token, '');
     await sharedPreferences.setString(AppConstants.refreshToken, '');
+    Get.find<PracticeController>().reset();
     apiClient.updateHeader('');
     Get.offAllNamed(RouteHelper.getLoginRoute());
 
@@ -382,55 +396,123 @@ class AuthController extends GetxController {
     update();
   }
 
-  // Future<void> refreshToken() async {
-  //   try {
-  //     final originalRefreshToken =
-  //         sharedPreferences.getString(AppConstants.refreshToken);
-  //     if (originalRefreshToken != null) {
-  //       apiClient.updateHeader(originalRefreshToken);
-  //       final response = await apiClient.postData(AppConstants.refreshUrl, {});
+  Future<bool> biometricLogin() async {
+    try {
+      // Paso 1: Validar biometría
+      final didAuthenticate = await _localAuth.authenticate(
+        localizedReason: 'Please authenticate to continue',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
 
-  //       if (response.statusCode == 200) {
-  //         final token = response.body['access_token'];
-  //         final refreshToken = response.body['refresh_token'];
-  //         final userJson = response.body['user'];
+      if (!didAuthenticate) {
+        debugPrint('❌ Biometric authentication failed');
+        return true;
+      }
 
-  //         await sharedPreferences.setString(AppConstants.token, token);
-  //         await sharedPreferences.setString(
-  //             AppConstants.refreshToken, refreshToken);
-  //         apiClient.updateHeader(token);
+      // Paso 2: Obtener refresh_biometric
+      final rt = sharedPreferences.getString('refresh_biometric');
+      if (rt == null || rt.isEmpty) {
+        debugPrint('❌ No biometric refresh token stored');
+        return false;
+      }
 
-  //         final user = UserModel.fromJson(userJson);
-  //         _user = user;
-  //         apiClient.updateHeader(token);
-  //         update();
-  //         if (user.roleDisplayName == 'patient') {
-  //           Get.offAllNamed(RouteHelper.getDashboardPatientRoute());
-  //         }
-  //         if (user.roleDisplayName == 'doctor') {
-  //           Get.offAllNamed(RouteHelper.getDashboardDoctorRoute());
-  //         }
-  //       } else {
-  //         Get.offAllNamed(RouteHelper.getLoginRoute());
-  //         final message = response.body['message'];
-  //         Get.snackbar(
-  //           'Error',
-  //           message ?? 'Unknown error',
-  //           backgroundColor: Colors.red.shade600,
-  //           colorText: Colors.white,
-  //           snackPosition: SnackPosition.BOTTOM,
-  //           margin: const EdgeInsets.all(16),
-  //           borderRadius: 8,
-  //           icon: const Icon(Icons.error, color: Colors.white),
-  //         );
-  //       }
-  //     } else {
-  //       Get.offAllNamed(RouteHelper.getLoginRoute());
-  //     }
-  //   } catch (e) {
-  //     await sharedPreferences.setString(AppConstants.token, '');
-  //     await sharedPreferences.setString(AppConstants.refreshToken, '');
-  //     Get.offAllNamed(RouteHelper.getLoginRoute());
-  //   }
-  // }
+      // Paso 3: Request refresh al backend
+      final url = Uri.parse(AppConstants.baseAuthUrl).replace(
+        path: '/auth/token/refresh/',
+        queryParameters: {"app_key": AppConstants.appKey},
+      );
+
+      final res = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refresh': rt}),
+      );
+
+      if (res.statusCode == 200) {
+        final json = jsonDecode(res.body);
+        final accessToken = json['access'].toString();
+        final refreshToken = json['refresh'].toString();
+
+        // Guardar tokens
+        await sharedPreferences.setString(AppConstants.token, accessToken);
+        await sharedPreferences.setString(
+            AppConstants.refreshToken, refreshToken);
+        await sharedPreferences.setString('refresh_biometric', refreshToken);
+
+        // Update headers en ApiClient
+        apiClient.updateHeader(accessToken);
+        apiClient.refreshToken = refreshToken;
+
+        debugPrint('✅ Biometric login successful!');
+        debugPrint('Access: $accessToken');
+
+        Get.offAllNamed(RouteHelper.getDashboardRoute());
+        return true;
+      } else {
+        // ❌ Si falla, eliminamos la posibilidad biométrica
+        debugPrint('❌ Failed refreshing token: ${res.statusCode}');
+        debugPrint(res.body);
+
+        await sharedPreferences.remove('refresh_biometric');
+        await sharedPreferences.remove('refresh_method');
+
+        Get.snackbar(
+          'Error',
+          'Biometric login failed. Please sign in manually.',
+          backgroundColor: Colors.red.shade600,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    } on PlatformException catch (e) {
+      debugPrint('❌ Biometric error: $e');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Unexpected biometric login error: $e');
+      return true;
+    }
+  }
+
+  void setUser(User user) {
+    _user = user;
+    update();
+  }
+
+  Future<bool> refreshUser() async {
+    // Construimos el query dinámico
+    final query = <String, String>{"app_key": AppConstants.appKey};
+
+    final response = await apiClient.getData(
+      '/auth/user/',
+      useApi: false,
+      query: query,
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final user = User.fromJson(response.body);
+        Get.find<AuthController>().setUser(user);
+        return true;
+      } catch (e) {
+        print('Error parseando datos: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to update get info',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+
+    return false;
+  }
 }

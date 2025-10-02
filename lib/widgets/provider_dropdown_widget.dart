@@ -34,6 +34,24 @@ class _ProviderDropdownWidgetState extends State<ProviderDropdownWidget> {
   }
 
   @override
+  void didUpdateWidget(covariant ProviderDropdownWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.providers != widget.providers) {
+      setState(() {
+        if (_searchController.text.isEmpty) {
+          _filteredProviders = widget.providers;
+        } else {
+          _filteredProviders = widget.providers
+              .where((provider) => provider.name
+                  .toLowerCase()
+                  .contains(_searchController.text.toLowerCase()))
+              .toList();
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();

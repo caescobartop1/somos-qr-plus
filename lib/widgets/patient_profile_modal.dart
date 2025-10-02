@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/models/provider_schedule.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../models/patient.dart';
 import 'package:somos_qr_plus/models/patient_gap.dart';
 import 'package:somos_qr_plus/models/patient_patology.dart';
@@ -35,6 +36,7 @@ class PatientProfileModal extends StatefulWidget {
 class _PatientProfileModalState extends State<PatientProfileModal> {
   String _selectedTab = 'No Shows';
   String _selectedProvider = 'all';
+  bool _isLoading = false;
   String _formatDate(DateTime? date) {
     if (date == null) return '-';
     return DateFormat('MM/dd/yyyy').format(date.toLocal());
@@ -43,20 +45,41 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadData();
+      setState(() {
+        _isLoading = false;
+      });
+    });
   }
 
   Future<void> _loadData() async {
     final c = Get.find<PracticeController>();
 
-    await c.getPatient(widget.patient.id.toString(), widget.practice_id);
+    bool resPatient =
+        await c.getPatient(widget.patient.id.toString(), widget.practice_id);
+    if (!resPatient) return;
+
     if (widget.member_plan_id == 0) {
       final patient = c.patient;
-      await c.getPatientGap(patient?.memberPlanId.toString() ?? '');
-      await c.getPatientPatology(patient?.memberPlanId.toString() ?? '');
+
+      bool resGap =
+          await c.getPatientGap(patient?.memberPlanId.toString() ?? '');
+      if (!resGap) return;
+
+      bool resPatology =
+          await c.getPatientPatology(patient?.memberPlanId.toString() ?? '');
+      if (!resPatology) return;
     } else {
-      await c.getPatientGap(widget.member_plan_id.toString());
-      await c.getPatientPatology(widget.member_plan_id.toString());
+      bool resGap = await c.getPatientGap(widget.member_plan_id.toString());
+      if (!resGap) return;
+
+      bool resPatology =
+          await c.getPatientPatology(widget.member_plan_id.toString());
+      if (!resPatology) return;
     }
 
     if (!mounted) return;
@@ -79,100 +102,105 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
           icon: const Icon(Icons.arrow_back),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Provider Selection
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Provider',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _selectedProvider,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: 'all',
-                        child: Text('Select a Provider'),
-                      ),
-                      ...widget.providers
-                          .map((provider) => DropdownMenuItem(
-                                value: provider.id.toString(),
-                                child: Text(provider.fullName),
-                              ))
-                          .toList()
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedProvider = value);
-                        if (value != 'Select a Provider') {
-                          _showProviderChangeDialog(value);
-                        }
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // Patient Name and Tabs
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    initialValue: practiceController.patient?.fullName ??
-                        widget.patient.fullName,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Tabs
-                  Row(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Provider Selection
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTabButton('No Shows', false),
-                      const SizedBox(width: 8),
-                      _buildTabButton('Completed Visits', false),
+                      const Text(
+                        'Provider',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _selectedProvider,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: 'all',
+                            child: Text('Select a Provider'),
+                          ),
+                          ...widget.providers
+                              .map((provider) => DropdownMenuItem(
+                                    value: provider.id.toString(),
+                                    child: Text(provider.fullName),
+                                  ))
+                              .toList()
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _selectedProvider = value);
+                            if (value != 'Select a Provider') {
+                              _showProviderChangeDialog(value);
+                            }
+                          }
+                        },
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+
+                // Patient Name and Tabs
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextFormField(
+                        initialValue: practiceController.patient?.fullName ??
+                            widget.patient.fullName,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Tabs
+                      Row(
+                        children: [
+                          _buildTabButton('No Shows', false),
+                          const SizedBox(width: 8),
+                          _buildTabButton('Completed Visits', false),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Demographics Card
+                _buildDemographicsCard(),
+
+                // Care Gaps Section
+                _buildCareGapsCard(),
+
+                // Risk Adjustment Section
+                _buildRiskAdjustmentCard(),
+              ],
             ),
-
-            // Demographics Card
-            _buildDemographicsCard(),
-
-            // Care Gaps Section
-            _buildCareGapsCard(),
-
-            // Risk Adjustment Section
-            _buildRiskAdjustmentCard(),
-          ],
-        ),
+          ),
+          if (_isLoading) LoadingSpinner()
+        ],
       ),
     );
   }
@@ -182,14 +210,16 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
 
     return GestureDetector(
       onTap: () async {
-        if (isDisabled) return; // ✅ Bloquear tap si está deshabilitado
+        if (isDisabled) return;
 
         // ✅ Validar provider antes de permitir el cambio
         if (_selectedProvider == 'all') {
           _showProviderRequiredDialog();
           return;
         }
-
+        setState(() {
+          _isLoading = true;
+        });
         final c = Get.find<PracticeController>();
         await c.updateStatusVisit(
           practiceId: widget.practice_id,
@@ -198,6 +228,9 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
           field: text,
           schedule_id: widget.schedule_id,
         );
+        setState(() {
+          _isLoading = false;
+        });
         widget.onCloseDialog();
         Navigator.of(context).pop();
         setState(() => _selectedTab = text);
@@ -353,36 +386,52 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columns: const [
-                  DataColumn(label: Text('GAP')),
-                  DataColumn(label: Text('Description')),
-                  DataColumn(label: Text('Completed')),
-                  DataColumn(label: Text('App')),
-                  DataColumn(label: Text('EHR')),
-                  DataColumn(label: Text('Claim')),
+                  DataColumn(label: Center(child: Text('GAP'))),
+                  DataColumn(label: Center(child: Text('Description'))),
+                  DataColumn(label: Center(child: Text('Completed'))),
+                  DataColumn(label: Center(child: Text('App'))),
+                  DataColumn(label: Center(child: Text('EHR'))),
+                  DataColumn(label: Center(child: Text('Claim'))),
                 ],
                 rows: gaps.map((gap) {
                   return DataRow(cells: [
                     DataCell(Text(gap.measureCode)),
                     DataCell(Text(gap.measureDescription ?? '-')),
-                    DataCell(Checkbox(
-                      value: gap.complete,
-                      onChanged: null,
-                    )),
-                    DataCell(Checkbox(
-                      value: gap.app,
-                      onChanged: (val) => _showCareGapDialog(
-                        gap, // 👈 pasamos el objeto completo
-                        val ?? false,
+                    DataCell(
+                      Center(
+                        child: Checkbox(
+                          value: gap.complete,
+                          onChanged: null,
+                        ),
                       ),
-                    )),
-                    DataCell(Checkbox(
-                      value: gap.ehr,
-                      onChanged: null,
-                    )),
-                    DataCell(Checkbox(
-                      value: gap.claim,
-                      onChanged: null,
-                    )),
+                    ),
+                    DataCell(
+                      Center(
+                        child: Checkbox(
+                          value: gap.app,
+                          onChanged: (val) => _showCareGapDialog(
+                            gap, // 👈 pasamos el objeto completo
+                            val ?? false,
+                          ),
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      Center(
+                        child: Checkbox(
+                          value: gap.ehr,
+                          onChanged: null,
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      Center(
+                        child: Checkbox(
+                          value: gap.claim,
+                          onChanged: null,
+                        ),
+                      ),
+                    ),
                   ]);
                 }).toList(),
               ),
@@ -447,31 +496,63 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
                   return DataRow(cells: [
                     DataCell(Text(p.hccCategory ?? '-')),
                     DataCell(Text(p.code ?? '-')),
-                    DataCell(Checkbox(value: p.present, onChanged: null)),
-
-                    // ✅ Inactive (editable)
-                    DataCell(Checkbox(
-                      value: p.inactive,
-                      onChanged: (val) => _showPatologyDialog(
-                        p,
-                        'Inactive',
-                        val ?? false,
+                    // ✅ Present (solo lectura)
+                    DataCell(
+                      Center(
+                        child: Checkbox(
+                          value: p.present,
+                          onChanged: null,
+                        ),
                       ),
-                    )),
+                    ),
 
-                    // ✅ App (editable)
-                    DataCell(Checkbox(
-                      value: p.app,
-                      onChanged: (val) => _showPatologyDialog(
-                        p,
-                        'App',
-                        val ?? false,
+// ✅ Inactive (editable)
+                    DataCell(
+                      Center(
+                        child: Checkbox(
+                          value: p.inactive,
+                          onChanged: (val) => _showPatologyDialog(
+                            p,
+                            'Inactive',
+                            val ?? false,
+                          ),
+                        ),
                       ),
-                    )),
+                    ),
 
-                    // Solo lectura
-                    DataCell(Checkbox(value: p.ehr, onChanged: null)),
-                    DataCell(Checkbox(value: p.claim, onChanged: null)),
+// ✅ App (editable)
+                    DataCell(
+                      Center(
+                        child: Checkbox(
+                          value: p.app,
+                          onChanged: (val) => _showPatologyDialog(
+                            p,
+                            'App',
+                            val ?? false,
+                          ),
+                        ),
+                      ),
+                    ),
+
+// ✅ EHR (solo lectura)
+                    DataCell(
+                      Center(
+                        child: Checkbox(
+                          value: p.ehr,
+                          onChanged: null,
+                        ),
+                      ),
+                    ),
+
+// ✅ Claim (solo lectura)
+                    DataCell(
+                      Center(
+                        child: Checkbox(
+                          value: p.claim,
+                          onChanged: null,
+                        ),
+                      ),
+                    ),
                   ]);
                 }).toList(),
               ),
@@ -637,9 +718,15 @@ class _PatientProfileModalState extends State<PatientProfileModal> {
                 final c = Get.find<PracticeController>();
                 final idx = c.patientGaps.indexWhere((g) => g.id == gap.id);
                 if (idx != -1) {
+                  setState(() {
+                    _isLoading = true;
+                  });
                   // Creamos una copia inmutable para no romper la lista
                   await c.updatePatientGaps(newValue, idx, gap.id,
                       widget.practice_id, _selectedProvider);
+                  setState(() {
+                    _isLoading = false;
+                  });
                   setState(() {});
                 }
 

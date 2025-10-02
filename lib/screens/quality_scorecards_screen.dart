@@ -5,6 +5,8 @@ import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/provider.dart';
+import 'package:somos_qr_plus/models/quality_score.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
 import '../widgets/provider_dropdown_widget.dart';
@@ -19,112 +21,80 @@ class QualityScorecardsScreen extends StatefulWidget {
 
 class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
   bool _isDrawerOpen = false;
-  Provider _selectedProvider = new Provider(name: 'All', id: '-1');
+  Provider _selectedIncentiveProvider = new Provider(name: 'All', id: '-1');
   int _currentPage = 0;
   int _rowsPerPage = 20;
   bool _showLogoutDialog = false;
+  bool _isLoading = false;
+  String? _selectedMco = '';
+  String? _selectedProduct = '';
+  String? _selectedLob = '';
+  String? _selectedMeasure = '';
+  String _sortColumn = '';
+  bool _sortAscending = true;
 
-  final List<Map<String, dynamic>> _qualityMetrics = [
-    {
-      'measure': 'COA-PA',
-      'closed': ['123', '456', '789'],
-      'benchmarks': ['50%', '75%', '90%'],
-      'hitsNeeded': ['10', '20', '30'],
-    },
-    {
-      'measure': 'CCS',
-      'closed': ['234', '567', '890'],
-      'benchmarks': ['55%', '80%', '95%'],
-      'hitsNeeded': ['15', '25', '35'],
-    },
-    {
-      'measure': 'CAW',
-      'closed': ['345', '678', '901'],
-      'benchmarks': ['60%', '85%', '92%'],
-      'hitsNeeded': ['12', '22', '32'],
-    },
-    {
-      'measure': 'CIS-3',
-      'closed': ['456', '789', '012'],
-      'benchmarks': ['65%', '88%', '94%'],
-      'hitsNeeded': ['18', '28', '38'],
-    },
-    {
-      'measure': 'CRC',
-      'closed': ['567', '890', '123'],
-      'benchmarks': ['70%', '90%', '96%'],
-      'hitsNeeded': ['14', '24', '34'],
-    },
-    {
-      'measure': 'CDC-EE',
-      'closed': ['678', '901', '234'],
-      'benchmarks': ['75%', '92%', '98%'],
-      'hitsNeeded': ['16', '26', '36'],
-    },
-    {
-      'measure': 'CDC-HbA1c',
-      'closed': ['789', '012', '345'],
-      'benchmarks': ['80%', '94%', '99%'],
-      'hitsNeeded': ['13', '23', '33'],
-    },
-    {
-      'measure': 'CHBP',
-      'closed': ['890', '123', '456'],
-      'benchmarks': ['85%', '96%', '100%'],
-      'hitsNeeded': ['17', '27', '37'],
-    },
-    {
-      'measure': 'FUA-7',
-      'closed': ['901', '234', '567'],
-      'benchmarks': ['90%', '98%', '100%'],
-      'hitsNeeded': ['11', '21', '31'],
-    },
-    {
-      'measure': 'MAC',
-      'closed': ['012', '345', '678'],
-      'benchmarks': ['95%', '99%', '100%'],
-      'hitsNeeded': ['19', '29', '39'],
-    },
-    {
-      'measure': 'MAH',
-      'closed': ['123', '456', '789'],
-      'benchmarks': ['100%', '100%', '100%'],
-      'hitsNeeded': ['0', '0', '0'],
-    },
-    {
-      'measure': 'MAD',
-      'closed': ['234', '567', '890'],
-      'benchmarks': ['45%', '70%', '85%'],
-      'hitsNeeded': ['25', '40', '55'],
-    },
-    {
-      'measure': 'OMF',
-      'closed': ['345', '678', '901'],
-      'benchmarks': ['40%', '65%', '80%'],
-      'hitsNeeded': ['30', '45', '60'],
-    },
-    {
-      'measure': 'PPC-PP',
-      'closed': ['456', '789', '012'],
-      'benchmarks': ['35%', '60%', '75%'],
-      'hitsNeeded': ['35', '50', '65'],
-    },
-    {
-      'measure': 'ST-DM',
-      'closed': ['567', '890', '123'],
-      'benchmarks': ['30%', '55%', '70%'],
-      'hitsNeeded': ['40', '55', '70'],
-    },
-    {
-      'measure': 'TOC-MR',
-      'closed': ['678', '901', '234'],
-      'benchmarks': ['25%', '50%', '65%'],
-      'hitsNeeded': ['45', '60', '75'],
-    },
-  ];
+  List<QualityScore> _qualityMetrics = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final c = Get.find<PracticeController>();
+    _selectedIncentiveProvider = c.defaultProvider;
+    // Lánzalo después del frame para asegurar que el árbol está listo
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadData(_selectedIncentiveProvider);
+      setState(() {
+        _isLoading = false;
+      });
+    });
+  }
+
+  Future<void> _loadData(provider) async {
+    final c = Get.find<PracticeController>();
+
+    bool resPractice = await c.getPractice('');
+    if (!resPractice) return;
+    await c.getQuality(provider.id,
+        mco: _selectedMco,
+        product: _selectedProduct,
+        lob: _selectedLob,
+        measure: _selectedMeasure);
+    await c.getQualityMco(provider.id);
+    await c.getQualityProduct(provider.id);
+    await c.getQualityLob(provider.id);
+    await c.getQualityMeasure(provider.id);
+    if (provider.id == '-1') {
+      _selectedMco = '';
+      _selectedProduct = '';
+      _selectedLob = '';
+      _selectedMeasure = '';
+    }
+    if (!mounted) return;
+    setState(() {
+      _qualityMetrics = c.qualityScores;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    Future<void> _searchQuality() async {
+      setState(() {
+        _isLoading = true;
+      });
+      final c = Get.find<PracticeController>();
+      await c.getQuality(_selectedIncentiveProvider.id,
+          mco: _selectedMco,
+          product: _selectedProduct,
+          lob: _selectedLob,
+          measure: _selectedMeasure);
+      setState(() {
+        _isLoading = false;
+      });
+    }
+
     return GetBuilder<PracticeController>(builder: (practiceController) {
       return SafeArea(
         child: Stack(
@@ -158,14 +128,22 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
                       children: [
                         Expanded(
                           child: ProviderDropdownWidget(
-                            selectedProvider: _selectedProvider,
+                            selectedProvider: _selectedIncentiveProvider,
                             providers: practiceController.practices,
-                            onProviderChanged: (provider) {
+                            onProviderChanged: (provider) async {
                               setState(() {
-                                _selectedProvider = provider;
+                                _selectedIncentiveProvider = provider;
                               });
+                              setState(() {
+                                _isLoading = true;
+                              });
+                              await _loadData(_selectedIncentiveProvider);
+                              setState(() {
+                                _isLoading = false;
+                              });
+                              String name = provider.name;
                               _showSuccessMessage(
-                                  'Quality scorecards updated for $provider');
+                                  'Quality scorecards updated for $name');
                             },
                             maxWidth: 300,
                           ),
@@ -184,12 +162,203 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // 🔹 Filters Block
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border:
+                                      Border.all(color: Colors.grey.shade200),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          "Filters",
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF333333),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _selectedMco = '';
+                                              _selectedProduct = '';
+                                              _selectedLob = '';
+                                              _selectedMeasure = '';
+                                            });
+                                            _searchQuality();
+                                          },
+                                          style: TextButton.styleFrom(
+                                            side: const BorderSide(
+                                                color: Colors.black, width: 1),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 4),
+                                            minimumSize: Size.zero,
+                                          ),
+                                          child: const Text(
+                                            "Clear all",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Column(
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text("MCO",
+                                                      style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Color(
+                                                              0xFF333333))),
+                                                  const SizedBox(height: 4),
+                                                  _buildFilterDropdown(
+                                                    value: _selectedMco,
+                                                    items: practiceController
+                                                        .mcoOptions,
+                                                    hint: "Select MCO",
+                                                    onChanged: (val) {
+                                                      setState(() =>
+                                                          _selectedMco =
+                                                              val ?? '');
+                                                      _searchQuality();
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text("Line of Business",
+                                                      style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Color(
+                                                              0xFF333333))),
+                                                  const SizedBox(height: 4),
+                                                  _buildFilterDropdown(
+                                                    value: _selectedLob,
+                                                    items: practiceController
+                                                        .lobOptions,
+                                                    hint:
+                                                        "Select Line of Business",
+                                                    onChanged: (val) {
+                                                      setState(() =>
+                                                          _selectedLob =
+                                                              val ?? '');
+                                                      _searchQuality();
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(
+                                          height: 10,
+                                        ),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text("Product",
+                                                      style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Color(
+                                                              0xFF333333))),
+                                                  const SizedBox(height: 4),
+                                                  _buildFilterDropdown(
+                                                    value: _selectedProduct,
+                                                    items: practiceController
+                                                        .productOptions,
+                                                    hint: "Select Product",
+                                                    onChanged: (val) {
+                                                      setState(() =>
+                                                          _selectedProduct =
+                                                              val ?? '');
+                                                      _searchQuality();
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text("Measure",
+                                                      style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Color(
+                                                              0xFF333333))),
+                                                  const SizedBox(height: 4),
+                                                  _buildFilterDropdown(
+                                                    value: _selectedMeasure,
+                                                    items: practiceController
+                                                        .measureOptions
+                                                        .map((m) => m
+                                                            .measureCode) // Lista de códigos
+                                                        .toList(),
+                                                    hint: "Select Measure",
+                                                    onChanged: (val) {
+                                                      setState(() =>
+                                                          _selectedMeasure =
+                                                              val ?? '');
+                                                      _searchQuality();
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
                               // Page Title
                               Padding(
                                 padding:
                                     EdgeInsets.only(bottom: isMobile ? 16 : 20),
                                 child: const Text(
-                                  'Quality Score Cards',
+                                  'Quality Scorecard',
                                   style: TextStyle(
                                     fontSize: 26,
                                     fontWeight: FontWeight.w500,
@@ -199,510 +368,233 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
                               ),
 
                               // Score Cards Table
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey[300]!),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 3,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
-                                ),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
                                 child: Column(
                                   children: [
-                                    // Table
-                                    SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: DataTable(
-                                        headingRowHeight: isMobile ? 80 : 100,
-                                        dataRowHeight: isMobile ? 45 : 50,
-                                        columnSpacing: 0,
-                                        border: TableBorder.all(
-                                          color: Colors.grey[300]!,
-                                          width: 1,
-                                        ),
-                                        columns: [
-                                          // Measures Column
-                                          DataColumn(
-                                            label: Container(
-                                              width: isMobile ? 100 : 120,
-                                              padding: EdgeInsets.all(
-                                                  isMobile ? 12 : 16),
-                                              decoration: const BoxDecoration(
-                                                color: Color(0xFFF8F9FA),
-                                              ),
-                                              child: Text(
-                                                'Measures',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  color:
-                                                      const Color(0xFF333333),
-                                                  fontSize: isMobile ? 12 : 14,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          // Closed Section
-                                          ...List.generate(
-                                              3,
-                                              (index) => DataColumn(
-                                                    label: Container(
-                                                      width: isMobile ? 70 : 80,
-                                                      padding: EdgeInsets.all(
-                                                          isMobile ? 6 : 8),
-                                                      decoration:
-                                                          const BoxDecoration(
-                                                        color:
-                                                            Color(0xFFE8F5E8),
-                                                      ),
-                                                      child: Column(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          Text(
-                                                            'Closed',
-                                                            style: TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color: const Color(
-                                                                  0xFF333333),
-                                                              fontSize: isMobile
-                                                                  ? 12
-                                                                  : 14,
-                                                            ),
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                          ),
-                                                          const SizedBox(
-                                                              height: 4),
-                                                          Text(
-                                                            index == 0
-                                                                ? 'MCO'
-                                                                : index == 1
-                                                                    ? 'CLAIM'
-                                                                    : 'EHR*',
-                                                            style: TextStyle(
-                                                              fontSize: isMobile
-                                                                  ? 10
-                                                                  : 12,
-                                                              color: Colors
-                                                                  .grey[600],
-                                                            ),
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  )),
-                                          // Benchmarks Section
-                                          ...List.generate(
-                                              3,
-                                              (index) => DataColumn(
-                                                    label: Container(
-                                                      width:
-                                                          isMobile ? 90 : 100,
-                                                      padding: EdgeInsets.all(
-                                                          isMobile ? 6 : 8),
-                                                      decoration:
-                                                          const BoxDecoration(
-                                                        color:
-                                                            Color(0xFFF0F8F0),
-                                                      ),
-                                                      child: Column(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          Text(
-                                                            'Benchmarks',
-                                                            style: TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color: const Color(
-                                                                  0xFF333333),
-                                                              fontSize: isMobile
-                                                                  ? 12
-                                                                  : 14,
-                                                            ),
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                          ),
-                                                          const SizedBox(
-                                                              height: 4),
-                                                          Text(
-                                                            index == 0
-                                                                ? '50TH/3 START'
-                                                                : index == 1
-                                                                    ? '75TH/4 START'
-                                                                    : '90TH/5STAR',
-                                                            style: TextStyle(
-                                                              fontSize: isMobile
-                                                                  ? 9
-                                                                  : 11,
-                                                              color: Colors
-                                                                  .grey[600],
-                                                            ),
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                            maxLines: 2,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  )),
-                                          // Hits Needed Section
-                                          ...List.generate(
-                                              3,
-                                              (index) => DataColumn(
-                                                    label: Container(
-                                                      width:
-                                                          isMobile ? 90 : 100,
-                                                      padding: EdgeInsets.all(
-                                                          isMobile ? 6 : 8),
-                                                      decoration:
-                                                          const BoxDecoration(
-                                                        color:
-                                                            Color(0xFFF8F9FA),
-                                                      ),
-                                                      child: Column(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          Text(
-                                                            'Hits Needed',
-                                                            style: TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color: const Color(
-                                                                  0xFF333333),
-                                                              fontSize: isMobile
-                                                                  ? 12
-                                                                  : 14,
-                                                            ),
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                          ),
-                                                          const SizedBox(
-                                                              height: 4),
-                                                          Text(
-                                                            index == 0
-                                                                ? '50TH/3 START'
-                                                                : index == 1
-                                                                    ? '75TH/4 START'
-                                                                    : '90TH/5STAR',
-                                                            style: TextStyle(
-                                                              fontSize: isMobile
-                                                                  ? 9
-                                                                  : 11,
-                                                              color: Colors
-                                                                  .grey[600],
-                                                            ),
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                            maxLines: 2,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  )),
-                                        ],
-                                        rows: _getCurrentPageRows(),
-                                      ),
-                                    ),
-
-                                    // Pagination
+                                    // 🔹 HEADER con 2 niveles
                                     Container(
-                                      padding:
-                                          EdgeInsets.all(isMobile ? 12 : 16),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFF8F9FA),
-                                        border: Border(
-                                          top: BorderSide(
-                                              color: Colors.grey[300]!),
-                                        ),
+                                        color: Colors.grey.shade100,
+                                        border: Border.all(
+                                            color: Colors.grey.shade300),
                                       ),
-                                      child: isMobile
-                                          ? Column(
-                                              children: [
-                                                // Mobile: Stack rows per page and info
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        Text(
-                                                          'Rows per page:',
-                                                          style: TextStyle(
-                                                            fontSize: isMobile
-                                                                ? 12
-                                                                : 14,
-                                                            color: const Color(
-                                                                0xFF666666),
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 8),
-                                                        Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal: 8,
-                                                                  vertical: 4),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: Colors.white,
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        4),
-                                                            border: Border.all(
-                                                                color:
-                                                                    Colors.grey[
-                                                                        300]!),
-                                                          ),
-                                                          child:
-                                                              DropdownButtonHideUnderline(
-                                                            child:
-                                                                DropdownButton<
-                                                                    int>(
-                                                              value:
-                                                                  _rowsPerPage,
-                                                              style: TextStyle(
-                                                                fontSize:
-                                                                    isMobile
-                                                                        ? 12
-                                                                        : 14,
-                                                                color: const Color(
-                                                                    0xFF333333),
-                                                              ),
-                                                              items: const [
-                                                                DropdownMenuItem(
-                                                                    value: 20,
-                                                                    child: Text(
-                                                                        '20')),
-                                                                DropdownMenuItem(
-                                                                    value: 40,
-                                                                    child: Text(
-                                                                        '40')),
-                                                                DropdownMenuItem(
-                                                                    value: 60,
-                                                                    child: Text(
-                                                                        '60')),
-                                                                DropdownMenuItem(
-                                                                    value: 80,
-                                                                    child: Text(
-                                                                        '80')),
-                                                                DropdownMenuItem(
-                                                                    value: 100,
-                                                                    child: Text(
-                                                                        '100')),
-                                                              ],
-                                                              onChanged: (int?
-                                                                  newValue) {
-                                                                if (newValue !=
-                                                                    null) {
-                                                                  setState(() {
-                                                                    _rowsPerPage =
-                                                                        newValue;
-                                                                    _currentPage =
-                                                                        0;
-                                                                  });
-                                                                }
-                                                              },
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Text(
-                                                      _getPageInfo(),
-                                                      style: TextStyle(
-                                                        fontSize:
-                                                            isMobile ? 12 : 14,
-                                                        color: const Color(
-                                                            0xFF666666),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 12),
-                                                // Mobile: Center pagination buttons
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    _buildPaginationButton(
-                                                        '⏮️',
-                                                        _currentPage == 0,
-                                                        () => _goToFirstPage()),
-                                                    const SizedBox(width: 4),
-                                                    _buildPaginationButton(
-                                                        '◀',
-                                                        _currentPage == 0,
-                                                        () =>
-                                                            _goToPreviousPage()),
-                                                    const SizedBox(width: 4),
-                                                    _buildPaginationButton(
-                                                        '▶',
-                                                        _currentPage >=
-                                                            _getTotalPages() -
-                                                                1,
-                                                        () => _goToNextPage()),
-                                                    const SizedBox(width: 4),
-                                                    _buildPaginationButton(
-                                                        '⏭️',
-                                                        _currentPage >=
-                                                            _getTotalPages() -
-                                                                1,
-                                                        () => _goToLastPage()),
-                                                  ],
-                                                ),
-                                              ],
-                                            )
-                                          : Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                // Desktop: Left side - Rows per page and info
-                                                Row(
-                                                  children: [
-                                                    Text(
-                                                      'Rows per page:',
-                                                      style: TextStyle(
-                                                        fontSize:
-                                                            isMobile ? 12 : 14,
-                                                        color: const Color(
-                                                            0xFF666666),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Container(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 4),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(4),
-                                                        border: Border.all(
-                                                            color: Colors
-                                                                .grey[300]!),
-                                                      ),
-                                                      child:
-                                                          DropdownButtonHideUnderline(
-                                                        child:
-                                                            DropdownButton<int>(
-                                                          value: _rowsPerPage,
-                                                          style: TextStyle(
-                                                            fontSize: isMobile
-                                                                ? 12
-                                                                : 14,
-                                                            color: const Color(
-                                                                0xFF333333),
-                                                          ),
-                                                          items: const [
-                                                            DropdownMenuItem(
-                                                                value: 20,
-                                                                child:
-                                                                    Text('20')),
-                                                            DropdownMenuItem(
-                                                                value: 40,
-                                                                child:
-                                                                    Text('40')),
-                                                            DropdownMenuItem(
-                                                                value: 60,
-                                                                child:
-                                                                    Text('60')),
-                                                            DropdownMenuItem(
-                                                                value: 80,
-                                                                child:
-                                                                    Text('80')),
-                                                            DropdownMenuItem(
-                                                                value: 100,
-                                                                child: Text(
-                                                                    '100')),
-                                                          ],
-                                                          onChanged:
-                                                              (int? newValue) {
-                                                            if (newValue !=
-                                                                null) {
-                                                              setState(() {
-                                                                _rowsPerPage =
-                                                                    newValue;
-                                                                _currentPage =
-                                                                    0;
-                                                              });
-                                                            }
-                                                          },
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 32),
-                                                    Text(
-                                                      _getPageInfo(),
-                                                      style: TextStyle(
-                                                        fontSize:
-                                                            isMobile ? 12 : 14,
-                                                        color: const Color(
-                                                            0xFF666666),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
+                                      child: Column(
+                                        children: [
+                                          Row(
+                                            children: [
+                                              _headerCell("Code", "measureCode",
+                                                  rowSpan: true, width: 80),
+                                              _headerCell(
+                                                  "Measure Name", "measureName",
+                                                  rowSpan: true, width: 200),
+                                              _headerCell("Open", "open",
+                                                  rowSpan: true, width: 70),
+                                              _headerCell(
+                                                  "Numerator", "numerator",
+                                                  rowSpan: true, width: 90),
+                                              _headerCell(
+                                                  "Denominator", "denominator",
+                                                  rowSpan: true, width: 110),
 
-                                                // Desktop: Right side - Pagination buttons
-                                                Row(
+                                              // Grupo Closed
+                                              _groupHeader("Closed",
+                                                  width: 530,
                                                   children: [
-                                                    _buildPaginationButton(
-                                                        '⏮️',
-                                                        _currentPage == 0,
-                                                        () => _goToFirstPage()),
-                                                    const SizedBox(width: 4),
-                                                    _buildPaginationButton(
-                                                        '◀',
-                                                        _currentPage == 0,
-                                                        () =>
-                                                            _goToPreviousPage()),
-                                                    const SizedBox(width: 4),
-                                                    _buildPaginationButton(
-                                                        '▶',
-                                                        _currentPage >=
-                                                            _getTotalPages() -
-                                                                1,
-                                                        () => _goToNextPage()),
-                                                    const SizedBox(width: 4),
-                                                    _buildPaginationButton(
-                                                        '⏭️',
-                                                        _currentPage >=
-                                                            _getTotalPages() -
-                                                                1,
-                                                        () => _goToLastPage()),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
+                                                    _headerCell("APP", "app",
+                                                        width: 70),
+                                                    _headerCell(
+                                                        "CLAIM", "claim",
+                                                        width: 80),
+                                                    _headerCell("EHR", "ehr",
+                                                        width: 70),
+                                                    _headerCell(
+                                                        "Compliance rate",
+                                                        "complianceRate",
+                                                        width: 250),
+                                                  ]),
+
+                                              // Grupo Benchmarks
+                                              _groupHeader("Benchmarks",
+                                                  width: 300,
+                                                  children: [
+                                                    _headerCell("50th / 3★",
+                                                        "bm50th3star",
+                                                        width: 100),
+                                                    _headerCell("75th / 4★",
+                                                        "bm75th4star",
+                                                        width: 100),
+                                                    _headerCell("90th / 5★",
+                                                        "bm90th5star",
+                                                        width: 100),
+                                                  ]),
+
+                                              _headerCell("Hit to next target",
+                                                  "hitsToNextTarget",
+                                                  rowSpan: true, width: 140),
+                                              _headerCell("Weight", "weight",
+                                                  rowSpan: true, width: 80),
+                                              _headerCell(
+                                                  "Achieved", "achieved",
+                                                  rowSpan: true, width: 100),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
+
+                                    // 🔹 FILAS DE DATOS dinámicas
+                                    ...practiceController.qualityScores
+                                        .sublist(
+                                      _currentPage * _rowsPerPage,
+                                      ((_currentPage + 1) * _rowsPerPage).clamp(
+                                          0,
+                                          practiceController
+                                              .qualityScores.length),
+                                    )
+                                        .map((q) {
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          border: Border(
+                                            left: BorderSide(
+                                                color: Colors.grey.shade300),
+                                            right: BorderSide(
+                                                color: Colors.grey.shade300),
+                                            bottom: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            _dataCell(q.measureCode, width: 80),
+                                            _dataCell(q.measureName,
+                                                width: 200),
+                                            _dataCell(q.open.toStringAsFixed(0),
+                                                width: 70),
+                                            _dataCell(
+                                                q.numerator.toStringAsFixed(0),
+                                                width: 90),
+                                            _dataCell(
+                                                q.denominator
+                                                    .toStringAsFixed(0),
+                                                width: 110),
+                                            _dataCell(q.app.toString(),
+                                                width: 132),
+                                            _dataCell(q.claim.toString(),
+                                                width: 132),
+                                            _dataCell(q.ehr.toString(),
+                                                width: 132),
+                                            _dataCell(
+                                              "${(q.complianceRate * 100).toStringAsFixed(0)}%",
+                                              width:
+                                                  132, // ✅ alineado con el header
+                                            ),
+                                            _dataCell(
+                                                "${(q.bm50th3star * 100).toStringAsFixed(0)}%",
+                                                width: 100),
+                                            _dataCell(
+                                                "${(q.bm75th4star * 100).toStringAsFixed(0)}%",
+                                                width: 100),
+                                            _dataCell(
+                                                "${(q.bm90th5star * 100).toStringAsFixed(0)}%",
+                                                width: 100),
+                                            _dataCell(
+                                                q.hitsToNextTarget
+                                                    .toStringAsFixed(0),
+                                                width: 140),
+                                            _dataCell(
+                                                q.weight.toStringAsFixed(2),
+                                                width: 80),
+                                            _dataCell(
+                                              q.achieved != null
+                                                  ? "${(q.achieved! * 100).toStringAsFixed(0)}%"
+                                                  : "-",
+                                              width: 100,
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade50,
+                                  border: Border(
+                                    left:
+                                        BorderSide(color: Colors.grey.shade300),
+                                    right:
+                                        BorderSide(color: Colors.grey.shade300),
+                                    bottom:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    // Rows per page
+                                    const Text(
+                                      "Rows per page:",
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          color: Color(0xFF333333)),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    DropdownButton<int>(
+                                      value: _rowsPerPage,
+                                      items: [10, 20, 50, 100].map((e) {
+                                        return DropdownMenuItem<int>(
+                                          value: e,
+                                          child: Text(e.toString(),
+                                              style: const TextStyle(
+                                                  fontSize: 13,
+                                                  color: Color(0xFF333333))),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) {
+                                        if (value != null) {
+                                          setState(() {
+                                            _rowsPerPage = value;
+                                            _currentPage = 0; // reset
+                                          });
+                                        }
+                                      },
+                                    ),
+                                    const SizedBox(width: 20),
+
+                                    // Page info
+                                    Text(
+                                      _getPageInfo(practiceController
+                                          .qualityScores.length),
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Color(0xFF333333)),
+                                    ),
+                                    const SizedBox(width: 20),
+
+                                    // Pagination buttons
+                                    // _buildPaginationButton(
+                                    //     "⏮", _currentPage == 0, _goToFirstPage),
+                                    // const SizedBox(width: 6),
+                                    _buildPaginationButton("◀",
+                                        _currentPage == 0, _goToPreviousPage),
+                                    const SizedBox(width: 6),
+                                    _buildPaginationButton(
+                                        "▶",
+                                        (_currentPage + 1) * _rowsPerPage >=
+                                            practiceController
+                                                .qualityScores.length,
+                                        _goToNextPage),
+                                    // const SizedBox(width: 6),
+                                    // _buildPaginationButton(
+                                    //     "⏭",
+                                    //     (_currentPage + 1) * _rowsPerPage >=
+                                    //         practiceController
+                                    //             .qualityScores.length,
+                                    //     _goToLastPage),
                                   ],
                                 ),
                               ),
@@ -733,6 +625,7 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
               activeRoute: 'quality',
             ),
             if (_showLogoutDialog) _buildLogoutDialog(),
+            if (_isLoading) LoadingSpinner()
           ],
         ),
       );
@@ -788,31 +681,15 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
     }
   }
 
-  List<DataRow> _getCurrentPageRows() {
-    final startIndex = _currentPage * _rowsPerPage;
-    final endIndex =
-        (startIndex + _rowsPerPage).clamp(0, _qualityMetrics.length);
-
-    return _qualityMetrics
-        .sublist(startIndex, endIndex)
-        .map((metric) => _buildDataRow(
-              metric['measure'],
-              metric['closed'],
-              metric['benchmarks'],
-              metric['hitsNeeded'],
-            ))
-        .toList();
-  }
-
   int _getTotalPages() {
     return (_qualityMetrics.length / _rowsPerPage).ceil();
   }
 
-  String _getPageInfo() {
+  String _getPageInfo(int totalItems) {
+    if (totalItems == 0) return "0-0 of 0";
     final startIndex = _currentPage * _rowsPerPage + 1;
-    final endIndex =
-        ((_currentPage + 1) * _rowsPerPage).clamp(0, _qualityMetrics.length);
-    return '$startIndex-$endIndex of ${_qualityMetrics.length}';
+    final endIndex = ((_currentPage + 1) * _rowsPerPage).clamp(0, totalItems);
+    return '$startIndex-$endIndex of $totalItems';
   }
 
   void _goToFirstPage() {
@@ -839,13 +716,178 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
     }
   }
 
-  void _goToLastPage() {
-    final totalPages = _getTotalPages();
-    if (_currentPage < totalPages - 1) {
-      setState(() {
-        _currentPage = totalPages - 1;
+  // void _goToLastPage() {
+  //   final totalPages = _getTotalPages();
+  //   if (_currentPage < totalPages - 1) {
+  //     setState(() {
+  //       _currentPage = totalPages - 1;
+  //     });
+  //   }
+  // }
+
+  // DataColumn _buildDataColumn(String label, String column, double fontSize) {
+  //   return DataColumn(
+  //     label: Row(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: [
+  //         Text(label),
+  //         SizedBox(width: 4),
+  //         Icon(
+  //           _sortColumn == column
+  //               ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward)
+  //               : Icons.unfold_more,
+  //           size: fontSize,
+  //           color: Colors.grey.shade600,
+  //         ),
+  //       ],
+  //     ),
+  //     onSort: (columnIndex, ascending) => _sortTable(column),
+  //   );
+  // }
+
+  void _sortTable(String column) {
+    final c = Get.find<PracticeController>();
+    setState(() {
+      if (_sortColumn == column) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortColumn = column;
+        _sortAscending = true;
+      }
+
+      c.qualityScores.sort((a, b) {
+        var aValue = _getValueForColumn(a, column);
+        var bValue = _getValueForColumn(b, column);
+
+        int comparison = aValue.compareTo(bValue);
+        return _sortAscending ? comparison : -comparison;
       });
+    });
+  }
+
+  dynamic _getValueForColumn(QualityScore quality, String column) {
+    switch (column) {
+      case 'measureName':
+        return quality.measureName;
+      case 'open':
+        return quality.open;
+      case 'numerator':
+        return quality.numerator;
+      case 'denominator':
+        return quality.denominator;
+      case 'app':
+        return quality.app;
+      case 'claim':
+        return quality.claim;
+      case 'ehr':
+        return quality.ehr;
+      case 'complianceRate':
+        return quality.complianceRate;
+      case 'bm50th3star':
+        return quality.bm50th3star;
+      case 'bm75th4star':
+        return quality.bm75th4star;
+      case 'bm90th5star':
+        return quality.bm90th5star;
+      case 'hitsToNextTarget':
+        return quality.hitsToNextTarget;
+      case 'weight':
+        return quality.weight;
+      case 'achieved':
+        return quality.achieved ?? -1.0;
+
+      default:
+        return quality.measureName;
     }
+  }
+
+  Widget _headerCell(String text, String param,
+      {double width = 100, bool rowSpan = false}) {
+    return Container(
+      width: width,
+      height: rowSpan ? 64 : 32,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        color: Colors.grey.shade50,
+      ),
+      child: GestureDetector(
+        onTap: () {
+          _sortTable(param);
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              text,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Color(0xFF333333),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            Icon(
+              _sortColumn == param
+                  ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward)
+                  : Icons.unfold_more,
+              size: 13,
+              color: Colors.grey.shade600,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _groupHeader(String title,
+      {required double width, required List<Widget> children}) {
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        color: const Color(0xFFEFF7F1),
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 32,
+            alignment: Alignment.center,
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Color(0xFF333333),
+              ),
+            ),
+          ),
+          Row(
+            children: children
+                .map((child) =>
+                    Expanded(child: child)) // 🔑 cada celda ocupa proporcional
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dataCell(String text, {double width = 100}) {
+    return Container(
+      width: width,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 13, color: Color(0xFF333333)),
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
   }
 
   Widget _buildPaginationButton(
@@ -1097,6 +1139,45 @@ class _QualityScorecardsScreenState extends State<QualityScorecardsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFilterDropdown({
+    required String? value,
+    required List<String> items,
+    required String hint,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return ConstrainedBox(
+      constraints:
+          const BoxConstraints(minWidth: 80), // Minimum width constraint
+      child: DropdownButtonFormField<String>(
+        value: value!.isEmpty ? null : value,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(4),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          isDense: true,
+        ),
+        items: items.map((item) {
+          return DropdownMenuItem<String>(
+            value: item.isEmpty ? null : item,
+            child: Text(
+              item.isEmpty ? hint : item,
+              style: TextStyle(
+                fontSize: 11,
+                color: item.isEmpty ? Colors.grey.shade500 : Colors.black,
+              ),
+            ),
+          );
+        }).toList(),
+        onChanged: onChanged,
       ),
     );
   }

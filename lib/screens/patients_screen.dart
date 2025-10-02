@@ -6,6 +6,7 @@ import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/provider.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../widgets/patient_profile_modal.dart';
 import '../widgets/patient_filter_modal.dart';
 import '../widgets/app_header_widget.dart';
@@ -33,11 +34,15 @@ class _PatientsScreenState extends State<PatientsScreen> {
   int _currentPage = 1;
   int _rowsPerPage = 20;
   bool _showLogoutDialog = false;
+  bool _isLoading = false;
   Timer? _debounce;
   String _currentOrdering = ''; // ← lo que se envía a getPatients
   String _currentSortColumn =
       ''; // ← columna actual (full_name, birthdate, etc.)
   bool _isAscending = true; // ← dirección actual
+  String _sortColumn = 'full_name';
+  bool _sortAscending = true;
+  List<Patient> _filteredPatients = [];
 
   @override
   void initState() {
@@ -46,8 +51,15 @@ class _PatientsScreenState extends State<PatientsScreen> {
     _selectedProvider = c.defaultProvider;
     _initializePatients();
     // Lánzalo después del frame para asegurar que el árbol está listo
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _loadData(_selectedProvider));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadData(_selectedProvider);
+      setState(() {
+        _isLoading = false;
+      });
+    });
   }
 
   @override
@@ -59,6 +71,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
   void _initializePatients() {}
 
   void _applyFilters() async {
+    setState(() {
+      _isLoading = true;
+    });
     final c = Get.find<PracticeController>();
     String dobParsed = '';
     try {
@@ -72,13 +87,19 @@ class _PatientsScreenState extends State<PatientsScreen> {
       provider: _providerFilter.isEmpty || _providerFilter == 'All'
           ? null
           : _providerFilter,
-      mco: _mcoFilter.isEmpty || _mcoFilter == 'All' ? null : _mcoFilter,
+      mco: (_mcoFilter.isEmpty || _mcoFilter == 'All' || _mcoFilter == 'all')
+          ? null
+          : _mcoFilter,
       search: _searchController.text.isEmpty ? null : _searchController.text,
     );
 
     if (!mounted) return;
     setState(() {
       _currentPage = 1;
+      _filteredPatients = c.patients;
+    });
+    setState(() {
+      _isLoading = false;
     });
   }
 
@@ -136,7 +157,9 @@ class _PatientsScreenState extends State<PatientsScreen> {
       provider: _providerFilter.isEmpty || _providerFilter == 'All'
           ? null
           : _providerFilter,
-      mco: _mcoFilter.isEmpty || _mcoFilter == 'All' ? null : _mcoFilter,
+      mco: (_mcoFilter.isEmpty || _mcoFilter == 'All' || _mcoFilter == 'all')
+          ? null
+          : _mcoFilter,
       search: _searchController.text.isEmpty ? null : _searchController.text,
       ordering: _currentOrdering,
     );
@@ -144,6 +167,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
     if (!mounted) return;
     setState(() {
       _currentPage = 1;
+      _filteredPatients = c.patients;
     });
   }
 
@@ -212,7 +236,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
       dobParsed = DateFormat('yyyy-MM-dd').format(parsed);
     } catch (_) {}
 
-    await c.getPatients(
+    bool resPatients = await c.getPatients(
       _selectedProvider.id,
       dob: dobParsed.isEmpty ? null : dobParsed,
       provider: _providerFilter.isEmpty || _providerFilter == 'All'
@@ -221,12 +245,18 @@ class _PatientsScreenState extends State<PatientsScreen> {
       mco: _mcoFilter.isEmpty || _mcoFilter == 'All' ? null : _mcoFilter,
       search: _searchController.text.isEmpty ? null : _searchController.text,
     );
+    if (!resPatients) return;
 
-    await c.getMco(_selectedProvider.id);
-    await c.getProvider(_selectedProvider.id);
+    bool resMco = await c.getMco(_selectedProvider.id);
+    if (!resMco) return;
+
+    bool resProvider = await c.getProvider(_selectedProvider.id);
+    if (!resProvider) return;
 
     if (!mounted) return;
-    setState(() {});
+    setState(() {
+      _filteredPatients = c.patients;
+    });
   }
 
   @override
@@ -267,11 +297,17 @@ class _PatientsScreenState extends State<PatientsScreen> {
                           child: ProviderDropdownWidget(
                             selectedProvider: _selectedProvider,
                             providers: practiceController.practices,
-                            onProviderChanged: (provider) {
+                            onProviderChanged: (provider) async {
                               setState(() => _selectedProvider = provider);
                               final c = Get.find<PracticeController>();
                               c.setProvider(provider);
-                              _loadData(provider);
+                              setState(() {
+                                _isLoading = true;
+                              });
+                              await _loadData(provider);
+                              setState(() {
+                                _isLoading = false;
+                              });
                               _showSuccessMessage(
                                   'Showing data for ${provider.name}');
                             },
@@ -395,99 +431,81 @@ class _PatientsScreenState extends State<PatientsScreen> {
 
                   // Patients Table
                   Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Container(
-                          width: MediaQuery.of(context).size.width,
-                          child: Column(
-                            children: [
-                              // Table Header
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  border: Border(
-                                      bottom: BorderSide(
-                                          color: Colors.grey.shade300)),
+                    child: Column(
+                      children: [
+                        // Table con scroll horizontal + vertical
+                        Expanded(
+                          child: _paginatedPatients.isEmpty
+                              ? Center(child: Text("No records found"))
+                              : SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.vertical,
+                                    child: DataTable(
+                                      columnSpacing: 20,
+                                      dataTextStyle:
+                                          const TextStyle(fontSize: 14),
+                                      headingTextStyle: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF333333),
+                                      ),
+                                      columns: [
+                                        _buildDataColumn(
+                                            'FULL NAME', 'full_name', 14),
+                                        _buildDataColumn(
+                                            'DOB', 'birthdate', 14),
+                                        _buildDataColumn('MCO', 'mco_name', 14),
+                                        _buildDataColumn('GIC', 'gic', 14),
+                                        _buildDataColumn('RA', 'ra', 14),
+                                      ],
+                                      rows: _paginatedPatients.map((patient) {
+                                        return DataRow(
+                                          // onSelectChanged: (_) =>
+                                          //     _showPatientProfile(patient),
+                                          cells: [
+                                            DataCell(onTap: () {
+                                              _showPatientProfile(patient);
+                                            },
+                                                Text(patient.fullName,
+                                                    overflow:
+                                                        TextOverflow.ellipsis)),
+                                            DataCell(onTap: () {
+                                              _showPatientProfile(patient);
+                                            },
+                                                Text(_formatDate(patient.dob),
+                                                    overflow:
+                                                        TextOverflow.ellipsis)),
+                                            DataCell(onTap: () {
+                                              _showPatientProfile(patient);
+                                            },
+                                                Text(patient.mco,
+                                                    overflow:
+                                                        TextOverflow.ellipsis)),
+                                            DataCell(onTap: () {
+                                              _showPatientProfile(patient);
+                                            },
+                                                Text(patient.gic.toString(),
+                                                    overflow:
+                                                        TextOverflow.ellipsis)),
+                                            DataCell(onTap: () {
+                                              _showPatientProfile(patient);
+                                            },
+                                                Text(patient.ra.toString(),
+                                                    overflow:
+                                                        TextOverflow.ellipsis)),
+                                          ],
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                        flex: 3,
-                                        child: _sortableHeader(
-                                            'Full Name', 'full_name')),
-                                    Expanded(
-                                        flex: 2,
-                                        child: _sortableHeader(
-                                            'DOB', 'birthdate')),
-                                    Expanded(
-                                        flex: 3,
-                                        child:
-                                            _sortableHeader('MCO', 'mco_name')),
-                                    Expanded(
-                                        flex: 1,
-                                        child: _sortableHeader('GIC', 'gic')),
-                                    Expanded(
-                                        flex: 1,
-                                        child: _sortableHeader('RA', 'ra')),
-                                  ],
-                                ),
-                              ),
-                              // Table Rows
-                              ..._paginatedPatients
-                                  .map((patient) => GestureDetector(
-                                        onTap: () =>
-                                            _showPatientProfile(patient),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 12),
-                                          decoration: BoxDecoration(
-                                            border: Border(
-                                                bottom: BorderSide(
-                                                    color:
-                                                        Colors.grey.shade200)),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                  flex: 3,
-                                                  child: Text(patient.fullName,
-                                                      overflow: TextOverflow
-                                                          .ellipsis)),
-                                              Expanded(
-                                                  flex: 2,
-                                                  child: Text(patient.dob,
-                                                      overflow: TextOverflow
-                                                          .ellipsis)),
-                                              Expanded(
-                                                  flex: 3,
-                                                  child: Text(patient.mco,
-                                                      overflow: TextOverflow
-                                                          .ellipsis)),
-                                              Expanded(
-                                                  flex: 1,
-                                                  child: Text(
-                                                      patient.gic.toString(),
-                                                      overflow: TextOverflow
-                                                          .ellipsis)),
-                                              Expanded(
-                                                  flex: 1,
-                                                  child: Text(
-                                                      patient.ra.toString(),
-                                                      overflow: TextOverflow
-                                                          .ellipsis)),
-                                            ],
-                                          ),
-                                        ),
-                                      ))
-                                  .toList(),
-                            ],
-                          ),
                         ),
-                      ),
+
+                        // Controles de paginación
+                        const SizedBox(height: 16),
+                        _buildPaginationControls(),
+                      ],
                     ),
                   ),
 
@@ -585,11 +603,21 @@ class _PatientsScreenState extends State<PatientsScreen> {
                 activeRoute: 'patients',
               ),
               if (_showLogoutDialog) _buildLogoutDialog(),
+              if (_isLoading) LoadingSpinner()
             ],
           ),
         ),
       );
     });
+  }
+
+  String _formatDate(String dob) {
+    try {
+      final date = DateTime.parse(dob); // viene en yyyy-MM-dd
+      return DateFormat('MM/dd/yyyy').format(date);
+    } catch (e) {
+      return dob; // fallback si no se puede parsear
+    }
   }
 
   void _handleNavigation(String route) {
@@ -794,5 +822,237 @@ class _PatientsScreenState extends State<PatientsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildPaginationControls() {
+    final startIndex = (_currentPage - 1) * _rowsPerPage + 1;
+    final endIndex =
+        (_currentPage * _rowsPerPage).clamp(0, _filteredPatients.length);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // If width is too small, stack vertically
+          if (constraints.maxWidth < 600) {
+            return Column(
+              children: [
+                // Rows per page selector
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Rows per page:',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                    ),
+                    const SizedBox(width: 6),
+                    DropdownButton<int>(
+                      value: _rowsPerPage,
+                      items: [10, 20, 50, 100].map((value) {
+                        return DropdownMenuItem<int>(
+                          value: value,
+                          child: Text('$value',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.black)),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _rowsPerPage = value;
+                            _currentPage = 1;
+                          });
+                        }
+                      },
+                      underline: Container(),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Page info and navigation
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildCompactNavigation(),
+                  ],
+                ),
+              ],
+            );
+          } else {
+            // Horizontal layout for wider screens
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Rows per page selector
+                Row(
+                  children: [
+                    const Text(
+                      'Rows per page:',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                    ),
+                    const SizedBox(width: 6),
+                    DropdownButton<int>(
+                      value: _rowsPerPage,
+                      items: [10, 20, 50, 100].map((value) {
+                        return DropdownMenuItem<int>(
+                          value: value,
+                          child: Text('$value',
+                              style: const TextStyle(fontSize: 11)),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _rowsPerPage = value;
+                            _currentPage = 1;
+                          });
+                        }
+                      },
+                      underline: Container(),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ],
+                ),
+
+                // Page info and navigation
+                Row(
+                  children: [
+                    Text(
+                      'Showing $startIndex-$endIndex of ${_filteredPatients.length}',
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF666666)),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildCompactNavigation(),
+                  ],
+                ),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  void _goToPage(int page) {
+    if (page >= 1 && page <= _totalPages) {
+      setState(() {
+        _currentPage = page;
+      });
+    }
+  }
+
+  Widget _buildCompactNavigation() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Previous button
+        IconButton(
+          onPressed:
+              _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
+          icon: const Icon(Icons.chevron_left),
+          iconSize: 18,
+          padding: const EdgeInsets.all(2),
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+        ),
+
+        // Current page number only (to save space)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1976D2),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '$_currentPage',
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+
+        // Next button
+        IconButton(
+          onPressed: _currentPage < _totalPages
+              ? () => _goToPage(_currentPage + 1)
+              : null,
+          icon: const Icon(Icons.chevron_right),
+          iconSize: 18,
+          padding: const EdgeInsets.all(2),
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+        ),
+      ],
+    );
+  }
+
+  DataColumn _buildDataColumn(String label, String column, double fontSize) {
+    return DataColumn(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label),
+          SizedBox(width: 4),
+          Icon(
+            _sortColumn == column
+                ? (_sortAscending ? Icons.arrow_upward : Icons.arrow_downward)
+                : Icons.unfold_more,
+            size: fontSize,
+            color: Colors.grey.shade600,
+          ),
+        ],
+      ),
+      onSort: (columnIndex, ascending) => _sortTable(column),
+    );
+  }
+
+  void _sortTable(String column) {
+    final c = Get.find<PracticeController>();
+    setState(() {
+      if (_sortColumn == column) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortColumn = column;
+        _sortAscending = true;
+      }
+
+      c.patients.sort((a, b) {
+        var aValue = _getValueForColumn(a, column);
+        var bValue = _getValueForColumn(b, column);
+
+        int comparison = aValue.compareTo(bValue);
+        return _sortAscending ? comparison : -comparison;
+      });
+    });
+  }
+
+  dynamic _getValueForColumn(Patient patient, String column) {
+    switch (column) {
+      case 'full_name':
+        return patient.fullName;
+      case 'birthdate':
+        return patient.dob;
+      case 'mco_name':
+        return patient.mco;
+      case 'gic':
+        return patient.gic.toString();
+      case 'ra':
+        return patient.ra.toString();
+
+      default:
+        return patient.fullName;
+    }
   }
 }

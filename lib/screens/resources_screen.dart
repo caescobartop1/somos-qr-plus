@@ -6,6 +6,7 @@ import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/pocket_guide.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
 
@@ -32,16 +33,31 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   final List<Map<String, dynamic>> _qualityItems = [];
   // Risk Adjustments items data
   final List<Map<String, dynamic>> _riskItems = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     // Primera carga: obtener solo los Pocket Guides (padres)
-    final c = Get.find<PracticeController>();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      c.getPocketQuality(null, null);
-      c.getPocketRa(null);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadData();
+      setState(() {
+        _isLoading = false;
+      });
     });
+  }
+
+  Future<void> _loadData() async {
+    final c = Get.find<PracticeController>();
+    bool resQuality = await c.getPocketQuality(null, null);
+    if (!resQuality) return;
+
+    bool resRa = await c.getPocketRa(null);
+    if (!resRa) return;
   }
 
   void _handleProfileAction(String action) {
@@ -127,8 +143,14 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                                     });
                                     final controller =
                                         Get.find<PracticeController>();
+                                    setState(() {
+                                      _isLoading = true;
+                                    });
                                     await controller.getPocketQuality(
                                         null, _qualitySearchQuery);
+                                    setState(() {
+                                      _isLoading = false;
+                                    });
                                   },
                                 ),
 
@@ -144,9 +166,15 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                                         _isRiskExpanded = !_isRiskExpanded);
                                   },
                                   onSearchChanged: (query) async {
+                                    setState(() {
+                                      _isLoading = true;
+                                    });
                                     setState(() => _riskSearchQuery = query);
                                     final c = Get.find<PracticeController>();
                                     await c.getPocketRa(_riskSearchQuery);
+                                    setState(() {
+                                      _isLoading = false;
+                                    });
                                   },
                                 ),
 
@@ -215,6 +243,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
 
               // Logout dialog
               if (_showLogoutDialog) _buildLogoutDialog(),
+              if (_isLoading) LoadingSpinner()
             ],
           ),
         ),
@@ -447,7 +476,14 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   }
 
   Widget _buildExpandableItem(PocketGuide guide) {
-    return _ExpandableItemWidget(guide: guide);
+    return _ExpandableItemWidget(
+      guide: guide,
+      onChangeLoad: (value) {
+        setState(() {
+          _isLoading = value;
+        });
+      },
+    );
   }
 
   Widget _buildLogoutDialog() {
@@ -605,8 +641,10 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
 
 class _ExpandableItemWidget extends StatefulWidget {
   final PocketGuide guide;
+  final Function(bool state) onChangeLoad;
 
-  const _ExpandableItemWidget({required this.guide});
+  const _ExpandableItemWidget(
+      {required this.guide, required this.onChangeLoad});
 
   @override
   State<_ExpandableItemWidget> createState() => _ExpandableItemWidgetState();
@@ -628,9 +666,12 @@ class _ExpandableItemWidgetState extends State<_ExpandableItemWidget> {
                 _isExpanded = !_isExpanded;
               });
               if (_isExpanded && widget.guide.categories.isEmpty) {
+                widget.onChangeLoad(true);
                 final controller = Get.find<PracticeController>();
+
                 await controller.getPocketQuality(
                     widget.guide.id.toString(), null);
+                widget.onChangeLoad(false);
               }
             },
             child: Container(

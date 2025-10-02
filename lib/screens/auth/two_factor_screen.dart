@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:somos_qr_plus/constants/app_constants.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'dart:async';
 
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 
 class TwoFactorScreen extends StatefulWidget {
   const TwoFactorScreen({super.key});
@@ -17,6 +20,8 @@ class TwoFactorScreen extends StatefulWidget {
 class _TwoFactorScreenState extends State<TwoFactorScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  bool _forceOtp = false;
+
   final List<TextEditingController> _codeControllers = List.generate(
     6,
     (index) => TextEditingController(),
@@ -116,20 +121,23 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
               ],
             ),
           ),
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: _buildTwoFactorCard(authController),
+          child: Stack(children: [
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: _buildTwoFactorCard(authController),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+            if (_isLoading) LoadingSpinner()
+          ]),
         );
       }),
     );
@@ -207,11 +215,50 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
           _buildCodeInputs(),
           const SizedBox(height: 16),
           _buildVerifyButton(authController),
-          const SizedBox(height: 16),
-          _buildResendButton(authController),
+          if ((authController.loginResponse?.loginMethod ?? '').toUpperCase() ==
+                  'AUTHENTICATOR' &&
+              !_forceOtp) ...[
+            const SizedBox(height: 16),
+            _buildSwitchToOtpButton(authController),
+          ] else ...[
+            const SizedBox(height: 16),
+            _buildResendButton(authController),
+            const SizedBox(height: 8),
+          ],
           const SizedBox(height: 8),
           _buildBackToLoginButton(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSwitchToOtpButton(AuthController authController) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () async {
+          setState(() {
+            _forceOtp = true;
+          });
+          await _handleResendCode(
+              authController, true); // 👉 dispara resend de una vez
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+        child: const Text(
+          'Switch to OTP',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
@@ -334,7 +381,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
       child: ElevatedButton(
         onPressed: _isLoading
             ? null
-            : () {
+            : () async {
                 final code = _codeControllers
                     .map((controller) => controller.text)
                     .join('');
@@ -347,7 +394,13 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
                   );
                   return;
                 }
-                authController.validateCode(code);
+                setState(() {
+                  _isLoading = true;
+                });
+                await authController.validateCode(code);
+                setState(() {
+                  _isLoading = false;
+                });
               },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1976D2),
@@ -382,7 +435,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     return TextButton(
       onPressed: _canResend
           ? () {
-              _handleResendCode(authController);
+              _handleResendCode(authController, false);
             }
           : null,
       style: TextButton.styleFrom(
@@ -433,61 +486,18 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     );
   }
 
-  Future<void> _handleVerifyCode() async {
-    // Get the complete code
-    final code = _codeControllers.map((controller) => controller.text).join('');
-
-    if (code.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter the complete 6-digit code'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
+  Future<void> _handleResendCode(
+      AuthController authController, bool forceSend) async {
+    if (!_canResend && !forceSend) return;
     setState(() {
       _isLoading = true;
     });
-
-    try {
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 1500));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Code verified successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Navigate to dashboard or wherever 2FA should lead
-        // context.go('/quality-scorecards');
-        Get.offAllNamed(RouteHelper.getQualityScoreCardsRoute());
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Verification failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _handleResendCode(AuthController authController) async {
-    if (!_canResend) return;
+    final sharedPreferences = await SharedPreferences.getInstance();
+    await sharedPreferences.setString(AppConstants.loginMethod, 'OTP');
     await authController.reSendCode();
+    setState(() {
+      _isLoading = false;
+    });
     _startCountdown();
   }
 }

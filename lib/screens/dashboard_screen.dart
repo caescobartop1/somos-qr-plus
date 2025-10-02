@@ -10,6 +10,7 @@ import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/bonus_detail.dart';
 import 'package:somos_qr_plus/models/provider.dart';
 import 'package:somos_qr_plus/models/schedule.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
 import '../widgets/provider_dropdown_widget.dart';
@@ -27,53 +28,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isScheduleExpanded = true;
   Provider _selectedIncentiveProvider = new Provider(name: 'All', id: '-1');
   bool _showLogoutDialog = false;
+  bool _isLoading = false;
 
-  final List<Map<String, dynamic>> _appointments = [
-    {
-      'name': 'Sarah Williams',
-      'time': '9:00 AM',
-      'tags': ['GIC', 'Confirmed'],
-    },
-    {
-      'name': 'Michael Chen',
-      'time': '9:30 AM',
-      'tags': ['RA', 'Pending'],
-    },
-    {
-      'name': 'Emily Johnson',
-      'time': '10:00 AM',
-      'tags': ['GIC', 'RA', 'Confirmed'],
-    },
-    {
-      'name': 'Robert Davis',
-      'time': '10:30 AM',
-      'tags': ['Cancelled'],
-    },
-    {
-      'name': 'Jennifer Lopez',
-      'time': '11:00 AM',
-      'tags': ['GIC', 'Confirmed'],
-    },
-  ];
   @override
   void initState() {
     super.initState();
     final c = Get.find<PracticeController>();
     _selectedIncentiveProvider = c.defaultProvider;
     // Lánzalo después del frame para asegurar que el árbol está listo
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _loadData(_selectedIncentiveProvider));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      final authController = Get.find<AuthController>();
+      if (authController.user == null) {
+        await authController.refreshUser();
+      }
+      await _loadData(_selectedIncentiveProvider);
+      setState(() {
+        _isLoading = false;
+      });
+    });
   }
 
   Future<void> _loadData(provider) async {
     final c = Get.find<PracticeController>();
 
-    await c.getPractice('');
-    await c.getPracticeDetails(provider.id);
-    await c.getPanelDetails(provider.id);
-    // await c.mocListDetails(provider.id);
-    await c.getBonusDetails(provider.id);
-    await c.getSchedule(provider.id);
+    bool resPractice = await c.getPractice('');
+    if (!resPractice) return;
+
+    bool resDetails = await c.getPracticeDetails(provider.id);
+    if (!resDetails) return;
+
+    bool resPanel = await c.getPanelDetails(provider.id);
+    if (!resPanel) return;
+// await c.mocListDetails(provider.id);
+    bool resBonus = await c.getBonusDetails(provider.id);
+    if (!resBonus) return;
+
+    bool resSchedule = await c.getSchedule(provider.id);
+    if (!resSchedule) return;
 
     if (!mounted) return;
     setState(() {});
@@ -116,13 +110,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           child: ProviderDropdownWidget(
                             selectedProvider: _selectedIncentiveProvider,
                             providers: practiceController.practices,
-                            onProviderChanged: (provider) {
+                            onProviderChanged: (provider) async {
                               setState(() {
                                 _selectedIncentiveProvider = provider;
                               });
                               final c = Get.find<PracticeController>();
                               c.setProvider(provider);
-                              _loadData(provider);
+                              setState(() {
+                                _isLoading = true;
+                              });
+                              await _loadData(provider);
+                              setState(() {
+                                _isLoading = false;
+                              });
                               _showSuccessMessage(
                                   'Showing data for ${provider.name}');
                             },
@@ -174,6 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               // Logout Dialog
               if (_showLogoutDialog) _buildLogoutDialog(),
+              if (_isLoading) LoadingSpinner()
             ],
           ),
         ),
@@ -504,7 +505,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
                 maxY: maxY,
-                barTouchData: BarTouchData(enabled: false),
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    tooltipBgColor: Colors.black87,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      String lob;
+                      if (rodIndex == 0) {
+                        lob = 'EP';
+                      } else if (rodIndex == 1) {
+                        lob = 'MCD';
+                      } else {
+                        lob = 'MCR';
+                      }
+
+                      return BarTooltipItem(
+                        '$lob\n${rod.toY.toInt()}',
+                        const TextStyle(color: Colors.white, fontSize: 12),
+                      );
+                    },
+                  ),
+                ),
                 titlesData: FlTitlesData(
                   show: true,
                   rightTitles: const AxisTitles(

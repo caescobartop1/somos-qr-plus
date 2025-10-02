@@ -6,6 +6,7 @@ import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/provider.dart';
 import 'package:somos_qr_plus/widgets/provider_dropdown_widget.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
 import 'package:somos_qr_plus/models/invite.dart';
@@ -52,16 +53,35 @@ class _InvitationScreenState extends State<InvitationScreen>
     final c = Get.find<PracticeController>();
     _selectedIncentiveProvider = c.defaultProvider;
     // Lánzalo después del frame para asegurar que el árbol está listo
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _loadData(_selectedIncentiveProvider));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadData(_selectedIncentiveProvider);
+      setState(() {
+        _isLoading = false;
+      });
+    });
   }
 
   Future<void> _loadData(provider) async {
     final c = Get.find<PracticeController>();
-    await c.getPractice('');
-    await c.getInvitationRoles();
-    await c.getInvites(provider.id.toString(), _searchController.text);
-    await c.getProviderInvitations(provider.id.toString());
+    bool resPractice = await c.getPractice('');
+    if (!resPractice) return;
+
+    bool resMyInv = await c.getMyInvitations();
+    if (!resMyInv) return;
+
+    bool resRoles = await c.getInvitationRoles();
+    if (!resRoles) return;
+
+    bool resInvites =
+        await c.getInvites(provider.id.toString(), _searchController.text);
+    if (!resInvites) return;
+
+    bool resProviderInv =
+        await c.getProviderInvitations(provider.id.toString());
+    if (!resProviderInv) return;
     if (!mounted) return;
     setState(() {});
   }
@@ -133,16 +153,22 @@ class _InvitationScreenState extends State<InvitationScreen>
                                 child: ProviderDropdownWidget(
                                   selectedProvider: _selectedIncentiveProvider,
                                   providers: practiceController.practices,
-                                  onProviderChanged: (provider) {
+                                  onProviderChanged: (provider) async {
                                     setState(() {
                                       _selectedIncentiveProvider = provider;
                                     });
                                     final c = Get.find<PracticeController>();
                                     c.setProvider(provider);
-                                    c.getInvites(provider.id.toString(),
-                                        _searchController.text);
-                                    c.getProviderInvitations(
-                                        provider.id.toString());
+                                    bool resInvites = await c.getInvites(
+                                      provider.id.toString(),
+                                      _searchController.text,
+                                    );
+                                    if (!resInvites) return;
+
+                                    bool resProviderInvitations =
+                                        await c.getProviderInvitations(
+                                            provider.id.toString());
+                                    if (!resProviderInvitations) return;
                                     _showSuccessMessage(
                                         'Showing data for ${provider.name}');
                                   },
@@ -208,7 +234,13 @@ class _InvitationScreenState extends State<InvitationScreen>
                                                 minHeight: 20,
                                               ),
                                               child: Text(
-                                                '$_pendingInvitationsCount',
+                                                practiceController.myInvites
+                                                    .where((invite) =>
+                                                        invite.status
+                                                            .toLowerCase() ==
+                                                        'pending')
+                                                    .length
+                                                    .toString(),
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 12,
@@ -335,6 +367,7 @@ class _InvitationScreenState extends State<InvitationScreen>
                 },
                 activeRoute: 'invitation',
               ),
+              if (_isLoading) LoadingSpinner()
             ],
           ),
         ),
@@ -452,49 +485,49 @@ class _InvitationScreenState extends State<InvitationScreen>
                 ),
               ),
               const SizedBox(height: 16),
-
-              _buildFormField(
-                label: 'NPI',
-                child: DropdownButtonFormField<String>(
-                  value: _selectedNPI.isEmpty ? null : _selectedNPI,
-                  decoration: InputDecoration(
-                    hintText: 'Select a NPI',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+              if (_selectedRoleId != '5')
+                _buildFormField(
+                  label: 'NPI',
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedNPI.isEmpty ? null : _selectedNPI,
+                    decoration: InputDecoration(
+                      hintText: 'Select a NPI',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFF1976D2)),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 16),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFF1976D2)),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 16),
+                    items: c.npiList
+                        .map((npi) => DropdownMenuItem<String>(
+                              value: npi.npi, // valor que se enviará
+                              child: Text(
+                                  '${npi.npi} - ${npi.name}'), // texto visible
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedNPI = value ?? '';
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select a NPI';
+                      }
+                      return null;
+                    },
                   ),
-                  items: c.npiList
-                      .map((npi) => DropdownMenuItem<String>(
-                            value: npi.npi, // valor que se enviará
-                            child: Text(
-                                '${npi.npi} - ${npi.name}'), // texto visible
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedNPI = value ?? '';
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please select a NPI';
-                    }
-                    return null;
-                  },
                 ),
-              ),
-              const SizedBox(height: 16),
+              if (_selectedRoleId != '5') const SizedBox(height: 16),
 
               _buildFormField(
                 label: 'First Name',
@@ -782,7 +815,10 @@ class _InvitationScreenState extends State<InvitationScreen>
     final c = Get.find<PracticeController>();
 
     try {
-      await c.resendInvitation(id);
+      bool res = await c.resendInvitation(id);
+      if (!res) {
+        return;
+      }
 
       if (!mounted) return;
 
@@ -1063,25 +1099,31 @@ class _InvitationScreenState extends State<InvitationScreen>
 
       // ✅ Llama al método POST que creamos
       if (setEdit) {
-        await c.updateUserInvitation(
+        bool res = await c.updateUserInvitation(
             email: _emailController.text.trim(),
             firstName: _firstNameController.text.trim(),
             lastName: _lastNameController.text.trim(),
-            npi: _selectedNPI.trim(),
+            npi: _selectedRoleId != '5' ? _selectedNPI.trim() : '',
             phoneNumber: _phoneController.text.trim(),
             practiceId: practiceId,
             roleId: _selectedRoleId,
             invitationId: _selectedInvite?.id);
+        if (!res) {
+          return;
+        }
       } else {
-        await c.sendUserInvitation(
+        bool res = await c.sendUserInvitation(
           email: _emailController.text.trim(),
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
-          npi: _selectedNPI.trim(),
+          npi: _selectedRoleId != '5' ? _selectedNPI.trim() : '',
           phoneNumber: _phoneController.text.trim(),
           practiceId: practiceId,
           roleId: _selectedRoleId,
         );
+        if (!res) {
+          return;
+        }
       }
 
       if (mounted) {

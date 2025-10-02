@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/appt_list.dart';
 import 'package:somos_qr_plus/models/bonus_detail.dart';
@@ -13,7 +14,9 @@ import 'package:somos_qr_plus/models/invitation_role.dart';
 import 'package:somos_qr_plus/models/invite.dart';
 import 'package:somos_qr_plus/models/login_response.dart';
 import 'package:somos_qr_plus/models/mco.dart';
+import 'package:somos_qr_plus/models/mfa_method.dart';
 import 'package:somos_qr_plus/models/mwov_list.dart';
+import 'package:somos_qr_plus/models/my_invites.dart';
 import 'package:somos_qr_plus/models/notifications.dart';
 import 'package:somos_qr_plus/models/npi_response.dart';
 import 'package:somos_qr_plus/models/panel_detail.dart';
@@ -26,11 +29,14 @@ import 'package:somos_qr_plus/models/practice.dart';
 import 'package:somos_qr_plus/models/practice_details.dart';
 import 'package:somos_qr_plus/models/provider.dart';
 import 'package:somos_qr_plus/models/provider_schedule.dart';
+import 'package:somos_qr_plus/models/quality_measure.dart';
+import 'package:somos_qr_plus/models/quality_score.dart';
 import 'package:somos_qr_plus/models/ra_list.dart';
 import 'package:somos_qr_plus/models/report_kpi_gic.dart';
 import 'package:somos_qr_plus/models/schedule.dart';
 import 'package:somos_qr_plus/models/staff_login.dart';
 import 'package:somos_qr_plus/models/user.dart';
+import 'package:somos_qr_plus/models/user_settings.dart';
 import '../api/api_client.dart';
 import '../constants/app_constants.dart';
 
@@ -104,8 +110,25 @@ class PracticeController extends GetxController {
   List<NpiResponse> get npiList => _npiList;
   List<InvitationRole> _invitationRoles = [];
   List<InvitationRole> get invitationRoles => _invitationRoles;
+  List<MyInvite> _myInvites = [];
+  List<MyInvite> get myInvites => _myInvites;
+  List<MfaMethod> _mfaMethods = [];
+  List<MfaMethod> get mfaMethods => _mfaMethods;
+  UserSettings? _userSettings;
+  UserSettings? get userSettings => _userSettings;
+  List<QualityScore> _qualityScores = [];
+  List<QualityScore> get qualityScores => _qualityScores;
+  List<String> _mcoOptions = [];
+  List<String> get mcoOptions => _mcoOptions;
+  List<String> _productOptions = [];
+  List<String> get productOptions => _productOptions;
+  List<String> _lobOptions = [];
+  List<String> get lobOptions => _lobOptions;
+  List<QualityMeasure> _measureOptions = [];
+  List<QualityMeasure> get measureOptions => _measureOptions;
 
-  Future<void> getPractice(String search) async {
+  // Done
+  Future<bool> getPractice(String search) async {
     _isLoading = true;
     update();
 
@@ -142,6 +165,7 @@ class PracticeController extends GetxController {
       }
       _practices = practices;
       update();
+      return true;
     } else {
       final message = response.body['detail'];
       Get.snackbar(
@@ -154,12 +178,12 @@ class PracticeController extends GetxController {
         borderRadius: 8,
         icon: const Icon(Icons.error, color: Colors.white),
       );
-    }
 
-    _isLoading = false;
-    update();
+      return false;
+    }
   }
 
+  // Done
   Future<void> getNotifications() async {
     // _isLoading = true;
     // update();
@@ -184,6 +208,9 @@ class PracticeController extends GetxController {
 
       update();
     } else {
+      if (response.statusCode == 401) {
+        return;
+      }
       final message = response.body['detail'];
       Get.snackbar(
         'Error',
@@ -201,7 +228,8 @@ class PracticeController extends GetxController {
     // update();
   }
 
-  Future<void> getPracticeDetails(String? practice_id) async {
+// Done
+  Future<bool> getPracticeDetails(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -225,6 +253,7 @@ class PracticeController extends GetxController {
         _practiceDetails = PracticeDetails.empty();
       }
       update();
+      return true;
 
       // Opcional: logs
       // print("PracticeDetails: ${practiceDetails.toJson()}");
@@ -240,13 +269,12 @@ class PracticeController extends GetxController {
         borderRadius: 8,
         icon: const Icon(Icons.error, color: Colors.white),
       );
+      return false;
     }
-
-    _isLoading = false;
-    update();
   }
 
-  Future<void> getPanelDetails(String? practice_id) async {
+// Done
+  Future<bool> getPanelDetails(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -266,6 +294,7 @@ class PracticeController extends GetxController {
           .map((e) => PanelDetail.fromJson(e as Map<String, dynamic>))
           .toList();
       update();
+      return true;
     } else {
       final message = response.body['detail'];
       Get.snackbar(
@@ -278,13 +307,12 @@ class PracticeController extends GetxController {
         borderRadius: 8,
         icon: const Icon(Icons.error, color: Colors.white),
       );
+      return false;
     }
-
-    _isLoading = false;
-    update();
   }
 
-  Future<void> mocListDetails(String? practice_id) async {
+// Done
+  Future<bool> mocListDetails(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -305,6 +333,7 @@ class PracticeController extends GetxController {
       //     .map((e) => PanelDetail.fromJson(e as Map<String, dynamic>))
       //     .toList();
       // update();
+      return true;
     } else {
       final message = response.body['detail'];
       Get.snackbar(
@@ -319,11 +348,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getBonusDetails(String? practice_id) async {
+// Done
+  Future<bool> getBonusDetails(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -346,6 +375,7 @@ class PracticeController extends GetxController {
           .map((e) => BonusDetail.fromJson(e as Map<String, dynamic>))
           .toList();
       update();
+      return true;
     } else {
       final message = response.body['detail'];
       Get.snackbar(
@@ -358,13 +388,12 @@ class PracticeController extends GetxController {
         borderRadius: 8,
         icon: const Icon(Icons.error, color: Colors.white),
       );
+      return false;
     }
-
-    _isLoading = false;
-    update();
   }
 
-  Future<void> getSchedule(String? practice_id) async {
+// Done
+  Future<bool> getSchedule(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -400,6 +429,7 @@ class PracticeController extends GetxController {
         _scheduleDetails = results.map((e) => Schedule.fromJson(e)).toList();
         print(_scheduleDetails.length);
         update();
+        return true;
       } catch (e) {
         print('hola aca e!!!');
         print(e);
@@ -417,12 +447,11 @@ class PracticeController extends GetxController {
         icon: const Icon(Icons.error, color: Colors.white),
       );
     }
-
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getScheduleForScreen(
+// Done
+  Future<bool> getScheduleForScreen(
     String? practiceId, {
     DateTime? startDate,
     DateTime? endDate,
@@ -478,6 +507,7 @@ class PracticeController extends GetxController {
         _scheduleDetailsForPage =
             results.map((e) => Schedule.fromJson(e)).toList();
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -495,11 +525,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getMco(String? practiceId) async {
+// Done
+  Future<bool> getMco(String? practiceId) async {
     _isLoading = true;
     update();
 
@@ -521,6 +551,7 @@ class PracticeController extends GetxController {
         final results = data['results'] as List<dynamic>;
         _mcoList = results.map((e) => Mco.fromJson(e)).toList();
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -538,11 +569,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getProvider(String? practiceId) async {
+// Done
+  Future<bool> getProvider(String? practiceId) async {
     _isLoading = true;
     update();
 
@@ -566,6 +597,7 @@ class PracticeController extends GetxController {
             results.map((e) => ProviderSchedule.fromJson(e)).toList();
 
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -583,11 +615,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getPatients(String? practiceId,
+// Done
+  Future<bool> getPatients(String? practiceId,
       {String? dob,
       String? provider,
       String? status,
@@ -607,6 +639,8 @@ class PracticeController extends GetxController {
       query["provider_id"] = provider;
     }
     if (mco != null && mco.isNotEmpty) {
+      print('hola aca!');
+      print(mco);
       query["mco_id"] = mco;
     }
     if (dob != null && dob.isNotEmpty) {
@@ -631,6 +665,8 @@ class PracticeController extends GetxController {
         final List<dynamic> results = body['results'] ?? [];
 
         _patients = results.map((e) => Patient.fromJson(e)).toList();
+        update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -648,10 +684,10 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
+// Done
   Future<void> walkIn(String? practiceId,
       {String? patientId, String? provider}) async {
     _isLoading = true;
@@ -691,7 +727,8 @@ class PracticeController extends GetxController {
     update();
   }
 
-  Future<void> getPocketQuality(
+// Done
+  Future<bool> getPocketQuality(
       String? categoryParentId, String? search) async {
     _isLoading = true;
     update();
@@ -766,6 +803,7 @@ class PracticeController extends GetxController {
         }
 
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -783,11 +821,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getPocketRa(String? search) async {
+// Done
+  Future<bool> getPocketRa(String? search) async {
     _isLoading = true;
     update();
 
@@ -816,8 +854,8 @@ class PracticeController extends GetxController {
             .map(
                 (item) => PocketRaParent.fromJson(item as Map<String, dynamic>))
             .toList();
-
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -835,11 +873,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getReportKpiGic(String? practice_id) async {
+// Done
+  Future<bool> getReportKpiGic(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -872,6 +910,7 @@ class PracticeController extends GetxController {
         }
 
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -889,11 +928,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getReportKpiGicList(String? practice_id,
+// Done
+  Future<bool> getReportKpiGicList(String? practice_id,
       {String? member_name,
       String? mco_name,
       String? dob,
@@ -913,7 +952,7 @@ class PracticeController extends GetxController {
     if (member_name != null && member_name.isNotEmpty) {
       query['member_name__icontains'] = member_name;
     }
-    if (mco_name != null && mco_name.isNotEmpty) {
+    if (mco_name != null && mco_name.isNotEmpty && mco_name != 'all') {
       query['mco_name__icontains'] = mco_name;
     }
     if (dob != null && dob.isNotEmpty) {
@@ -944,6 +983,8 @@ class PracticeController extends GetxController {
         final data = response.body;
         final List<GicList> results = GicList.listFromJson(data);
         _gicList = results;
+        update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -961,10 +1002,10 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
+// Done
   Future<void> getReportKpiRaList(String? practiceId,
       {String? memberName,
       String? mcoName,
@@ -986,7 +1027,7 @@ class PracticeController extends GetxController {
     if (memberName != null && memberName.isNotEmpty) {
       query['member_name__icontains'] = memberName;
     }
-    if (mcoName != null && mcoName.isNotEmpty) {
+    if (mcoName != null && mcoName.isNotEmpty && mcoName != 'all') {
       query['mco_name__icontains'] = mcoName;
     }
     if (dob != null && dob.isNotEmpty) {
@@ -1038,7 +1079,8 @@ class PracticeController extends GetxController {
     update();
   }
 
-  Future<void> getReportKpiApptList(String? practiceId,
+// Done
+  Future<bool> getReportKpiApptList(String? practiceId,
       {String? memberName,
       String? mcoName,
       String? dob,
@@ -1094,6 +1136,7 @@ class PracticeController extends GetxController {
         _apptList = apptList;
         print(_apptList.length);
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos RA: $e');
       }
@@ -1111,11 +1154,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getReportKpiMwovList(String? practiceId,
+// Done
+  Future<bool> getReportKpiMwovList(String? practiceId,
       {String? memberName,
       String? mcoName,
       String? dob,
@@ -1162,6 +1205,7 @@ class PracticeController extends GetxController {
         final data = response.body;
         _mwovList = MWOVList.listFromJson(data);
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos MWOV: $e');
       }
@@ -1179,11 +1223,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getReportKpiLastLogin(String? practice_id) async {
+// Done
+  Future<bool> getReportKpiLastLogin(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -1213,6 +1257,7 @@ class PracticeController extends GetxController {
             .map((e) => StaffLogin.fromJson(e as Map<String, dynamic>))
             .toList();
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -1230,11 +1275,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getReportKpiRa(String? practice_id) async {
+// Done
+  Future<bool> getReportKpiRa(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -1267,6 +1312,7 @@ class PracticeController extends GetxController {
         }
 
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -1284,11 +1330,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getReportKpiAppt(String? practice_id) async {
+// Done
+  Future<bool> getReportKpiAppt(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -1321,6 +1367,7 @@ class PracticeController extends GetxController {
         }
 
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -1338,11 +1385,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getReportKpiMWOV(String? practice_id) async {
+// Done
+  Future<bool> getReportKpiMWOV(String? practice_id) async {
     _isLoading = true;
     update();
 
@@ -1375,6 +1422,7 @@ class PracticeController extends GetxController {
         }
 
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -1392,11 +1440,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getPatient(String patientId, String practice_id) async {
+// Done
+  Future<bool> getPatient(String patientId, String practice_id) async {
     _isLoading = true;
     update();
 
@@ -1416,6 +1464,7 @@ class PracticeController extends GetxController {
         final data = response.body;
         _patient = PatientResponse.fromJson(data);
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -1433,11 +1482,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getPatientGap(String patientId) async {
+// Done
+  Future<bool> getPatientGap(String patientId) async {
     _isLoading = true;
     update();
 
@@ -1461,6 +1510,7 @@ class PracticeController extends GetxController {
             .map((e) => PatientGap.fromJson(e as Map<String, dynamic>))
             .toList();
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -1478,11 +1528,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getPatientPatology(String patientId) async {
+// Done
+  Future<bool> getPatientPatology(String patientId) async {
     _isLoading = true;
     update();
 
@@ -1507,6 +1557,7 @@ class PracticeController extends GetxController {
             .map((e) => PatientPatology.fromJson(e as Map<String, dynamic>))
             .toList();
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -1524,11 +1575,11 @@ class PracticeController extends GetxController {
       );
     }
 
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getInvites(String practiceId, String? search) async {
+// Done
+  Future<bool> getInvites(String practiceId, String? search) async {
     _isLoading = true;
     update();
 
@@ -1551,6 +1602,7 @@ class PracticeController extends GetxController {
         _invites = Invite.listFromJson(results);
 
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -1567,11 +1619,10 @@ class PracticeController extends GetxController {
         icon: const Icon(Icons.error, color: Colors.white),
       );
     }
-
-    _isLoading = false;
-    update();
+    return false;
   }
 
+// Done
   Future<void> updatePatientGaps(bool value, int index, int gap_id,
       String practice_id, String selected_provider) async {
     if (index < 0 || index >= _patientGaps.length) return;
@@ -1613,6 +1664,7 @@ class PracticeController extends GetxController {
     }
   }
 
+// Done
   Future<void> updatePatientPatologyField({
     required bool value,
     required int index,
@@ -1685,6 +1737,7 @@ class PracticeController extends GetxController {
     }
   }
 
+// Done
   Future<void> updateStatusVisit(
       {required int patientId,
       required String? practiceId,
@@ -1748,7 +1801,8 @@ class PracticeController extends GetxController {
     update();
   }
 
-  Future<void> sendUserInvitation({
+// Done
+  Future<bool> sendUserInvitation({
     required String email,
     required String firstName,
     required String lastName,
@@ -1760,18 +1814,21 @@ class PracticeController extends GetxController {
     // ✅ Validación de practiceId
     if (practiceId == '-1') {
       print('⚠️ practiceId es -1, manejar caso especial aquí');
-      return;
+      return false;
     }
 
     final body = {
       "email": email,
       "first_name": firstName,
       "last_name": lastName,
-      "npi": npi,
       "phone_number": phoneNumber,
       "practice_id": practiceId,
       "role_id": roleId,
     };
+
+    if (npi.isNotEmpty) {
+      body["npi"] = npi;
+    }
     final query = <String, String>{"app_key": AppConstants.appKey};
 
     final response = await apiClient.postData(
@@ -1782,6 +1839,7 @@ class PracticeController extends GetxController {
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
     } else {
       final message = response.body['detail'] ?? response.body['error'];
       Get.snackbar(
@@ -1794,11 +1852,12 @@ class PracticeController extends GetxController {
         borderRadius: 8,
         icon: const Icon(Icons.error, color: Colors.white),
       );
+      return false;
     }
-    update();
   }
 
-  Future<void> updateUserInvitation(
+// Done
+  Future<bool> updateUserInvitation(
       {required String email,
       required String firstName,
       required String lastName,
@@ -1810,7 +1869,7 @@ class PracticeController extends GetxController {
     // ✅ Validación de practiceId
     if (practiceId == '-1') {
       print('⚠️ practiceId es -1, manejar caso especial aquí');
-      return;
+      return false;
     }
 
     final body = {
@@ -1832,11 +1891,12 @@ class PracticeController extends GetxController {
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
     } else {
       final message = response.body['detail'] ?? response.body['error'];
       Get.snackbar(
         'Error',
-        message ?? 'Failed to create invitation',
+        message ?? 'Failed to edit invitation',
         backgroundColor: Colors.red.shade600,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -1846,9 +1906,11 @@ class PracticeController extends GetxController {
       );
     }
     update();
+    return false;
   }
 
-  Future<void> resendInvitation(int invitationId) async {
+// Done
+  Future<bool> resendInvitation(int invitationId) async {
     _isLoading = true;
     update();
 
@@ -1860,6 +1922,7 @@ class PracticeController extends GetxController {
           await apiClient.postData(url, {}, useApi: true, queryParams: query);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
       } else {
         final message = response.body['detail'];
         Get.snackbar(
@@ -1877,13 +1940,12 @@ class PracticeController extends GetxController {
         backgroundColor: Colors.red.shade600,
         colorText: Colors.white,
       );
-    } finally {
-      _isLoading = false;
-      update();
     }
+    return false;
   }
 
-  Future<void> getInvitationRoles() async {
+// Done
+  Future<bool> getInvitationRoles() async {
     _isLoading = true;
     update();
 
@@ -1904,6 +1966,7 @@ class PracticeController extends GetxController {
         _invitationRoles = InvitationRole.listFromJson(results);
         print(_invitationRoles.length);
         update();
+        return true;
       } catch (e) {
         print('Error parseando roles de invitación: $e');
       }
@@ -1920,12 +1983,11 @@ class PracticeController extends GetxController {
         icon: const Icon(Icons.error, color: Colors.white),
       );
     }
-
-    _isLoading = false;
-    update();
+    return false;
   }
 
-  Future<void> getProviderInvitations(String practiceId) async {
+// Done
+  Future<bool> getProviderInvitations(String practiceId) async {
     final query = <String, String>{
       "practice_id": practiceId,
       "app_key": AppConstants.appKey
@@ -1946,6 +2008,7 @@ class PracticeController extends GetxController {
         print(results.length);
         _npiList = NpiResponse.listFromJson(results);
         update();
+        return true;
       } catch (e) {
         print('❌ Error parseando provider invitations: $e');
       }
@@ -1962,9 +2025,11 @@ class PracticeController extends GetxController {
         icon: const Icon(Icons.error, color: Colors.white),
       );
     }
+    return false;
   }
 
-  Future<void> getUserManagement(String practiceId) async {
+// Done
+  Future<bool> getUserManagement(String practiceId) async {
     final query = <String, String>{
       "practice_id": practiceId,
       "app_key": AppConstants.appKey,
@@ -1990,6 +2055,7 @@ class PracticeController extends GetxController {
             .map((e) => StaffLogin.fromJson(e as Map<String, dynamic>))
             .toList();
         update();
+        return true;
       } catch (e) {
         print('Error parseando datos: $e');
       }
@@ -2006,9 +2072,10 @@ class PracticeController extends GetxController {
         icon: const Icon(Icons.error, color: Colors.white),
       );
     }
+    return false;
   }
 
-  // 🔹 Desactivar una cuenta de usuario
+  // Done
   Future<void> disableUserAccount({
     required int userId,
     required String practiceId,
@@ -2052,7 +2119,7 @@ class PracticeController extends GetxController {
     }
   }
 
-// 🔹 Activar una cuenta de usuario
+// Done
   Future<void> enableUserAccount({
     required int userId,
     required String practiceId,
@@ -2096,7 +2163,8 @@ class PracticeController extends GetxController {
     }
   }
 
-  Future<void> changeUserRole({
+// Done
+  Future<bool> changeUserRole({
     required int userId,
     required String practiceId,
     required int newRoleId,
@@ -2105,7 +2173,7 @@ class PracticeController extends GetxController {
     // Si no hay práctica válida, haz un print para debug
     if (practiceId == '-1') {
       print('⚠️ No practice selected, cannot change role');
-      return;
+      return false;
     }
 
     final url = '${AppConstants.reportStaffLogin}$userId/change_role/';
@@ -2127,8 +2195,7 @@ class PracticeController extends GetxController {
       print('✅ Role changed successfully for user $userId to role $newRoleId');
       _usersAccounts = _usersAccounts.map((u) {
         if (u.id == userId) {
-          print(userId);
-          print(u.userId);
+          print('hola aca lo encontro!');
           return StaffLogin(
             id: u.id,
             fullName: u.fullName,
@@ -2153,12 +2220,529 @@ class PracticeController extends GetxController {
       }).toList();
 
       update();
+      return true;
     } else {
       final message = response.body['detail'];
       print('❌ Error changing role: $message');
       Get.snackbar(
         'Error',
         message ?? 'Failed to change role',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+    return false;
+  }
+
+// Done
+  Future<bool> getMyInvitations() async {
+    final response = await apiClient.getData(
+      AppConstants.myInvites,
+      useApi: true,
+      query: {
+        "app_key": AppConstants.appKey,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+        final List<dynamic> results =
+            data is List ? data : (data['results'] ?? []);
+        _myInvites = MyInvite.listFromJson(results);
+        update();
+        return true;
+      } catch (e) {
+        print('❌ Error parsing my invitations: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to fetch my invitations',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+    return false;
+  }
+
+// Done
+  Future<bool> acceptInvitation(int invitationId) async {
+    final url = '/accounts/my_invitations/$invitationId/accept/';
+    try {
+      final response = await apiClient.postData(
+        url,
+        {}, // No requiere body
+        queryParams: {'app_key': AppConstants.appKey},
+        useApi: true,
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Invitación $invitationId aceptada correctamente');
+        // Si deseas refrescar las invitaciones:
+        await getMyInvitations();
+        update();
+        return true;
+      } else {
+        final message = response.body['detail'];
+        print('❌ Error aceptando invitación: $message');
+        Get.snackbar(
+          'Error',
+          message ?? 'Failed to accept invitation',
+          backgroundColor: Colors.red.shade600,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 8,
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
+      }
+    } catch (e) {
+      print('❌ Excepción al aceptar invitación: $e');
+      Get.snackbar(
+        'Error',
+        'Unexpected error while accepting invitation',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+      );
+    }
+    return false;
+  }
+
+// Done
+  Future<bool> denyInvitation(int invitationId) async {
+    final url = '/accounts/my_invitations/$invitationId/deny/';
+    try {
+      final response = await apiClient.postData(
+        url,
+        {}, // No requiere body
+        queryParams: {'app_key': AppConstants.appKey},
+        useApi: true,
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Invitación $invitationId rechazada correctamente');
+        // Si deseas refrescar las invitaciones:
+        await getMyInvitations();
+        update();
+        return true;
+      } else {
+        final message = response.body['detail'];
+        print('❌ Error rechazando invitación: $message');
+        Get.snackbar(
+          'Error',
+          message ?? 'Failed to deny invitation',
+          backgroundColor: Colors.red.shade600,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 8,
+          icon: const Icon(Icons.error, color: Colors.white),
+        );
+      }
+    } catch (e) {
+      print('❌ Excepción al rechazar invitación: $e');
+      Get.snackbar(
+        'Error',
+        'Unexpected error while denying invitation',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+      );
+    }
+    return false;
+  }
+
+// Done
+  Future<void> getMfaMethods() async {
+    final response = await apiClient.getData(
+      '/security/mfa_setup/', // Ajusta si tu endpoint exacto es distinto
+      query: {'app_key': AppConstants.appKey},
+      useApi: false,
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final data = response.body;
+        final List<dynamic> results =
+            data is List ? data : (data['results'] ?? []);
+
+        _mfaMethods = MfaMethod.listFromJson(results);
+        update();
+      } catch (e) {
+        print('Error parseando métodos MFA: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to fetch MFA methods',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+// Done
+  Future<void> getUserSettings() async {
+    final response = await apiClient.getData(
+      '/security/user_settings/',
+      query: {'app_key': AppConstants.appKey},
+      useApi: false,
+    );
+
+    if (response.statusCode == 200) {
+      try {
+        final body = response.body;
+        final List<dynamic> results =
+            body is List ? body : (body['results'] ?? []);
+        if (results.isNotEmpty) {
+          _userSettings = UserSettings.fromJson(results.first);
+          update();
+        }
+      } catch (e) {
+        print('Error parseando user settings: $e');
+      }
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to fetch user settings',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+  String _getRefreshKeySuffix(int mfaId) {
+    final m = mfaMethods.firstWhereOrNull((x) => x.id == mfaId);
+    if (m == null) return 'unknown';
+
+    switch (m.code.toUpperCase()) {
+      case 'FACEID':
+        return 'faceId';
+      case 'AUTHENTICATOR':
+        return 'authenticator';
+      case 'OTP':
+        return 'otp';
+      case 'TOUCHID':
+        return 'biometric';
+      default:
+        return m.code.toLowerCase();
+    }
+  }
+
+// Done
+  Future<bool> updateUserMfa(int userSettingsId, int newMfaId) async {
+    final url = '/security/user_settings/$userSettingsId/';
+    final body = {'mfa_id': newMfaId};
+
+    final response = await apiClient.patchData(
+      url,
+      body,
+      queryParams: {'app_key': AppConstants.appKey},
+      useApi: false,
+    );
+
+    if (response.statusCode == 200) {
+      // Actualizar el objeto userSettings local
+      if (_userSettings != null) {
+        _userSettings = _userSettings!.copyWith(mfaId: newMfaId);
+      }
+      final prefs = await SharedPreferences.getInstance();
+      String refreshToken =
+          sharedPreferences.getString(AppConstants.refreshToken) ?? '';
+
+      String sufix = _getRefreshKeySuffix(newMfaId);
+      print(sufix);
+      await prefs.setString(
+        'refresh_method',
+        sufix,
+      );
+      if (sufix == 'faceId' || sufix == 'biometric') {
+        await prefs.setString(
+          'refresh_biometric',
+          refreshToken,
+        );
+      }
+      update();
+      return true;
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to update MFA method',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+    return false;
+  }
+
+// Done
+  Future<Map<String, dynamic>?> getAuthenticatorUrl(int userId) async {
+    final response = await apiClient.postData(
+      '/security/user_settings/$userId/authenticator/',
+      {},
+      queryParams: {'app_key': AppConstants.appKey},
+      useApi: false,
+    );
+
+    if (response.statusCode == 200) {
+      return response.body;
+    } else {
+      final msg = response.body['detail'] ?? 'Failed to get authenticator data';
+      Get.snackbar(
+        'Error',
+        msg,
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+      );
+      return null;
+    }
+  }
+
+  void reset() {
+    _isLoading = false;
+
+    _defaultProvider = Provider(name: 'All', id: '-1');
+    _practices = [];
+    _panelDetails = [];
+    _bonusDetails = [];
+    _scheduleDetails = [];
+    _scheduleDetailsForPage = [];
+    _practiceDetails = PracticeDetails.empty();
+
+    _notifications = [];
+    _mcoList = [];
+    _providerList = [];
+    _pocketGuides = [];
+    _pocketRaList = [];
+    _patients = [];
+    _reportKpiGic = null;
+    _reportKpiRA = null;
+    _reportKpiAPPT = null;
+    _reportKpiMWOV = null;
+
+    _patient = null;
+    _patientGaps = [];
+    _patientPatologies = [];
+    _staffLogins = [];
+    _usersAccounts = [];
+    _gicList = [];
+    _raList = [];
+    _apptList = [];
+    _mwovList = [];
+    _invites = [];
+    _npiList = [];
+    _invitationRoles = [];
+    _myInvites = [];
+    _mfaMethods = [];
+    _userSettings = null;
+    _qualityScores = [];
+    _mcoOptions = [];
+    _productOptions = [];
+    _lobOptions = [];
+    _measureOptions = [];
+
+    update();
+  }
+
+  Future<void> getQuality(String? practiceId,
+      {String? product, String? mco, String? lob, String? measure}) async {
+    if (practiceId == null || practiceId == '-1' || practiceId == 'all') {
+      Get.snackbar(
+        'Error',
+        'Must select a practice',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+      return;
+    }
+    final query = {
+      'app_key': AppConstants.appKey,
+      'practice_id': practiceId,
+      'limit': '100',
+      'offset': '0'
+    };
+
+    if (product != null && product.isNotEmpty) {
+      query["product"] = product;
+    }
+    if (mco != null && mco.isNotEmpty) {
+      query["mco"] = mco;
+    }
+    if (lob != null && lob.isNotEmpty) {
+      query["line_of_business"] = lob;
+    }
+    if (measure != null && measure.isNotEmpty) {
+      query["measure_code"] = measure;
+    }
+    final response = await apiClient.getData(
+      '/catalog/app_quality_score/',
+      query: query,
+      useApi: true,
+    );
+
+    if (response.statusCode == 200) {
+      final results = response.body['results'] as List<dynamic>;
+      _qualityScores =
+          results.map((json) => QualityScore.fromJson(json)).toList();
+      update();
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to fetch quality score',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+  Future<void> getQualityMco(String? practiceId) async {
+    if (practiceId == '-1') {
+      _mcoOptions = [];
+    } else {
+      await _fetchQualityFilter(practiceId, 'mco', (results) {
+        _mcoOptions = results;
+      });
+    }
+    update();
+  }
+
+  Future<void> getQualityProduct(String? practiceId) async {
+    if (practiceId == '-1') {
+      _productOptions = [];
+    } else {
+      await _fetchQualityFilter(practiceId, 'product', (results) {
+        _productOptions = results;
+      });
+    }
+    update();
+  }
+
+  Future<void> getQualityLob(String? practiceId) async {
+    if (practiceId == '-1') {
+      _lobOptions = [];
+    } else {
+      await _fetchQualityFilter(practiceId, 'line_of_business', (results) {
+        _lobOptions = results;
+      });
+    }
+    update();
+  }
+
+  Future<void> getQualityMeasure(String? practiceId) async {
+    if (practiceId == null || practiceId == '-1' || practiceId == 'all') {
+      _measureOptions = [];
+      return;
+    }
+
+    final response = await apiClient.getData(
+      '/catalog/app_quality_filters/',
+      query: {
+        'app_key': AppConstants.appKey,
+        'practice_id': practiceId,
+        'limit': '100',
+        'offset': '0',
+        'type': 'measure',
+      },
+      useApi: true,
+    );
+
+    if (response.statusCode == 200) {
+      final body = response.body;
+      final List<dynamic> results =
+          body is List ? body : (body['results'] ?? []);
+      _measureOptions = results
+          .map((item) => QualityMeasure.fromJson(item as Map<String, dynamic>))
+          .toList();
+      update();
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to fetch measure filters',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+    }
+  }
+
+  Future<void> _fetchQualityFilter(
+    String? practiceId,
+    String type,
+    Function(List<String>) onSuccess,
+  ) async {
+    if (practiceId == null || practiceId == '-1' || practiceId == 'all') {
+      Get.snackbar(
+        'Error',
+        'Must select a practice',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 8,
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+      return;
+    }
+
+    final response = await apiClient.getData(
+      '/catalog/app_quality_filters/',
+      query: {
+        'app_key': AppConstants.appKey,
+        'practice_id': practiceId,
+        'limit': '100',
+        'offset': '0',
+        'type': type,
+      },
+      useApi: true,
+    );
+
+    if (response.statusCode == 200) {
+      final results = (response.body['results'] as List<dynamic>)
+          .map((e) => e.toString())
+          .toList();
+      onSuccess(results);
+    } else {
+      final message = response.body['detail'];
+      Get.snackbar(
+        'Error',
+        message ?? 'Failed to fetch $type filters',
         backgroundColor: Colors.red.shade600,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,

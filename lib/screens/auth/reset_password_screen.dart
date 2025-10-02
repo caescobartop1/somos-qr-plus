@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -106,20 +107,23 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
               ],
             ),
           ),
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: _buildResetPasswordCard(authController),
+          child: Stack(children: [
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: _buildResetPasswordCard(authController),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+            if (_isLoading) LoadingSpinner()
+          ]),
         );
       }),
     );
@@ -552,7 +556,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       child: ElevatedButton(
         onPressed: _isLoading
             ? null
-            : () {
+            : () async {
                 if (!_formKey.currentState!.validate()) {
                   return;
                 }
@@ -597,10 +601,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                   );
                   return;
                 }
-                authController.confirmForgotPassword(
+                setState(() {
+                  _isLoading = true;
+                });
+                await authController.confirmForgotPassword(
                     _newPasswordController.text,
                     _confirmPasswordController.text,
                     otp);
+                setState(() {
+                  _isLoading = false;
+                });
               },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1976D2),
@@ -695,59 +705,5 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     }
 
     setState(() {});
-  }
-
-  Future<void> _handlePasswordReset() async {
-    // Validate OTP
-    final otp = _otpControllers.map((controller) => controller.text).join('');
-    if (otp.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter the complete verification code'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 1500));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password reset successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Navigate to login page
-        context.go('/login');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Password reset failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 }

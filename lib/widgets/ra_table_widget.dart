@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 
 class RATableWidget extends StatefulWidget {
   final String practice_id;
@@ -15,6 +17,7 @@ class _RATableWidgetState extends State<RATableWidget> {
   List<RAPatient> _filteredPatients = [];
   String _sortColumn = 'name';
   bool _sortAscending = true;
+  bool _isLoading = false;
 
   // Pagination
   int _currentPage = 1;
@@ -32,7 +35,15 @@ class _RATableWidgetState extends State<RATableWidget> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPatients());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadPatients();
+      setState(() {
+        _isLoading = false;
+      });
+    });
   }
 
   Future<void> _loadPatients() async {
@@ -73,8 +84,14 @@ class _RATableWidgetState extends State<RATableWidget> {
     });
   }
 
-  void _applyFilters() {
-    _loadPatients();
+  Future<void> _applyFilters() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await _loadPatients();
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   List<RAPatient> get _paginatedPatients {
@@ -154,193 +171,210 @@ class _RATableWidgetState extends State<RATableWidget> {
           padding = 12;
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Stack(
           children: [
-            // Table Header
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(padding),
-              decoration: BoxDecoration(
-                color: const Color(0xFFf8f9fa),
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'RA Detailed Report',
-                      style: TextStyle(
-                        fontSize: fontSize + 2,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF333333),
-                      ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Table Header
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(padding),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFf8f9fa),
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
-                  // IconButton(
-                  //   onPressed: () {
-                  //     // Export functionality - silent for now
-                  //   },
-                  //   icon: const Icon(Icons.file_download, size: 20),
-                  //   tooltip: 'Export',
-                  // ),
-                ],
-              ),
-            ),
-
-            // Filter Row
-            Container(
-              padding: EdgeInsets.all(padding),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Column(
-                children: [
-                  // First row of filters - 3 columns for better fit
-                  Row(
+                  child: Row(
                     children: [
                       Expanded(
-                        child: _buildFilterField(
-                          controller: _nameFilterController,
-                          hint: 'Name...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterDropdown(
-                          value: _mcoFilter,
-                          items: [
-                            'all',
-                            ...c.mcoList.map((mco) => mco.mcoName),
-                          ],
-                          hint: 'MCO',
-                          onChanged: (value) {
-                            _mcoFilter = value ?? '';
-                            _applyFilters();
-                          },
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _dobFilterController,
-                          hint: 'DOB...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: padding),
-                  // Second row of filters - 3 columns for better fit
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _hccFilterController,
-                          hint: 'HCC/ICD10...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterDropdown(
-                          value: _statusFilter,
-                          items: ['', 'Completed', 'Open'],
-                          hint: 'Status',
-                          onChanged: (value) {
-                            _statusFilter = value ?? '';
-                            _applyFilters();
-                          },
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _dosFilterController,
-                          hint: 'DOS...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: padding),
-                  // Third row of filters - 1 column for phone
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _phoneFilterController,
-                          hint: 'Phone...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Table
-            Expanded(
-              child: Column(
-                children: [
-                  // Table with horizontal scroll
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SingleChildScrollView(
-                        child: DataTable(
-                          columnSpacing: padding * 2,
-                          dataTextStyle: TextStyle(fontSize: fontSize),
-                          headingTextStyle: TextStyle(
-                            fontSize: fontSize,
+                        child: Text(
+                          'RA Detailed Report',
+                          style: TextStyle(
+                            fontSize: fontSize + 2,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF333333),
                           ),
-                          columns: [
-                            _buildDataColumn('NAME', 'name', fontSize),
-                            _buildDataColumn('MCO', 'mco', fontSize),
-                            _buildDataColumn('DOB', 'dob', fontSize),
-                            _buildDataColumn('HCC/ICD10', 'hccIcd10', fontSize),
-                            _buildDataColumn('STATUS', 'status', fontSize),
-                            _buildDataColumn('LAST DOS', 'lastDos', fontSize),
-                            _buildDataColumn('PHONE', 'phone', fontSize),
-                          ],
-                          rows: _paginatedPatients.map((patient) {
-                            return DataRow(
-                              cells: [
-                                DataCell(Text(patient.name)),
-                                DataCell(Text(patient.mco)),
-                                DataCell(Text(patient.dob)),
-                                DataCell(Text(patient.hccIcd10.isEmpty
-                                    ? '-'
-                                    : patient.hccIcd10)),
-                                DataCell(Text(patient.status)),
-                                DataCell(Text(patient.lastDos.isEmpty
-                                    ? '-'
-                                    : patient.lastDos)),
-                                DataCell(Text(patient.phone)),
-                              ],
-                            );
-                          }).toList(),
                         ),
                       ),
-                    ),
+                      // IconButton(
+                      //   onPressed: () {
+                      //     // Export functionality - silent for now
+                      //   },
+                      //   icon: const Icon(Icons.file_download, size: 20),
+                      //   tooltip: 'Export',
+                      // ),
+                    ],
                   ),
-                  // Pagination Controls
-                  const SizedBox(height: 16),
-                  _buildPaginationControls(),
-                ],
-              ),
+                ),
+
+                // Filter Row
+                Container(
+                  padding: EdgeInsets.all(padding),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border:
+                        Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                  ),
+                  child: Column(
+                    children: [
+                      // First row of filters - 3 columns for better fit
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _nameFilterController,
+                              hint: 'Name...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterDropdown(
+                              value: _mcoFilter,
+                              items: [
+                                'all',
+                                ...c.mcoList.map((mco) => mco.mcoName),
+                              ],
+                              hint: 'MCO',
+                              onChanged: (value) {
+                                _mcoFilter = value ?? '';
+                                _applyFilters();
+                              },
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _dobFilterController,
+                              hint: 'DOB...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: padding),
+                      // Second row of filters - 3 columns for better fit
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _hccFilterController,
+                              hint: 'HCC/ICD10...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterDropdown(
+                              value: _statusFilter,
+                              items: ['', 'Completed', 'Open'],
+                              hint: 'Status',
+                              onChanged: (value) {
+                                _statusFilter = value ?? '';
+                                _applyFilters();
+                              },
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _dosFilterController,
+                              hint: 'DOS...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: padding),
+                      // Third row of filters - 1 column for phone
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _phoneFilterController,
+                              hint: 'Phone...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Table
+                Expanded(
+                  child: Column(
+                    children: [
+                      // Table with horizontal scroll
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SingleChildScrollView(
+                            child: DataTable(
+                              columnSpacing: padding * 2,
+                              dataTextStyle: TextStyle(fontSize: fontSize),
+                              headingTextStyle: TextStyle(
+                                fontSize: fontSize,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF333333),
+                              ),
+                              columns: [
+                                _buildDataColumn('NAME', 'name', fontSize),
+                                _buildDataColumn('MCO', 'mco', fontSize),
+                                _buildDataColumn('DOB', 'dob', fontSize),
+                                _buildDataColumn(
+                                    'HCC/ICD10', 'hccIcd10', fontSize),
+                                _buildDataColumn('STATUS', 'status', fontSize),
+                                _buildDataColumn(
+                                    'LAST DOS', 'lastDos', fontSize),
+                                _buildDataColumn('PHONE', 'phone', fontSize),
+                              ],
+                              rows: _paginatedPatients.map((patient) {
+                                return DataRow(
+                                  cells: [
+                                    DataCell(Text(patient.name)),
+                                    DataCell(Text(patient.mco)),
+                                    DataCell(Text(_formatDate(patient.dob))),
+                                    DataCell(Text(patient.hccIcd10.isEmpty
+                                        ? '-'
+                                        : patient.hccIcd10)),
+                                    DataCell(Text(patient.status)),
+                                    DataCell(Text(patient.lastDos.isEmpty
+                                        ? '-'
+                                        : patient.lastDos)),
+                                    DataCell(Text(patient.phone)),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Pagination Controls
+                      const SizedBox(height: 16),
+                      _buildPaginationControls(),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            if (_isLoading) LoadingSpinner()
           ],
         );
       },
     );
+  }
+
+  String _formatDate(String dob) {
+    try {
+      final date = DateTime.parse(dob); // viene en yyyy-MM-dd
+      return DateFormat('MM/dd/yyyy').format(date);
+    } catch (e) {
+      return dob; // fallback si no se puede parsear
+    }
   }
 
   DataColumn _buildDataColumn(String label, String column, double fontSize) {

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
@@ -22,6 +24,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _password = TextEditingController();
   final _passwordConfirm = TextEditingController();
   final _oldPassword = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final c = Get.find<PracticeController>();
+      c.getUserSettings();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             activeRoute: 'settings',
           ),
+          // if (_isLoading) LoadingSpinner()
         ],
       ),
     );
@@ -377,13 +391,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showReportBugModal() {
-    showDialog(
-      context: context,
-      builder: (context) => _buildReportBugDialog(),
-    );
-  }
-
   void _showChangePasswordModal() {
     showDialog(
       context: context,
@@ -391,10 +398,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showTwoFactorDialog() {
+  Future<void> _showTwoFactorDialog() async {
+    final c = Get.find<PracticeController>();
+    await c.getMfaMethods();
     showDialog(
       context: context,
-      builder: (context) => const TwoFactorAuthDialog(),
+      builder: (context) => TwoFactorAuthDialog(),
     );
   }
 
@@ -403,154 +412,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SnackBar(
         content: Text('Dark mode ${enabled ? 'enabled' : 'disabled'}'),
         backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  Widget _buildReportBugDialog() {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        width: 500,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Report a Bug',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Color(0xFF666666)),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Form Fields
-            _buildFormField(
-              label: 'Title',
-              child: TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Brief description of the issue',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            _buildFormField(
-              label: 'Description',
-              child: TextField(
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  hintText: 'Detailed description of the bug...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            _buildFormField(
-              label: 'Severity',
-              child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  hintText: 'Select severity',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'low', child: Text('Low')),
-                  DropdownMenuItem(value: 'medium', child: Text('Medium')),
-                  DropdownMenuItem(value: 'high', child: Text('High')),
-                  DropdownMenuItem(value: 'critical', child: Text('Critical')),
-                ],
-                onChanged: (value) {},
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Action Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF666666),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                  ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Bug report submitted successfully!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1976D2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Submit Report',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -665,18 +526,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     final authController = Get.find<AuthController>();
+                    setState(() {
+                      _isLoading = true;
+                    });
                     await authController.changePassword(_password.text,
                         _passwordConfirm.text, _oldPassword.text);
+                    setState(() {
+                      _isLoading = false;
+                    });
                     _password.clear();
                     _passwordConfirm.clear();
                     _oldPassword.clear();
                     Navigator.of(context).pop();
-                    // ScaffoldMessenger.of(context).showSnackBar(
-                    //   const SnackBar(
-                    //     content: Text('Password changed successfully!'),
-                    //     backgroundColor: Colors.green,
-                    //   ),
-                    // );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1976D2),

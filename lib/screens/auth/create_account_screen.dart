@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/routes/router.dart';
 
@@ -96,19 +97,24 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
               ],
             ),
           ),
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: _buildCreateAccountCard(authController),
+          child: Stack(
+            children: [
+              SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: _buildCreateAccountCard(authController),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              if (_isLoading) LoadingSpinner()
+            ],
           ),
         );
       }),
@@ -731,17 +737,23 @@ class _CreateAccountScreenState extends State<CreateAccountScreen>
       child: ElevatedButton(
         onPressed: authController.isLoading || !_agreeToTerms
             ? null
-            : () {
+            : () async {
                 if (!_formKey.currentState!.validate()) {
                   return;
                 }
-                authController.createAccount(
+                setState(() {
+                  _isLoading = true;
+                });
+                await authController.createAccount(
                   _firstNameController.text.trim(),
                   _lastNameController.text.trim(),
                   _emailController.text.trim(),
                   _passwordController.text.trim(),
                   _confirmPasswordController.text.trim(),
                 );
+                setState(() {
+                  _isLoading = false;
+                });
               },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1976D2),

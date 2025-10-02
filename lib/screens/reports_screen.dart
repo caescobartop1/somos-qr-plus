@@ -8,6 +8,7 @@ import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/provider.dart';
 import 'package:somos_qr_plus/models/report_kpi_gic.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../widgets/gic_table_widget.dart';
 import '../widgets/ra_table_widget.dart';
 import '../widgets/appt_table_widget.dart';
@@ -30,6 +31,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   bool _isDrawerOpen = false;
   bool _showLogoutDialog = false;
   Provider _selectedProvider = new Provider(name: 'All', id: '-1');
+  bool _isLoading = false;
 
   // KPI Card Data
   final Map<String, Map<String, dynamic>> _kpiData = {
@@ -129,17 +131,34 @@ class _ReportsScreenState extends State<ReportsScreen> {
     super.initState();
     final c = Get.find<PracticeController>();
     _selectedProvider = c.defaultProvider;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadData();
+      setState(() {
+        _isLoading = false;
+      });
+    });
   }
 
   Future<void> _loadData() async {
     final c = Get.find<PracticeController>();
 
-    await c.getReportKpiGic(_selectedProvider.id);
-    await c.getReportKpiRa(_selectedProvider.id);
-    await c.getReportKpiAppt(_selectedProvider.id);
-    await c.getReportKpiLastLogin(_selectedProvider.id);
-    await c.getReportKpiMWOV(_selectedProvider.id);
+    bool resGic = await c.getReportKpiGic(_selectedProvider.id);
+    if (!resGic) return;
+
+    bool resRa = await c.getReportKpiRa(_selectedProvider.id);
+    if (!resRa) return;
+
+    bool resAppt = await c.getReportKpiAppt(_selectedProvider.id);
+    if (!resAppt) return;
+
+    bool resLastLogin = await c.getReportKpiLastLogin(_selectedProvider.id);
+    if (!resLastLogin) return;
+
+    bool resMwov = await c.getReportKpiMWOV(_selectedProvider.id);
+    if (!resMwov) return;
 
     if (!mounted) return;
     setState(() {});
@@ -182,13 +201,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           child: ProviderDropdownWidget(
                             selectedProvider: _selectedProvider,
                             providers: practiceController.practices,
-                            onProviderChanged: (provider) {
+                            onProviderChanged: (provider) async {
                               setState(() {
                                 _selectedProvider = provider;
                               });
                               final c = Get.find<PracticeController>();
                               c.setProvider(provider);
-                              _loadData();
+                              setState(() {
+                                _isLoading = true;
+                              });
+                              await _loadData();
+                              setState(() {
+                                _isLoading = false;
+                              });
                               _showSuccessMessage(
                                   'Reports updated for $provider');
                             },
@@ -240,6 +265,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
               // Logout Dialog
               if (_showLogoutDialog) _buildLogoutDialog(),
+              if (_isLoading) LoadingSpinner()
             ],
           ),
         ),

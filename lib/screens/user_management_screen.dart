@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/models/staff_login.dart';
 import 'package:somos_qr_plus/widgets/provider_dropdown_widget.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../helpers/route_helper.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
@@ -22,6 +23,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _currentPage = 1;
   final int _itemsPerPage = 10;
+  bool _isLoading = false;
 
   // Sample user data
   final List<Map<String, dynamic>> _users = [];
@@ -71,10 +73,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Reemplaza '522248589' por el practiceId actual
-      await c.getUserManagement(_selectedIncentiveProvider.id);
-      await c.getInvitationRoles();
-      await c.getPractice('');
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadData();
+      setState(() {
+        _isLoading = false;
+      });
     });
+  }
+
+  Future<void> _loadData() async {
+    final c = Get.find<PracticeController>();
+    bool resUserManagement =
+        await c.getUserManagement(_selectedIncentiveProvider.id);
+    if (!resUserManagement) return;
+
+    bool resRoles = await c.getInvitationRoles();
+    if (!resRoles) return;
+
+    bool resPractice = await c.getPractice('');
+    if (!resPractice) return;
   }
 
   @override
@@ -123,13 +142,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                     selectedProvider:
                                         _selectedIncentiveProvider,
                                     providers: c.practices,
-                                    onProviderChanged: (provider) {
+                                    onProviderChanged: (provider) async {
                                       setState(() {
                                         _selectedIncentiveProvider = provider;
                                       });
                                       final c = Get.find<PracticeController>();
-                                      c.getUserManagement(
+                                      setState(() {
+                                        _isLoading = true;
+                                      });
+                                      bool res = await c.getUserManagement(
                                           _selectedIncentiveProvider.id);
+                                      setState(() {
+                                        _isLoading = false;
+                                      });
+                                      if (!res) {
+                                        return;
+                                      }
                                       _showSuccessMessage(
                                           'Showing data for ${provider.name}');
                                     },
@@ -207,6 +235,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 },
                 activeRoute: 'user-management',
               ),
+              if (_isLoading) LoadingSpinner()
             ],
           ),
         ),
@@ -317,6 +346,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 value: isActive,
                 onChanged: (value) async {
                   final c = Get.find<PracticeController>();
+                  setState(() {
+                    _isLoading = true;
+                  });
                   if (value) {
                     await c.enableUserAccount(
                       userId: id,
@@ -328,6 +360,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       practiceId: _selectedIncentiveProvider.id,
                     );
                   }
+                  setState(() {
+                    _isLoading = false;
+                  });
                 },
                 activeColor: Colors.white,
                 activeTrackColor: const Color(0xFF6F42C1),
@@ -465,11 +500,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future<void> _updateUserRole(
       String userName, String newRole, int userId, int roleId) async {
     final c = Get.find<PracticeController>();
-    await c.changeUserRole(
+    setState(() {
+      _isLoading = true;
+    });
+    bool res = await c.changeUserRole(
         userId: userId,
         practiceId: _selectedIncentiveProvider.id,
         newRoleId: roleId,
         newRoleName: newRole);
+    setState(() {
+      _isLoading = false;
+    });
+    if (!res) {
+      return;
+    }
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

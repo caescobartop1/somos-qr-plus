@@ -1,32 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:go_router/go_router.dart';
-import 'package:somos_qr_plus/controllers/auth_controller.dart';
+import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+
+import 'package:somos_qr_plus/models/my_invites.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
-
-enum InvitationStatus { pending, accepted, declined }
-
-class PatientInvitation {
-  final String id;
-  final String patientName;
-  final String patientEmail;
-  final String patientPhone;
-  final DateTime sentDate;
-  final InvitationStatus status;
-  final String? notes;
-
-  PatientInvitation({
-    required this.id,
-    required this.patientName,
-    required this.patientEmail,
-    required this.patientPhone,
-    required this.sentDate,
-    required this.status,
-    this.notes,
-  });
-}
+import 'package:somos_qr_plus/controllers/auth_controller.dart';
 
 class MyInvitationsScreen extends StatefulWidget {
   const MyInvitationsScreen({super.key});
@@ -39,41 +20,18 @@ class _MyInvitationsScreenState extends State<MyInvitationsScreen>
     with SingleTickerProviderStateMixin {
   bool _isDrawerOpen = false;
   late TabController _tabController;
-
-  List<PatientInvitation> _invitations = [
-    PatientInvitation(
-      id: '1',
-      patientName: 'Dr. Sarah Wilson',
-      patientEmail: 'sarah.wilson@clinic.com',
-      patientPhone: '(555) 123-4567',
-      sentDate: DateTime.now().subtract(const Duration(days: 2)),
-      status: InvitationStatus.pending,
-      notes: 'Invitation to join SOMOS QR+ network',
-    ),
-    PatientInvitation(
-      id: '2',
-      patientName: 'Dr. Michael Chen',
-      patientEmail: 'michael.chen@healthcare.com',
-      patientPhone: '(555) 987-6543',
-      sentDate: DateTime.now().subtract(const Duration(days: 5)),
-      status: InvitationStatus.accepted,
-      notes: 'Provider network invitation',
-    ),
-    PatientInvitation(
-      id: '3',
-      patientName: 'Dr. Lisa Rodriguez',
-      patientEmail: 'lisa.rodriguez@medical.com',
-      patientPhone: '(555) 456-7890',
-      sentDate: DateTime.now().subtract(const Duration(days: 1)),
-      status: InvitationStatus.pending,
-      notes: 'Quality improvement program invitation',
-    ),
-  ];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Llamar al controlador para traer los datos
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   final c = Get.find<PracticeController>();
+    //   c.getMyInvitations();
+    // });
   }
 
   @override
@@ -82,203 +40,162 @@ class _MyInvitationsScreenState extends State<MyInvitationsScreen>
     super.dispose();
   }
 
-  int get _pendingInvitationsCount {
-    return _invitations.where((inv) => inv.status == InvitationStatus.pending).length;
-  }
-
-  void _updateInvitationStatus(String invitationId, InvitationStatus newStatus) {
-    setState(() {
-      final index = _invitations.indexWhere((inv) => inv.id == invitationId);
-      if (index != -1) {
-        _invitations[index] = PatientInvitation(
-          id: _invitations[index].id,
-          patientName: _invitations[index].patientName,
-          patientEmail: _invitations[index].patientEmail,
-          patientPhone: _invitations[index].patientPhone,
-          sentDate: _invitations[index].sentDate,
-          status: newStatus,
-          notes: _invitations[index].notes,
-        );
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Stack(
-        children: [
-          // Main Content
-          Column(
+    return GetBuilder<PracticeController>(builder: (c) {
+      final invites = c.myInvites;
+      final pending = invites.where((i) => i.status == 'pending').toList();
+      final accepted = invites.where((i) => i.status != 'pending').toList();
+
+      return SafeArea(
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF5F5F5),
+          body: Stack(
             children: [
-              // Header
-              AppHeaderWidget(
-                onMenuPressed: () {
-                  setState(() {
-                    _isDrawerOpen = true;
-                  });
-                },
-                onProfileAction: (action) {
-                  _handleProfileAction(action);
-                },
-              ),
-              
-              // Main Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Page Title
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+              Column(
+                children: [
+                  AppHeaderWidget(
+                    onMenuPressed: () => setState(() => _isDrawerOpen = true),
+                    onProfileAction: (action) => _handleProfileAction(action),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Expanded(
-                                child: Text(
-                                  'My Invitations',
-                                  style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF333333),
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'My Invitations',
+                                      style: TextStyle(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF333333),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  IconButton(
+                                    onPressed: () => Get.offAllNamed(
+                                        RouteHelper.getInvitationsRoute()),
+                                    icon: const Icon(Icons.arrow_back,
+                                        color: Color(0xFF333333)),
+                                  ),
+                                ],
                               ),
-                              IconButton(
-                                onPressed: () => Get.offAllNamed(RouteHelper.getInvitationsRoute()),
-                                icon: const Icon(
-                                  Icons.arrow_back,
-                                  color: Color(0xFF333333),
-                                ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Manage invitations you\'ve received',
+                                style: TextStyle(
+                                    fontSize: 16, color: Color(0xFF666666)),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Manage invitations you\'ve received',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF666666),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    // Tab Bar
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(25),
                         ),
-                        child: Row(
-                          children: ['Pending', 'Accepted'].asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final tabName = entry.value;
-                            final isSelected = _tabController.index == index;
-                            
-                            return Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  _tabController.animateTo(index);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? const Color(0xFF1976D2) : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    tabName,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.grey.shade700,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
+
+                        // Tabs
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          color: Colors.white,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: Row(
+                              children: ['Pending', 'Accepted']
+                                  .asMap()
+                                  .entries
+                                  .map((entry) {
+                                final index = entry.key;
+                                final name = entry.value;
+                                final selected = _tabController.index == index;
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      _tabController.animateTo(index);
+                                      setState(() {});
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: selected
+                                            ? const Color(0xFF1976D2)
+                                            : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        name,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: selected
+                                              ? Colors.white
+                                              : Colors.grey.shade700,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                                );
+                              }).toList(),
+                            ),
+                          ),
                         ),
-                      ),
+
+                        Expanded(
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _buildList(pending, 'pending'),
+                              _buildList(accepted, 'accepted'),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    
-                    // Tab Content
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildPendingTab(),
-                          _buildAcceptedTab(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              if (_isDrawerOpen)
+                GestureDetector(
+                  onTap: () => setState(() => _isDrawerOpen = false),
+                  child: Container(color: Colors.transparent),
+                ),
+              AppDrawerWidget(
+                isOpen: _isDrawerOpen,
+                onClose: () => setState(() => _isDrawerOpen = false),
+                onNavigation: (route) {
+                  setState(() => _isDrawerOpen = false);
+                  _handleNavigation(route);
+                },
+                activeRoute: 'my-invitations',
+              ),
+              if (_isLoading) LoadingSpinner()
             ],
           ),
-          
-          // Drawer Overlay (transparent)
-          if (_isDrawerOpen)
-            GestureDetector(
-              onTap: () => setState(() => _isDrawerOpen = false),
-              child: Container(
-                color: Colors.transparent,
-              ),
-            ),
-          
-          // Navigation Drawer
-          AppDrawerWidget(
-            isOpen: _isDrawerOpen,
-            onClose: () {
-              setState(() {
-                _isDrawerOpen = false;
-              });
-            },
-            onNavigation: (route) {
-              setState(() {
-                _isDrawerOpen = false;
-              });
-              _handleNavigation(route);
-            },
-            activeRoute: 'my-invitations',
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+    });
   }
 
-  Widget _buildPendingTab() {
-    final pendingInvitations = _invitations.where((inv) => inv.status == InvitationStatus.pending).toList();
-    
-    if (pendingInvitations.isEmpty) {
-      return const Center(
+  Widget _buildList(List<MyInvite> list, String type) {
+    if (list.isEmpty) {
+      final icon = type == 'pending' ? Icons.inbox : Icons.check_circle_outline;
+      final msg = type == 'pending'
+          ? 'No pending invitations'
+          : 'No accepted invitations';
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'No pending invitations',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'You have no new invitations to review',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
+            Icon(icon, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(msg, style: const TextStyle(fontSize: 18, color: Colors.grey)),
           ],
         ),
       );
@@ -286,49 +203,12 @@ class _MyInvitationsScreenState extends State<MyInvitationsScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: pendingInvitations.length,
-      itemBuilder: (context, index) {
-        final invitation = pendingInvitations[index];
-        return _buildInvitationCard(invitation);
-      },
+      itemCount: list.length,
+      itemBuilder: (_, i) => _buildCard(list[i]),
     );
   }
 
-  Widget _buildAcceptedTab() {
-    final acceptedInvitations = _invitations.where((inv) => inv.status == InvitationStatus.accepted).toList();
-    
-    if (acceptedInvitations.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'No accepted invitations',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'You haven\'t accepted any invitations yet',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: acceptedInvitations.length,
-      itemBuilder: (context, index) {
-        final invitation = acceptedInvitations[index];
-        return _buildInvitationCard(invitation);
-      },
-    );
-  }
-
-  Widget _buildInvitationCard(PatientInvitation invitation) {
+  Widget _buildCard(MyInvite inv) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -346,43 +226,51 @@ class _MyInvitationsScreenState extends State<MyInvitationsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
           Row(
             children: [
               Expanded(
-                child: Text(
-                  invitation.patientName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF333333),
-                  ),
-                ),
+                child: Text(inv.firstName + ' ' + inv.lastName,
+                    style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF333333))),
               ),
-              _buildStatusChip(invitation.status),
+              _chip(inv.status),
             ],
           ),
           const SizedBox(height: 12),
-          
-          // Details
-          Text('From: ${invitation.patientEmail}'),
+          Text('Email: ${inv.email}'),
+          if (inv.phoneNumber.isNotEmpty) Text('Phone: ${inv.phoneNumber}'),
           const SizedBox(height: 4),
-          Text('Phone: ${invitation.patientPhone}'),
-          const SizedBox(height: 4),
-          Text('${invitation.status == InvitationStatus.pending ? 'Received' : 'Accepted'}: ${_formatDate(invitation.sentDate)}'),
-          if (invitation.notes?.isNotEmpty == true) ...[
-            const SizedBox(height: 8),
-            Text('Message: ${invitation.notes}'),
-          ],
-          
-          // Action Buttons (only for pending invitations)
-          if (invitation.status == InvitationStatus.pending) ...[
+          Text('Request #: ${inv.requestNumber}'),
+          if (inv.practiceNames.isNotEmpty)
+            Text('Practices: ${inv.practiceNames.join(", ")}'),
+          if (inv.status.toLowerCase() == 'pending') ...[
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => _updateInvitationStatus(invitation.id, InvitationStatus.declined),
+                    onPressed: () async {
+                      final c = Get.find<PracticeController>();
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      bool res = await c.denyInvitation(inv.id);
+                      setState(() {
+                        _isLoading = false;
+                      });
+                      if (!res) {
+                        return;
+                      }
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Invitation declined successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
                       side: const BorderSide(color: Colors.red),
@@ -397,7 +285,25 @@ class _MyInvitationsScreenState extends State<MyInvitationsScreen>
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _updateInvitationStatus(invitation.id, InvitationStatus.accepted),
+                    onPressed: () async {
+                      final c = Get.find<PracticeController>();
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      bool res = await c.acceptInvitation(inv.id);
+                      setState(() {
+                        _isLoading = false;
+                      });
+                      if (!res) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Invitation accepted successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1976D2),
                       foregroundColor: Colors.white,
@@ -411,60 +317,60 @@ class _MyInvitationsScreenState extends State<MyInvitationsScreen>
                 ),
               ],
             ),
-          ],
+          ]
         ],
       ),
     );
   }
 
-  Widget _buildStatusChip(InvitationStatus status) {
-    Color backgroundColor;
-    Color textColor;
-    String displayText;
-    
-    switch (status) {
-      case InvitationStatus.pending:
-        backgroundColor = Colors.orange[100]!;
-        textColor = Colors.orange[800]!;
-        displayText = 'Pending';
+  Widget _chip(String status) {
+    Color bg, fg;
+    final normalized = status.toLowerCase();
+
+    switch (normalized) {
+      case 'pending':
+        bg = Colors.orange[100]!;
+        fg = Colors.orange[800]!;
         break;
-      case InvitationStatus.accepted:
-        backgroundColor = Colors.green[100]!;
-        textColor = Colors.green[800]!;
-        displayText = 'Accepted';
+      case 'accepted':
+        bg = Colors.green[100]!;
+        fg = Colors.green[800]!;
         break;
-      case InvitationStatus.declined:
-        backgroundColor = Colors.red[100]!;
-        textColor = Colors.red[800]!;
-        displayText = 'Declined';
+      case 'cancelled':
+        bg = Colors.red[100]!;
+        fg = Colors.red[800]!;
         break;
+      case 'denied':
+        bg = Colors.purple[100]!;
+        fg = Colors.purple[800]!;
+        break;
+      default:
+        bg = Colors.grey[200]!;
+        fg = Colors.grey[700]!;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: bg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        displayText,
+        // Muestra el texto original, pero en formato Title Case para mejor estética
+        status[0].toUpperCase() + status.substring(1).toLowerCase(),
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
-          color: textColor,
+          color: fg,
         ),
       ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.month}/${date.day}/${date.year}';
-  }
-
   void _handleNavigation(String route) {
     switch (route) {
       case 'dashboard':
-        Get.offAllNamed(RouteHelper.getPatientsRoute());
+        Get.offAllNamed(RouteHelper.getDashboardRoute());
         break;
       case 'quality':
         Get.offAllNamed(RouteHelper.getQualityScoreCardsRoute());
@@ -484,9 +390,6 @@ class _MyInvitationsScreenState extends State<MyInvitationsScreen>
       case 'settings':
         Get.offAllNamed(RouteHelper.getSettingsRoute());
         break;
-      case 'invitation':
-        Get.offAllNamed(RouteHelper.getInvitationsRoute());
-        break;
       case 'logout':
         final authController = Get.find<AuthController>();
         authController.logout();
@@ -495,16 +398,9 @@ class _MyInvitationsScreenState extends State<MyInvitationsScreen>
   }
 
   void _handleProfileAction(String action) {
-    switch (action) {
-      case 'language':
-        // Handle language change
-        break;
-      case 'invitations':
-        // Already on invitations page
-        break;
-      case 'logout':
-        // Handle logout logic
-        break;
+    if (action == 'logout') {
+      final auth = Get.find<AuthController>();
+      auth.logout();
     }
   }
 }

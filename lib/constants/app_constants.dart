@@ -9,6 +9,7 @@ class AppConstants {
       'https://authapi-meta-dev.top1solutions.com';
   static const String token = 'token';
   static const String tokenOtp = 'tokenOtp';
+  static const String userId = 'userId';
   static const String tokenResetPassword = 'tokenResetPassword';
   static const String loginMethod = 'loginMethod';
   static const String refreshToken = 'refreshToken';
@@ -40,6 +41,7 @@ class AppConstants {
   static const String userGapUrl = '/catalog/patient_gap/';
   static const String userPatologyUrl = '/catalog/patient_pathology/';
   static const String userInvites = '/accounts/my_request_invitations/';
+  static const String myInvites = '/accounts/my_invitations/';
   static const String pocketGapUrl = '/catalog/pocket_gap_category/';
   static const String pocketRaUrl = '/catalog/pocket_guide_ra_header/';
 

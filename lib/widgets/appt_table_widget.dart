@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 
 class APPTTableWidget extends StatefulWidget {
   final String practice_id;
@@ -15,6 +17,7 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
   List<APPTPatient> _filteredPatients = [];
   String _sortColumn = 'name';
   bool _sortAscending = true;
+  bool _isLoading = false;
 
   // Pagination
   int _currentPage = 1;
@@ -33,17 +36,34 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPatients());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadPatients();
+      setState(() {
+        _isLoading = false;
+      });
+    });
+  }
+
+  String _formatDate(String dob) {
+    try {
+      final date = DateTime.parse(dob); // viene en yyyy-MM-dd
+      return DateFormat('MM/dd/yyyy').format(date);
+    } catch (e) {
+      return dob; // fallback si no se puede parsear
+    }
   }
 
   Future<void> _loadPatients() async {
     final c = Get.find<PracticeController>();
 
     // ✅ Cargar lista de MCOs para el dropdown
-    await c.getMco(widget.practice_id);
+    bool resMco = await c.getMco(widget.practice_id);
+    if (!resMco) return;
 
-    // ✅ Llamar al método que llena _apptList en el controlador
-    await c.getReportKpiApptList(
+    bool resApptList = await c.getReportKpiApptList(
       widget.practice_id,
       memberName: _nameFilterController.text,
       mcoName: _mcoFilter == 'all' ? null : _mcoFilter,
@@ -53,6 +73,7 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
       address: _addressFilterController.text,
       phone: _phoneFilterController.text,
     );
+    if (!resApptList) return;
 
     if (!mounted) return;
     setState(() {
@@ -75,6 +96,9 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
   }
 
   void _applyFilters() async {
+    setState(() {
+      _isLoading = true;
+    });
     final c = Get.find<PracticeController>();
 
     // ✅ Llamar al método que llena _apptList en el controlador
@@ -88,6 +112,9 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
       address: _addressFilterController.text,
       phone: _phoneFilterController.text,
     );
+    setState(() {
+      _isLoading = false;
+    });
     setState(() {
       // ✅ Mapear los datos del controlador a nuestro modelo de tabla
       _patients = c.apptList
@@ -184,191 +211,200 @@ class _APPTTableWidgetState extends State<APPTTableWidget> {
           padding = 12;
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Stack(
           children: [
-            // Table Header
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(padding),
-              decoration: BoxDecoration(
-                color: const Color(0xFFf8f9fa),
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'APPT Detailed Report',
-                      style: TextStyle(
-                        fontSize: fontSize + 2,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF333333),
-                      ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Table Header
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(padding),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFf8f9fa),
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
-                  // IconButton(
-                  //   onPressed: () {
-                  //     // Export functionality - silent for now
-                  //   },
-                  //   icon: const Icon(Icons.file_download, size: 20),
-                  //   tooltip: 'Export',
-                  // ),
-                ],
-              ),
-            ),
-
-            // Filter Row
-            Container(
-              padding: EdgeInsets.all(padding),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Column(
-                children: [
-                  // First row of filters - 3 columns for better fit
-                  Row(
+                  child: Row(
                     children: [
                       Expanded(
-                        child: _buildFilterField(
-                          controller: _nameFilterController,
-                          hint: 'Name...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterDropdown(
-                          value: _mcoFilter,
-                          items: [
-                            'all',
-                            ...c.mcoList.map((mco) => mco.mcoName),
-                          ],
-                          hint: 'MCO',
-                          onChanged: (value) {
-                            _mcoFilter = value ?? '';
-                            _applyFilters();
-                          },
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _dobFilterController,
-                          hint: 'DOB...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: padding),
-                  // Second row of filters - 3 columns for better fit
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _dosFilterController,
-                          hint: 'DOS...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _missedFilterController,
-                          hint: 'Missed...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _phoneFilterController,
-                          hint: 'Phone...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: padding),
-                  // Third row of filters - 1 column for address
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _addressFilterController,
-                          hint: 'Address...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Table
-            Expanded(
-              child: Column(
-                children: [
-                  // Table with horizontal scroll
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SingleChildScrollView(
-                        child: DataTable(
-                          columnSpacing: padding * 2,
-                          dataTextStyle: TextStyle(fontSize: fontSize),
-                          headingTextStyle: TextStyle(
-                            fontSize: fontSize,
+                        child: Text(
+                          'APPT Detailed Report',
+                          style: TextStyle(
+                            fontSize: fontSize + 2,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF333333),
                           ),
-                          columns: [
-                            _buildDataColumn('NAME', 'name', fontSize),
-                            _buildDataColumn('MCO', 'mco', fontSize),
-                            _buildDataColumn('DOB', 'dob', fontSize),
-                            _buildDataColumn('LAST DOS', 'lastDos', fontSize),
-                            _buildDataColumn(
-                                'MISSED DATE', 'missedDate', fontSize),
-                            _buildDataColumn('PHONE', 'phone', fontSize),
-                            _buildDataColumn('ADDRESS', 'address', fontSize),
-                          ],
-                          rows: _paginatedPatients.map((patient) {
-                            return DataRow(
-                              cells: [
-                                DataCell(Text(patient.name)),
-                                DataCell(Text(patient.mco)),
-                                DataCell(Text(patient.dob)),
-                                DataCell(Text(patient.lastDos)),
-                                DataCell(Text(patient.missedDate)),
-                                DataCell(Text(patient.phone)),
-                                DataCell(
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(maxWidth: 200),
-                                    child: Text(
-                                      patient.address,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 2,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
                         ),
                       ),
-                    ),
+                      // IconButton(
+                      //   onPressed: () {
+                      //     // Export functionality - silent for now
+                      //   },
+                      //   icon: const Icon(Icons.file_download, size: 20),
+                      //   tooltip: 'Export',
+                      // ),
+                    ],
                   ),
-                  // Pagination Controls
-                  const SizedBox(height: 16),
-                  _buildPaginationControls(),
-                ],
-              ),
+                ),
+
+                // Filter Row
+                Container(
+                  padding: EdgeInsets.all(padding),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border:
+                        Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                  ),
+                  child: Column(
+                    children: [
+                      // First row of filters - 3 columns for better fit
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _nameFilterController,
+                              hint: 'Name...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterDropdown(
+                              value: _mcoFilter,
+                              items: [
+                                'all',
+                                ...c.mcoList.map((mco) => mco.mcoName),
+                              ],
+                              hint: 'MCO',
+                              onChanged: (value) {
+                                _mcoFilter = value ?? '';
+                                _applyFilters();
+                              },
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _dobFilterController,
+                              hint: 'DOB...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: padding),
+                      // Second row of filters - 3 columns for better fit
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _dosFilterController,
+                              hint: 'DOS...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _missedFilterController,
+                              hint: 'Missed...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _phoneFilterController,
+                              hint: 'Phone...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: padding),
+                      // Third row of filters - 1 column for address
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _addressFilterController,
+                              hint: 'Address...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Table
+                Expanded(
+                  child: Column(
+                    children: [
+                      // Table with horizontal scroll
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SingleChildScrollView(
+                            child: DataTable(
+                              columnSpacing: padding * 2,
+                              dataTextStyle: TextStyle(fontSize: fontSize),
+                              headingTextStyle: TextStyle(
+                                fontSize: fontSize,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF333333),
+                              ),
+                              columns: [
+                                _buildDataColumn('NAME', 'name', fontSize),
+                                _buildDataColumn('MCO', 'mco', fontSize),
+                                _buildDataColumn('DOB', 'dob', fontSize),
+                                _buildDataColumn(
+                                    'LAST DOS', 'lastDos', fontSize),
+                                _buildDataColumn(
+                                    'MISSED DATE', 'missedDate', fontSize),
+                                _buildDataColumn('PHONE', 'phone', fontSize),
+                                _buildDataColumn(
+                                    'ADDRESS', 'address', fontSize),
+                              ],
+                              rows: _paginatedPatients.map((patient) {
+                                return DataRow(
+                                  cells: [
+                                    DataCell(Text(patient.name)),
+                                    DataCell(Text(patient.mco)),
+                                    DataCell(Text(_formatDate(patient.dob))),
+                                    DataCell(Text(patient.lastDos)),
+                                    DataCell(Text(patient.missedDate)),
+                                    DataCell(Text(patient.phone)),
+                                    DataCell(
+                                      ConstrainedBox(
+                                        constraints:
+                                            BoxConstraints(maxWidth: 200),
+                                        child: Text(
+                                          patient.address,
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Pagination Controls
+                      const SizedBox(height: 16),
+                      _buildPaginationControls(),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            if (_isLoading) LoadingSpinner()
           ],
         );
       },

@@ -14,6 +14,7 @@ class _StaffLoginTableWidgetState extends State<StaffLoginTableWidget> {
   List<StaffMember> _filteredStaff = [];
   String _sortColumn = 'name';
   bool _sortAscending = true;
+  bool _isLoading = false;
 
   // Pagination
   int _currentPage = 1;

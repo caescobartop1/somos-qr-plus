@@ -3,10 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/routes/router.dart';
+import 'dart:convert';
+import 'package:local_auth/local_auth.dart';
+import 'package:http/http.dart' as http;
+import 'package:somos_qr_plus/constants/app_constants.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,6 +31,10 @@ class _LoginScreenState extends State<LoginScreen>
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isLoading = false;
+  String? isface;
+  String? isbio;
+  final LocalAuthentication _localAuth = LocalAuthentication();
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -51,8 +62,15 @@ class _LoginScreenState extends State<LoginScreen>
     ));
 
     // Start animation after a brief delay
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 100), () async {
       _animationController.forward();
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        isface =
+            prefs.getString('refresh_method') == 'faceId' ? 'true' : 'false';
+        isbio =
+            prefs.getString('refresh_method') == 'biometric' ? 'true' : 'false';
+      });
     });
   }
 
@@ -99,6 +117,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
               ),
+              if (_isLoading) LoadingSpinner()
             ],
           ),
         );
@@ -217,10 +236,125 @@ class _LoginScreenState extends State<LoginScreen>
           _buildLoginButton(authController),
           const SizedBox(height: 24),
           _buildOrDivider(),
+          if (isface == 'true') _buildFaceIdOption(),
+          if (isbio == 'true') _buildBiometricOption(),
+          const SizedBox(height: 24),
           const SizedBox(height: 24),
           _buildCreateAccountSection(authController),
         ],
       ),
+    );
+  }
+
+  Widget _buildFaceIdOption() {
+    return Column(
+      children: [
+        Center(
+          child: InkWell(
+            onTap: () async {
+              setState(() {
+                _isLoading = true;
+              });
+              final authController = Get.find<AuthController>();
+              bool res = await authController.biometricLogin();
+              setState(() {
+                _isLoading = false;
+              });
+              if (!res) {
+                setState(() {
+                  isface = '';
+                  isbio = '';
+                });
+              }
+            },
+            child: SizedBox(
+              width: 100,
+              height: 100,
+              child: const Image(
+                image: AssetImage('assets/images/face.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Text(
+              "Sign in with ",
+              style: TextStyle(
+                fontFamily: 'Myriad Pro',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xffdcdcdc),
+              ),
+            ),
+            Text(
+              "Face ID",
+              style: TextStyle(
+                fontFamily: 'Myriad Pro',
+                fontSize: 19,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            )
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBiometricOption() {
+    return Column(
+      children: [
+        Center(
+          child: InkWell(
+            onTap: () async {
+              final authController = Get.find<AuthController>();
+              bool res = await authController.biometricLogin();
+              if (!res) {
+                setState(() {
+                  isface = '';
+                  isbio = '';
+                });
+              }
+            },
+            child: SizedBox(
+              width: 100,
+              height: 100,
+              child: const Image(
+                image: AssetImage('assets/images/biomat.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Text(
+              "Sign in with ",
+              style: TextStyle(
+                fontFamily: 'Myriad Pro',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xffdcdcdc),
+              ),
+            ),
+            Text(
+              "Biometric",
+              style: TextStyle(
+                fontFamily: 'Myriad Pro',
+                fontSize: 19,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            )
+          ],
+        ),
+      ],
     );
   }
 
@@ -500,9 +634,15 @@ class _LoginScreenState extends State<LoginScreen>
       );
       return;
     }
+    setState(() {
+      _isLoading = true;
+    });
 
     // Navigate to create account page with pre-filled email
-    authController.validateEmail(_createAccountEmailController.text);
+    await authController.validateEmail(_createAccountEmailController.text);
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Widget _buildFormOptions() {
@@ -556,9 +696,15 @@ class _LoginScreenState extends State<LoginScreen>
       child: ElevatedButton(
         onPressed: authController.isLoading
             ? null
-            : () {
-                authController.login(_emailController.text.trim(),
+            : () async {
+                setState(() {
+                  _isLoading = true;
+                });
+                await authController.login(_emailController.text.trim(),
                     _passwordController.text.trim());
+                setState(() {
+                  _isLoading = false;
+                });
               },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1976D2),
@@ -589,37 +735,53 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  Future<void> _openPolicies() async {
+    final Uri url = Uri.parse('https://aimny.co/privacy-policy/');
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw 'No se pudo abrir el navegador';
+    }
+  }
+
+  Future<void> _openTerms() async {
+    final Uri url = Uri.parse('https://aimny.co/terms-and-conditions/');
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw 'No se pudo abrir el navegador';
+    }
+  }
+
   Widget _buildFooter() {
     return Column(
       children: [
-        Text.rich(
-          TextSpan(
-            text: "Don't have an account? ",
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: Colors.grey[600],
-            ),
-            children: [
-              WidgetSpan(
-                child: GestureDetector(
-                  onTap: () {
-                    context.go('/create-account');
-                  },
-                  child: Text(
-                    'Create an account',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF1976D2),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
+        // Text.rich(
+        //   TextSpan(
+        //     text: "Don't have an account? ",
+        //     style: TextStyle(
+        //       fontSize: 14,
+        //       fontWeight: FontWeight.w400,
+        //       color: Colors.grey[600],
+        //     ),
+        //     children: [
+        //       WidgetSpan(
+        //         child: GestureDetector(
+        //           onTap: () {
+        //             context.go('/create-account');
+        //           },
+        //           child: Text(
+        //             'Create an account',
+        //             style: TextStyle(
+        //               fontSize: 14,
+        //               fontWeight: FontWeight.w500,
+        //               color: const Color(0xFF1976D2),
+        //             ),
+        //           ),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+        // const SizedBox(height: 16),
         Text.rich(
           TextSpan(
             text: 'By clicking Sign In, you agree to our ',
@@ -632,7 +794,7 @@ class _LoginScreenState extends State<LoginScreen>
               WidgetSpan(
                 child: GestureDetector(
                   onTap: () {
-                    // Show terms of service
+                    _openTerms();
                   },
                   child: Text(
                     'Terms of Service',
@@ -648,7 +810,7 @@ class _LoginScreenState extends State<LoginScreen>
               WidgetSpan(
                 child: GestureDetector(
                   onTap: () {
-                    // Show privacy policy
+                    _openPolicies();
                   },
                   child: Text(
                     'Privacy Policy',
@@ -684,32 +846,63 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
               const SizedBox(height: 8),
-              Image.asset(
-                'assets/images/SOMOS IPA logo.png',
-                width: 120,
-                height: 40,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Image.asset(
+                    'assets/images/SOMOS IPA logo.png',
                     width: 120,
                     height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'SOMOS IPA',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1976D2),
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 120,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+                        child: const Center(
+                          child: Text(
+                            'SOMOS IPA',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1976D2),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  Image.asset(
+                    'assets/images/optimus-logo.png',
+                    width: 120,
+                    height: 40,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 120,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'SOMOS IPA',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1976D2),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              )
             ],
           ),
         ),

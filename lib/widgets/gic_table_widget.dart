@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/models/gic_list.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 
 class GICTableWidget extends StatefulWidget {
   final String practice_id;
@@ -48,18 +50,28 @@ class _GICTableWidgetState extends State<GICTableWidget> {
     'Member ID': false,
     'Non User Flag': false,
   };
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPatients());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadPatients();
+      setState(() {
+        _isLoading = false;
+      });
+    });
   }
 
   Future<void> _loadPatients() async {
     final c = Get.find<PracticeController>();
-    await c.getMco(widget.practice_id);
+    bool resMco = await c.getMco(widget.practice_id);
+    if (!resMco) return;
 
-    await c.getReportKpiGicList(
+    bool resGicList = await c.getReportKpiGicList(
       widget.practice_id,
       member_name: _nameFilterController.text,
       mco_name: _mcoFilter,
@@ -69,6 +81,7 @@ class _GICTableWidgetState extends State<GICTableWidget> {
       status: _statusFilter,
       phone: _phoneFilterController.text,
     );
+    if (!resGicList) return;
 
     if (!mounted) return;
     setState(() {
@@ -79,7 +92,13 @@ class _GICTableWidgetState extends State<GICTableWidget> {
   }
 
   void _applyFilters() async {
+    setState(() {
+      _isLoading = true;
+    });
     await _loadPatients(); // 🔑 Re-dispara la consulta con los filtros actuales
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   List<GicList> get _paginatedPatients {
@@ -159,199 +178,207 @@ class _GICTableWidgetState extends State<GICTableWidget> {
           padding = 12;
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Stack(
           children: [
-            // Table Header
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(padding),
-              decoration: BoxDecoration(
-                color: const Color(0xFFf8f9fa),
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'GIC Detailed Report',
-                      style: TextStyle(
-                        fontSize: fontSize + 2,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF333333),
-                      ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Table Header
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(padding),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFf8f9fa),
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
-                  // IconButton(
-                  //   onPressed: () {
-                  //     _showExportDialog();
-                  //   },
-                  //   icon: const Icon(Icons.file_download, size: 20),
-                  //   tooltip: 'Export',
-                  // ),
-                ],
-              ),
-            ),
-
-            // Filter Row
-            Container(
-              padding: EdgeInsets.all(padding),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Column(
-                children: [
-                  // First row of filters - 2 columns for better fit
-                  Row(
+                  child: Row(
                     children: [
                       Expanded(
-                        child: _buildFilterField(
-                          controller: _nameFilterController,
-                          hint: 'Name...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterDropdown(
-                          value: _mcoFilter,
-                          items: [
-                            'all',
-                            ...c.mcoList.map((mco) => mco.mcoName),
-                          ],
-                          hint: 'MCO',
-                          onChanged: (value) {
-                            _mcoFilter = value ?? '';
-                            _applyFilters();
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: padding),
-                  // Second row of filters - 3 columns for better fit
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _dobFilterController,
-                          hint: 'DOB...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _apptFilterController,
-                          hint: 'APPT...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterDropdown(
-                          value: _measureFilter,
-                          items: [
-                            '',
-                            'AWV',
-                            'HBD',
-                            'KED',
-                            'CBP',
-                            'COL',
-                            'CCS',
-                            'PPC'
-                          ],
-                          hint: 'Measure',
-                          onChanged: (value) {
-                            _measureFilter = value ?? '';
-                            _applyFilters();
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: padding),
-                  // Third row of filters - 2 columns for remaining filters
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildFilterDropdown(
-                          value: _statusFilter,
-                          items: ['', 'Completed', 'Open'],
-                          hint: 'Status',
-                          onChanged: (value) {
-                            _statusFilter = value ?? '';
-                            _applyFilters();
-                          },
-                        ),
-                      ),
-                      SizedBox(width: padding),
-                      Expanded(
-                        child: _buildFilterField(
-                          controller: _phoneFilterController,
-                          hint: 'Phone...',
-                          onChanged: (_) => _applyFilters(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Table
-            Expanded(
-              child: Column(
-                children: [
-                  // Table with horizontal scroll
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SingleChildScrollView(
-                        child: DataTable(
-                          columnSpacing: padding *
-                              1.5, // Reduced spacing to prevent overflow
-                          dataTextStyle: TextStyle(fontSize: fontSize),
-                          headingTextStyle: TextStyle(
-                            fontSize: fontSize,
+                        child: Text(
+                          'GIC Detailed Report',
+                          style: TextStyle(
+                            fontSize: fontSize + 2,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFF333333),
                           ),
-                          columns: [
-                            _buildDataColumn('NAME', 'name', fontSize),
-                            _buildDataColumn('MCO', 'mco', fontSize),
-                            _buildDataColumn('DOB', 'dob', fontSize),
-                            _buildDataColumn('APPT', 'appointment', fontSize),
-                            _buildDataColumn('MEASURE', 'measure', fontSize),
-                            _buildDataColumn('STATUS', 'status', fontSize),
-                            _buildDataColumn('PHONE', 'phone', fontSize),
-                          ],
-                          rows: _paginatedPatients.map((patient) {
-                            return DataRow(
-                              cells: [
-                                DataCell(Text(patient.memberName)),
-                                DataCell(Text(patient.mcoName)),
-                                DataCell(Text(patient.dob)),
-                                DataCell(Text(patient.dateTime.toString())),
-                                DataCell(Text(patient.measureCode)),
-                                DataCell(Text(patient.status)),
-                                DataCell(Text(patient.phoneNumber)),
-                              ],
-                            );
-                          }).toList(),
                         ),
                       ),
-                    ),
+                      // IconButton(
+                      //   onPressed: () {
+                      //     _showExportDialog();
+                      //   },
+                      //   icon: const Icon(Icons.file_download, size: 20),
+                      //   tooltip: 'Export',
+                      // ),
+                    ],
                   ),
-                  // Pagination Controls
-                  const SizedBox(height: 16),
-                  _buildPaginationControls(),
-                ],
-              ),
+                ),
+
+                // Filter Row
+                Container(
+                  padding: EdgeInsets.all(padding),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border:
+                        Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                  ),
+                  child: Column(
+                    children: [
+                      // First row of filters - 2 columns for better fit
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _nameFilterController,
+                              hint: 'Name...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterDropdown(
+                              value: _mcoFilter,
+                              items: [
+                                'all',
+                                ...c.mcoList.map((mco) => mco.mcoName),
+                              ],
+                              hint: 'MCO',
+                              onChanged: (value) {
+                                _mcoFilter = value ?? '';
+                                _applyFilters();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: padding),
+                      // Second row of filters - 3 columns for better fit
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _dobFilterController,
+                              hint: 'DOB...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _apptFilterController,
+                              hint: 'APPT...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterDropdown(
+                              value: _measureFilter,
+                              items: [
+                                '',
+                                'AWV',
+                                'HBD',
+                                'KED',
+                                'CBP',
+                                'COL',
+                                'CCS',
+                                'PPC'
+                              ],
+                              hint: 'Measure',
+                              onChanged: (value) {
+                                _measureFilter = value ?? '';
+                                _applyFilters();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: padding),
+                      // Third row of filters - 2 columns for remaining filters
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFilterDropdown(
+                              value: _statusFilter,
+                              items: ['', 'Completed', 'Open'],
+                              hint: 'Status',
+                              onChanged: (value) {
+                                _statusFilter = value ?? '';
+                                _applyFilters();
+                              },
+                            ),
+                          ),
+                          SizedBox(width: padding),
+                          Expanded(
+                            child: _buildFilterField(
+                              controller: _phoneFilterController,
+                              hint: 'Phone...',
+                              onChanged: (_) => _applyFilters(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Table
+                Expanded(
+                  child: Column(
+                    children: [
+                      // Table with horizontal scroll
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SingleChildScrollView(
+                            child: DataTable(
+                              columnSpacing: padding *
+                                  1.5, // Reduced spacing to prevent overflow
+                              dataTextStyle: TextStyle(fontSize: fontSize),
+                              headingTextStyle: TextStyle(
+                                fontSize: fontSize,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF333333),
+                              ),
+                              columns: [
+                                _buildDataColumn('NAME', 'name', fontSize),
+                                _buildDataColumn('MCO', 'mco', fontSize),
+                                _buildDataColumn('DOB', 'dob', fontSize),
+                                _buildDataColumn(
+                                    'APPT', 'appointment', fontSize),
+                                _buildDataColumn(
+                                    'MEASURE', 'measure', fontSize),
+                                _buildDataColumn('STATUS', 'status', fontSize),
+                                _buildDataColumn('PHONE', 'phone', fontSize),
+                              ],
+                              rows: _paginatedPatients.map((patient) {
+                                return DataRow(
+                                  cells: [
+                                    DataCell(Text(patient.memberName)),
+                                    DataCell(Text(patient.mcoName)),
+                                    DataCell(Text(_formatDate(patient.dob))),
+                                    DataCell(Text(patient.dateTime.toString())),
+                                    DataCell(Text(patient.measureCode)),
+                                    DataCell(Text(patient.status)),
+                                    DataCell(Text(patient.phoneNumber)),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Pagination Controls
+                      const SizedBox(height: 16),
+                      _buildPaginationControls(),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            if (_isLoading) LoadingSpinner()
           ],
         );
       },
@@ -569,6 +596,15 @@ class _GICTableWidgetState extends State<GICTableWidget> {
         ),
       ],
     );
+  }
+
+  String _formatDate(String dob) {
+    try {
+      final date = DateTime.parse(dob); // viene en yyyy-MM-dd
+      return DateFormat('MM/dd/yyyy').format(date);
+    } catch (e) {
+      return dob; // fallback si no se puede parsear
+    }
   }
 
   Widget _buildFilterDropdown({

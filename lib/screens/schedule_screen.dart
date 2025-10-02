@@ -6,6 +6,7 @@ import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/controllers/practice_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
 import 'package:somos_qr_plus/models/schedule.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 import '../widgets/app_header_widget.dart';
 import '../widgets/app_drawer_widget.dart';
 import '../widgets/provider_dropdown_widget.dart';
@@ -24,7 +25,7 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen> {
   bool _isDrawerOpen = false;
   Provider _selectedProvider = new Provider(name: 'All', id: '-1');
-  String _selectedView = 'Week'; // Day, Week, Month
+  String _selectedView = 'Work Week'; // Day, Week, Month
   DateTime _selectedDate = DateTime.now();
   bool _showNewAppointmentModal = false;
 
@@ -47,6 +48,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   List<Patient> _filteredPatients = [];
   Patient? _selectedPatient;
   List<int> _workWeekDays = [1, 2, 3, 4, 5];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -55,23 +57,39 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     _selectedProvider = c.defaultProvider;
     _initializePatients();
     _patientSearchController.addListener(_onPatientSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _isLoading = true;
+      });
+      await _loadData();
+      setState(() {
+        _isLoading = false;
+      });
+    });
   }
 
   Future<void> _loadData() async {
     final c = Get.find<PracticeController>();
 
-    await c.getPractice('');
+    bool resPractice = await c.getPractice('');
+    if (!resPractice) return;
+
     dynamic start =
         _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
     dynamic end = start.add(const Duration(days: 6));
-    await c.getScheduleForScreen(
+
+    bool resSchedule = await c.getScheduleForScreen(
       _selectedProvider.id,
       startDate: start,
       endDate: end,
     );
-    await c.getMco(_selectedProvider.id);
-    await c.getProvider(_selectedProvider.id);
+    if (!resSchedule) return;
+
+    bool resMco = await c.getMco(_selectedProvider.id);
+    if (!resMco) return;
+
+    bool resProvider = await c.getProvider(_selectedProvider.id);
+    if (!resProvider) return;
 
     if (!mounted) return;
     setState(() {});
@@ -163,6 +181,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   void _applyPatientFilters() async {
+    setState(() {
+      _isLoading = true;
+    });
     final query = _patientSearchController.text.toLowerCase();
     String dobParsed = '';
     try {
@@ -184,6 +205,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       }).toList();
       setState(() {
         _filteredPatients = filtered;
+        _isLoading = false;
       });
     }
     setState(() {
@@ -192,7 +214,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   // Sample appointments data with specific days
-  void getSchedule() {
+  Future<void> getSchedule() async {
     final c = Get.find<PracticeController>();
     DateTime start;
     DateTime end;
@@ -226,7 +248,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final String dobParam = _selectedDOBFilter != null
         ? DateFormat('yyyy-MM-dd').format(_selectedDOBFilter!)
         : '';
-    c.getScheduleForScreen(_selectedProvider.id,
+    setState(() {
+      _isLoading = true;
+    });
+    await c.getScheduleForScreen(_selectedProvider.id,
         startDate: start,
         endDate: end,
         status: _selectedStatusFilter == 'all' ? null : _selectedStatusFilter,
@@ -235,6 +260,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         provider: _selectedScheduleProviderFilter == 'all'
             ? null
             : _selectedScheduleProviderFilter);
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -281,8 +309,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               });
                               final c = Get.find<PracticeController>();
                               c.setProvider(provider);
-                              await c.getMco(_selectedProvider.id);
-                              await c.getProvider(_selectedProvider.id);
+                              bool resMco =
+                                  await c.getMco(_selectedProvider.id);
+                              if (!resMco) return;
+
+                              bool resProvider =
+                                  await c.getProvider(_selectedProvider.id);
+                              if (!resProvider) return;
                               getSchedule();
                               _showSuccessMessage(
                                   'Showing schedule for ${provider.name == 'All' ? 'All providers' : provider.name}');
@@ -337,6 +370,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               // New Appointment Modal
               if (_showNewAppointmentModal)
                 _buildNewAppointmentModal(practiceController),
+              if (_isLoading) LoadingSpinner()
             ],
           ),
         ),
@@ -1772,9 +1806,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           onPressed: () async {
                             setState(() => _showNewAppointmentModal = false);
                             final c = Get.find<PracticeController>();
+                            setState(() {
+                              _isLoading = true;
+                            });
                             await c.walkIn(_selectedProvider.id,
                                 patientId: _selectedPatient?.id.toString(),
                                 provider: _providerFilter);
+                            setState(() {
+                              _isLoading = false;
+                            });
                             getSchedule();
                             _showSuccessMessage(
                                 'Appointment scheduled successfully!');

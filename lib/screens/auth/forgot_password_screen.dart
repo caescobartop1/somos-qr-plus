@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:somos_qr_plus/controllers/auth_controller.dart';
 import 'package:somos_qr_plus/helpers/route_helper.dart';
+import 'package:somos_qr_plus/widgets/spinner.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -73,20 +74,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               ],
             ),
           ),
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: _buildForgotPasswordCard(authController),
+          child: Stack(children: [
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: _buildForgotPasswordCard(authController),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+            if (_isLoading) LoadingSpinner()
+          ]),
         );
       }),
     );
@@ -265,7 +269,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       child: ElevatedButton(
         onPressed: authController.isLoading
             ? null
-            : () {
+            : () async {
                 if (!_formKey.currentState!.validate()) {
                   return;
                 }
@@ -278,8 +282,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                   );
                   return;
                 }
-                authController
+                setState(() {
+                  _isLoading = true;
+                });
+                await authController
                     .sendEmailForgotPassword(_emailController.text.trim());
+                setState(() {
+                  _isLoading = false;
+                });
               },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1976D2),
